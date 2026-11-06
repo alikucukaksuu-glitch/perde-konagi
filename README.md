@@ -1,14 +1,15 @@
-# Perde Konağı – Ana Sayfa V2
+# Perde Konağı – GitHub Pages Demo
 
-GitHub Pages için mobil uyumlu, statik ana sayfa tasarımı.
+Ölçüye özel perde satışı için statik, tarayıcıda çalışan demo.
 
 ## Yayınlama
-1. GitHub `perde-konagi` deposunda `index.html` dosyasını bu sürümle değiştirin.
-2. Değişikliği `main` dalına kaydedin.
-3. GitHub Pages mevcut `main / (root)` ayarıyla otomatik yeniden yayınlar.
+1. Bu klasördeki `index.html` ve `README.md` dosyalarını GitHub deposunun kök dizinine yükleyin.
+2. GitHub > Settings > Pages > Build and deployment bölümünden `Deploy from a branch` seçin.
+3. Branch: `main`, Folder: `/ (root)` seçip Save'e basın.
+4. Birkaç dakika sonra `https://alikucukaksuu-glitch.github.io/perde-konagi/` adresini kontrol edin.
 
 ## Önemli
-- Bu sürüm **ana sayfa tasarım demosudur**. Önceki tek dosyalı ürün yapılandırıcısı bu sürümde bulunmaz.
-- Fotoğraflar temsilidir ve uzaktan yüklenir; canlı mağaza öncesi gerçek, kullanım izni bulunan ürün fotoğraflarıyla değiştirilmelidir.
-- Sipariş, ödeme, veritabanı veya WooCommerce entegrasyonu yoktur.
-- WordPress'e geçişte bu tasarım tema olarak uyarlanmalı, sipariş sistemi WooCommerce ile sunucu tarafında geliştirilmelidir.
+- Fiyatlar, mekanizma ek ücretleri ve görseller **temsili**dir.
+- Sepet yalnızca tarayıcı belleğinde çalışır. Sipariş, müşteri verisi veya ödeme kaydetmez.
+- Bu HTML dosyası WordPress/WooCommerce eklentisi değildir. Gerçek satış için WordPress teması ve WooCommerce ile sunucu tarafında doğrulanan fiyat/sipariş entegrasyonu ayrıca geliştirilmelidir.
+- Ürün bazlı ölçü sınırları ve gerçek fiyat listeleri canlıya geçmeden önce doğrulanmalıdır.
