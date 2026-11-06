@@ -19,6 +19,10 @@
 .kasa-preview{width:100%!important;max-width:none!important;box-sizing:border-box;margin:10px 0 18px!important;padding:9px!important;background:#faf9f7!important;display:flex;align-items:center;justify-content:center;min-height:152px}
 .kasa-preview img{width:100%!important;height:132px!important;object-fit:contain!important;object-position:center!important}
 @media(max-width:480px){.kasa-choice{grid-template-columns:17px minmax(0,1fr) auto!important;gap:9px!important;padding:10px!important}.kasa-choice strong{font-size:13px!important}.kasa-choice b{font-size:11px!important}.kasa-preview img{height:115px!important}}
+
+/* Match dark cassette product scale with other color previews */
+.kasa-preview img[src$="kasa-antrasit.png"],.kasa-preview img[src$="kasa-kahve.png"]{transform:scale(1.22);transform-origin:center center}
+.kasa-preview{overflow:hidden}
 </style><script>
 const kasaColors={klasik:[['Beyaz','#fff','kasa-beyaz.png'],['Krem','#eee9dc','kasa-krem.png']],renkli:[['Gri','#999','kasa-gri.png'],['Antrasit','#414141','kasa-antrasit.png'],['Kahve','#795548','kasa-kahve.png']]};
 let kasaColor='';function kasaChange(){const type=selected('Kasa Seçeneği'),panel=document.getElementById('kasa-colors'),sw=document.getElementById('kasa-swatches');panel.hidden=type==='acik';if(type==='acik'){kasaColor='';document.getElementById('kasa-image').src='kasa-acik.png';document.getElementById('kasa-image').alt='Açık kasa alüminyum profil';}else{const colors=kasaColors[type];if(!colors.some(c=>c[0]===kasaColor))kasaColor=colors[0][0];sw.innerHTML='';colors.forEach(([name,hex,file])=>{const b=document.createElement('button');b.type='button';b.className='kasa-swatch';b.style.backgroundColor=hex;b.title=name;b.setAttribute('aria-label',name);b.setAttribute('aria-pressed',String(name===kasaColor));b.onclick=()=>{kasaColor=name;kasaChange()};sw.appendChild(b)});const chosen=colors.find(c=>c[0]===kasaColor);document.getElementById('kasa-image').src=chosen[2];document.getElementById('kasa-image').alt=kasaColor+' kapalı kasa alüminyum profil';}calc()}
