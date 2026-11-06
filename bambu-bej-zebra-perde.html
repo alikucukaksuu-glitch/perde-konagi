@@ -29,6 +29,12 @@
 
 /* Match white, cream and gray cassette previews to the approved dark variants */
 .kasa-preview img[src$="kasa-beyaz.png"],.kasa-preview img[src$="kasa-krem.png"],.kasa-preview img[src$="kasa-gri.png"]{transform:scale(1.9);transform-origin:center center}
+
+/* Consistent cassette previews */
+.kasa-preview{height:165px!important;min-height:165px!important;overflow:hidden!important}
+.kasa-preview img{height:145px!important;width:100%!important;object-fit:contain!important}
+.kasa-preview img[src*='kasa-beyaz.png'],.kasa-preview img[src*='kasa-krem.png'],.kasa-preview img[src*='kasa-gri.png']{transform:scale(2.5)!important}
+.kasa-preview img[src*='kasa-antrasit.png'],.kasa-preview img[src*='kasa-kahve.png']{transform:scale(1.22)!important}
 </style><script>
 const kasaColors={klasik:[['Beyaz','#fff','kasa-beyaz.png'],['Krem','#eee9dc','kasa-krem.png']],renkli:[['Gri','#999','kasa-gri.png'],['Antrasit','#414141','kasa-antrasit.png'],['Kahve','#795548','kasa-kahve.png']]};
 let kasaColor='';function kasaChange(){const type=selected('Kasa Seçeneği'),panel=document.getElementById('kasa-colors'),sw=document.getElementById('kasa-swatches');panel.hidden=type==='acik';if(type==='acik'){kasaColor='';document.getElementById('kasa-image').src='kasa-acik.png';document.getElementById('kasa-image').alt='Açık kasa alüminyum profil';}else{const colors=kasaColors[type];if(!colors.some(c=>c[0]===kasaColor))kasaColor=colors[0][0];sw.innerHTML='';colors.forEach(([name,hex,file])=>{const b=document.createElement('button');b.type='button';b.className='kasa-swatch';b.style.backgroundColor=hex;b.title=name;b.setAttribute('aria-label',name);b.setAttribute('aria-pressed',String(name===kasaColor));b.onclick=()=>{kasaColor=name;kasaChange()};sw.appendChild(b)});const chosen=colors.find(c=>c[0]===kasaColor);document.getElementById('kasa-image').src=chosen[2];document.getElementById('kasa-image').alt=kasaColor+' kapalı kasa alüminyum profil';}calc()}
