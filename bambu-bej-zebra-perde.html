@@ -30,9 +30,9 @@
 /* Match white, cream and gray cassette previews to the approved dark variants */
 .kasa-preview img[src$="kasa-beyaz.png"],.kasa-preview img[src$="kasa-krem.png"],.kasa-preview img[src$="kasa-gri.png"]{transform:scale(1.9);transform-origin:center center}
 
-/* Consistent cassette previews */
-.kasa-preview{height:165px!important;min-height:165px!important;overflow:hidden!important}
-.kasa-preview img{height:145px!important;width:100%!important;object-fit:contain!important}
+/* Fixed cassette viewport; anthracite is the visual scale reference. */
+.kasa-preview{height:165px!important;min-height:165px!important;overflow:hidden!important;padding:0!important}
+.kasa-preview img{display:block!important;height:150px!important;width:100%!important;object-fit:contain!important;object-position:center center!important;transform-origin:center center!important}
 .kasa-preview img[src*='kasa-beyaz.png'],.kasa-preview img[src*='kasa-krem.png'],.kasa-preview img[src*='kasa-gri.png']{transform:scale(2.5)!important}
 .kasa-preview img[src*='kasa-antrasit.png'],.kasa-preview img[src*='kasa-kahve.png']{transform:scale(1.22)!important}
 </style><script>
