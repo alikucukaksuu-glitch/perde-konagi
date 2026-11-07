@@ -1,33 +1,55 @@
 (()=>{
 'use strict';
 const sb=window.supabase?.createClient('https://rwylhxrtggsicieuyjrm.supabase.co','sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA');
-const key='perdeKonagiCartV1',items=document.getElementById('items'),status=document.getElementById('status'),total=document.getElementById('total'),count=document.getElementById('count');
+const key='perdeKonagiCartV1';
+const items=document.getElementById('items'),status=document.getElementById('status'),total=document.getElementById('total'),count=document.getElementById('count'),badge=document.getElementById('cart-badge');
 const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(n);
 const read=()=>{try{const x=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(x)?x.filter(v=>v?.options?.p_slug&&v.quantity>=1):[]}catch{return[]}};
 let cart=read(),version=0;
 function save(){localStorage.setItem(key,JSON.stringify(cart))}
-function text(tag,s,cls){const e=document.createElement(tag);e.textContent=s;if(cls)e.className=cls;return e}
+function text(tag,value,cls){const e=document.createElement(tag);e.textContent=String(value);if(cls)e.className=cls;return e}
+const icons={
+ ruler:'<path d="M4 18 18 4l4 4L8 22zM10 12l3 3M13 9l3 3"/>',
+ layer:'<path d="m12 2 9 5-9 5-9-5zM3 12l9 5 9-5M3 17l9 5 9-5"/>',
+ link:'<path d="m10 13 4-4M8 16H6a4 4 0 0 1 0-8h3M16 8h2a4 4 0 0 1 0 8h-3"/>',
+ gear:'<circle cx="12" cy="12" r="4"/><path d="m10 2-.5 3-2 1L5 4 3 7l2 2-.5 3L2 14l2 3 3-.5 2 2 .5 3H14l.5-3 2-2 3 .5 2-3-2.5-2 .5-3 2-2-2-3-3 2-2-1-.5-3z"/>',
+ trash:'<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 10v7M14 10v7"/>'
+};
+function svg(kind){const e=document.createElementNS('http://www.w3.org/2000/svg','svg');e.setAttribute('viewBox','0 0 24 24');e.setAttribute('aria-hidden','true');e.innerHTML=icons[kind];return e}
+function detail(label,value,icon){const d=document.createElement('div');d.className='custom-cell';const b=document.createElement('div');b.append(text('span',label,'custom-label'),text('strong',value,'custom-value'));d.append(svg(icon),b);return d}
+const kasaName=v=>({acik:'Açık Kasa',klasik:'Kapalı Kasa Klasik',renkli:'Kapalı Kasa Renkli'})[v]||v||'—';
+const tr=v=>({metal:'Metal',plastik:'Plastik',jumbo:'38’lik Jumbo',standart:'32’lik Standart',sag:'Sağ',sol:'Sol'})[v]||v||'—';
 function show(){
- items.textContent='';let sum=0,qty=0;
- if(!cart.length){items.appendChild(text('div','Sepetiniz henüz boş. Koleksiyonlarımızdan ürün seçebilirsiniz.','empty'))}
+ items.replaceChildren();let sum=0,qty=0;
+ if(!cart.length){const empty=text('div','Sepetiniz henüz boş. Size uygun perdeyi koleksiyonlarımızdan seçebilirsiniz.','empty');const a=text('a','Zebra Perdeleri İncele →');a.href='zebra-perde.html';empty.append(document.createElement('br'),a);items.append(empty)}
  for(const line of cart){const q=line.quote;if(!q)continue;const unit=Number(q.unit_total),lineTotal=unit*line.quantity;sum+=lineTotal;qty+=line.quantity;
- const card=document.createElement('article');card.className='item';
- const img=document.createElement('img');img.src=(q.slug.startsWith('mat-stor-')?q.slug+'-1.webp':q.slug.replace('-zebra-perde','')+'-1.'+(q.slug.includes('siyah')?'png':'webp'));img.alt=q.title;img.loading='lazy';img.onerror=()=>img.style.visibility='hidden';
- const block=document.createElement('div'),h=text('h2',q.title),meta=text('div',q.width_cm+' × '+q.height_cm+' cm • '+q.options.kasaTip+' kasa'+(q.options.kasaRenk?' ('+q.options.kasaRenk+')':'')+' • '+q.options.zincir+' zincir • '+q.options.boru+' boru • '+q.options.yon+' yön','meta');
- const bottom=document.createElement('div');bottom.className='item-bottom';const price=text('strong',money(lineTotal),'price');const control=document.createElement('div');control.className='qty';
- const minus=text('button','−');minus.type='button';minus.setAttribute('aria-label','Adedi azalt');minus.onclick=()=>change(line.id,line.quantity-1);
- const n=text('span',String(line.quantity));const plus=text('button','+');plus.type='button';plus.setAttribute('aria-label','Adedi artır');plus.onclick=()=>change(line.id,line.quantity+1);const remove=text('button','Kaldır','remove');remove.type='button';remove.onclick=()=>change(line.id,0);
- control.append(minus,n,plus,remove);bottom.append(price,control);block.append(h,meta,bottom);card.append(img,block);items.append(card)}
- total.textContent=money(sum);count.textContent=qty+' adet ürün';
+ const o=q.options||{};const card=document.createElement('article');card.className='item';
+ const top=document.createElement('div');top.className='item-main';
+ const img=document.createElement('img');img.className='item-image';img.src=(q.slug.startsWith('mat-stor-')?q.slug+'-1.webp':q.slug.replace('-zebra-perde','')+'-1.'+(q.slug.includes('siyah')?'png':'webp'));img.alt=q.title;img.loading='lazy';img.onerror=()=>img.style.visibility='hidden';
+ const block=document.createElement('div');block.className='item-info';
+ const productLink=document.createElement('a');productLink.href=q.slug+'.html';productLink.append(text('h2',q.title));
+ const sub=text('p',q.width_cm+' × '+q.height_cm+' cm · '+kasaName(o.kasaTip)+(o.kasaRenk?' ('+o.kasaRenk+')':'')+' · '+tr(o.zincir)+' Zincir · '+tr(o.boru)+' Boru · '+tr(o.yon)+' Yön','item-subtitle');
+ const bottom=document.createElement('div');bottom.className='item-bottom';const price=text('strong',money(lineTotal),'price');const controls=document.createElement('div');controls.className='qty';
+ const minus=text('button','−');minus.type='button';minus.setAttribute('aria-label',q.title+' adedini azalt');minus.onclick=()=>change(line.id,line.quantity-1);
+ const n=text('span',String(line.quantity),'qty-count');
+ const plus=text('button','+');plus.type='button';plus.setAttribute('aria-label',q.title+' adedini artır');plus.onclick=()=>change(line.id,line.quantity+1);
+ const remove=document.createElement('button');remove.type='button';remove.className='remove';remove.append(svg('trash'),text('span','Sil'));remove.setAttribute('aria-label',q.title+' ürününü sepetten kaldır');remove.onclick=()=>change(line.id,0);
+ controls.append(minus,n,plus,remove);bottom.append(price,controls);block.append(productLink,sub,bottom);top.append(img,block);
+ const custom=document.createElement('section');custom.className='custom-box';custom.setAttribute('aria-label','Ürün özelleştirmeleri');
+ const title=document.createElement('h3');title.append(svg('gear'),text('span','Ürün Özelleştirmeleri'));
+ const grid=document.createElement('div');grid.className='custom-grid';
+ grid.append(detail('Ölçü',q.width_cm+' × '+q.height_cm+' cm','ruler'),detail('Kasa / Renk',kasaName(o.kasaTip)+(o.kasaRenk?' · '+o.kasaRenk:''),'layer'),detail('Zincir / Yön',tr(o.zincir)+' · '+tr(o.yon),'link'),detail('Mekanizma',tr(o.boru)+' Boru','gear'));
+ const extra=text('p','Yan ayak: '+tr(o.ayak)+' · Fiyatlandırma eni: '+q.billed_width_cm+' cm','extra-options');
+ custom.append(title,grid,extra);card.append(top,custom);items.append(card)}
+ total.textContent=money(sum);count.textContent=qty+' adet ürün';if(badge)badge.textContent=qty>99?'99+':String(qty);
 }
 function change(id,n){if(n>20){status.textContent='Bir üründen en fazla 20 adet ekleyebilirsiniz.';return}if(n<1)cart=cart.filter(x=>x.id!==id);else cart=cart.map(x=>x.id===id?{...x,quantity:n}:x);save();show()}
 async function verify(){
  const t=++version;if(!sb){status.textContent='Fiyat servisine bağlanılamadı. Sepet fiyatları doğrulanamadı.';return}
  if(!cart.length){status.textContent='Sepetiniz boş.';show();return}
  const next=[];let rejected=0;
- for(const line of cart.slice(0,50)){try{let {data,error}=await sb.rpc('shop_quote_item',line.options);if(error||!data)throw Error();next.push({...line,quote:data,quantity:Math.min(20,Math.max(1,Math.floor(line.quantity)))})}catch{rejected++}}
- if(t!==version)return;
- cart=next;save();show();status.textContent=rejected?rejected+' üründe fiyat doğrulanamadı ve ürün sepetten çıkarıldı.':'✓ Ürün fiyatları güncel katalog üzerinden doğrulandı.';
+ for(const line of cart.slice(0,50)){try{const {data,error}=await sb.rpc('shop_quote_item',line.options);if(error||!data)throw Error('Fiyat doğrulanamadı');next.push({...line,quote:data,quantity:Math.min(20,Math.max(1,Math.floor(line.quantity)))})}catch{rejected++}}
+ if(t!==version)return;cart=next;save();show();status.textContent=rejected?rejected+' üründe fiyat doğrulanamadı ve ürün sepetten çıkarıldı.':'✓ Ürün fiyatları güncel katalog üzerinden doğrulandı.';
 }
 show();verify();
 })();
