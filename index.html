@@ -29,21 +29,103 @@
 .hero-points{margin-top:29px}
 @media(max-width:850px){.hero-photo{background-position:58% center}.hero:before{background:linear-gradient(90deg,rgba(246,238,229,.89),rgba(246,238,229,.55) 55%,rgba(246,238,229,.08))}.hero h1{font-size:clamp(40px,5.5vw,53px)}}
 @media(max-width:590px){.hero{min-height:545px}.hero-photo{background-position:64% center}.hero:before{background:linear-gradient(90deg,rgba(246,238,229,.94),rgba(246,238,229,.75) 63%,rgba(246,238,229,.2))}.hero h1{font-size:40px}.hero p{font-size:14px;max-width:300px}.hero-content{padding-top:43px}}
+
+/* Full-bleed cinema storefront header, centered logo and navigation */
+.top-line{position:relative;z-index:60;background:#2d2a28;color:#f7eee1;letter-spacing:1.15px}
+.site-header{position:absolute;top:29px;left:0;right:0;width:100%;z-index:55;background:linear-gradient(180deg,rgba(23,19,18,.56),rgba(23,19,18,.08));backdrop-filter:none;border-bottom:1px solid rgba(255,255,255,.15)}
+.header-layout{max-width:1380px;min-height:105px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);column-gap:24px}
+.header-layout>.brand{grid-column:2;grid-row:1;justify-self:center;color:white;filter:drop-shadow(0 1px 3px rgba(0,0,0,.22))}
+.header-layout>.nav-left{grid-column:1;grid-row:1;justify-self:end;margin:0}
+.header-layout>.nav-right{grid-column:3;grid-row:1;justify-self:start;display:flex;align-items:center;gap:20px;min-width:0}
+.header-layout .primary-nav{display:flex;gap:22px;margin:0}
+.header-layout .primary-nav a{font-size:13px;color:#fff;white-space:nowrap;text-shadow:0 1px 3px #0009}
+.header-layout .primary-nav a.active:after,.header-layout .primary-nav a:hover:after{background:#d7b78b}
+.header-layout .brand-symbol{color:#e8d1aa}
+.header-layout .brand-subtitle{color:#eee0cf}
+.header-layout .header-icons{margin-left:0;gap:5px}
+.header-layout .icon-link svg,.header-layout .icon-button svg{stroke:#fff;filter:drop-shadow(0 1px 3px #0008)}
+.header-rule{display:none}
+.hero{min-height:max(610px,calc(100svh - 29px));max-height:920px;justify-content:center;background:#4a423c}
+.hero-photo{background-position:center 50%}
+.hero:before{background:linear-gradient(180deg,rgba(18,16,15,.43) 0%,rgba(25,22,19,.47) 32%,rgba(30,25,21,.51) 75%,rgba(29,24,21,.65) 100%)}
+.hero-content{display:flex;align-items:center;justify-content:center;text-align:center;padding-top:160px;padding-bottom:95px}
+.hero-copy{max-width:800px}
+.hero h1{font-size:clamp(42px,4vw,67px);line-height:1.12;color:#fff;font-family:Georgia,serif;text-shadow:0 3px 18px rgba(0,0,0,.32)}
+.hero-kicker{color:#f0e3d1;text-shadow:0 1px 7px #0008;letter-spacing:2px}
+.hero p{margin-left:auto;margin-right:auto;max-width:660px;color:#fff9f2;font-size:16px;text-shadow:0 1px 8px #0009}
+.hero-actions,.hero-points{justify-content:center}
+.hero-actions .btn{background:#f7efe6;color:#3e3027;border-color:#f7efe6}
+.hero-actions .btn:hover{background:#fff}
+.hero-actions .btn-secondary{background:rgba(255,255,255,.11);color:#fff;border-color:rgba(255,255,255,.78);backdrop-filter:blur(4px)}
+.hero-actions .btn-secondary:hover{background:rgba(255,255,255,.24)}
+.hero-point{color:#fff;text-shadow:0 1px 8px #000a}
+.hero-point svg{stroke:#ead0ab}
+.hero-point:not(:last-child){border-color:#e4d5bd8c}
+.hero-dots span{background:#e5dac4c4}.hero-dots span:first-child{background:#f7f3e9}
+@media(max-width:1200px) and (min-width:851px){
+.header-layout{column-gap:13px}
+.header-layout .primary-nav{gap:13px}
+.header-layout .primary-nav a{font-size:11px}
+.header-layout .brand-title{font-size:20px}
+.header-layout .brand-symbol{width:42px;height:43px}
+.header-layout .nav-right{gap:9px}
+.header-layout .header-icons{gap:0}
+.header-layout .icon-link{width:30px}
+}
+@media(max-width:850px){
+.site-header{top:29px}
+.header-layout{display:flex;min-height:77px;justify-content:space-between}
+.header-layout>.brand{margin:0;filter:none}
+.header-layout>.nav-left{display:none}
+.header-layout>.nav-right{display:flex;margin-left:auto}
+.header-layout>.nav-right>.primary-nav{display:none}
+.header-layout .menu-toggle{display:grid}
+.mobile-panel.open{display:flex;position:absolute;left:0;right:0;top:100%;background:#2d2927f5;backdrop-filter:blur(14px);border-top:1px solid #ffffff36;padding:10px 22px 20px}
+.mobile-panel a{color:#fff;border-color:#ffffff22}
+.hero{min-height:max(610px,calc(100svh - 29px))}
+.hero-content{padding-top:150px;padding-bottom:85px}
+.hero:before{background:linear-gradient(180deg,rgba(22,20,19,.52),rgba(34,28,24,.51),rgba(24,19,16,.71))}
+.hero h1{font-size:clamp(39px,5vw,54px)}
+.hero p{color:#f8f0e7;max-width:530px}
+}
+@media(max-width:590px){
+.top-line{font-size:9px}
+.header-layout .brand-title{font-size:17px}
+.header-layout .brand-symbol{height:35px;width:37px}
+.header-layout .brand-subtitle{font-size:6px}
+.header-layout{min-height:72px}
+.header-layout .header-icons{gap:0}
+.header-layout .icon-link:nth-child(2){display:none}
+.hero{min-height:max(620px,calc(100svh - 29px))}
+.hero-photo{background-position:65% 50%}
+.hero:before{background:linear-gradient(180deg,rgba(22,19,17,.62),rgba(31,24,18,.53) 53%,rgba(25,21,18,.7))}
+.hero-content{padding-top:132px;padding-bottom:74px}
+.hero h1{font-size:clamp(35px,9.2vw,47px)}
+.hero p{font-size:14px}
+.hero-kicker{font-size:10px}
+.hero-points{gap:12px;flex-wrap:nowrap}
+.hero-point{font-size:9px}
+.hero-point:not(:last-child){padding-right:11px}
+.hero-point svg{width:21px;height:21px}
+.hero-actions{flex-wrap:wrap}
+}
 </style>
 </head>
 <body>
 <div class="top-line">ÖLÇÜYE ÖZEL ÜRETİM &nbsp; ✦ &nbsp; ZEBRA & STOR PERDE ÇÖZÜMLERİ</div>
 <header class="site-header">
 <div class="container header-layout">
+<nav class="primary-nav nav-left" aria-label="Ürün kategorileri">
+<a class="active" href="index.html">Ana Sayfa</a>
+<a href="zebra-perde.html">Zebra Perde</a>
+<a href="stor-perde.html">Stor Perde</a>
+</nav>
 <a class="brand" href="index.html" aria-label="Perde Konağı ana sayfa">
 <svg class="brand-symbol" viewBox="0 0 66 58" aria-hidden="true"><path d="M5 27L32 5l29 22M13 25v29M52 25v29M26 31h14v23M26 42h14M18 34h4M45 34h4" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round"/></svg>
 <span><span class="brand-title">PERDE KONAĞI</span><span class="brand-subtitle">MEKANİK PERDE SİSTEMLERİ</span></span>
 </a>
-<div class="header-rule"></div>
-<nav class="primary-nav" aria-label="Ana menü">
-<a class="active" href="index.html">Ana Sayfa</a>
-<a href="zebra-perde.html">Zebra Perde</a>
-<a href="stor-perde.html">Stor Perde</a>
+<div class="nav-right">
+<nav class="primary-nav" aria-label="Diğer sayfalar">
 <a href="#koleksiyonlar">Plise Perde</a>
 <a href="#iletisim">İletişim</a>
 </nav>
@@ -52,6 +134,7 @@
 <a class="icon-link" href="#siparis-bilgi" aria-label="Sipariş bilgileri"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4.5 21c0-5 3.2-8 7.5-8s7.5 3 7.5 8"/></svg></a>
 <a class="icon-link" href="sepet.html" aria-label="Sepetim"><svg viewBox="0 0 24 24"><path d="M2 3h3l2.5 12h12l2-9H6"/><circle cx="9" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/></svg><span id="cart-count" class="cart-badge" hidden>0</span></a>
 <button class="icon-button menu-toggle" id="menu-toggle" type="button" aria-label="Menüyü aç" aria-controls="mobile-menu" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+</div>
 </div>
 </div>
 <nav class="mobile-panel" id="mobile-menu" aria-label="Mobil menü">
