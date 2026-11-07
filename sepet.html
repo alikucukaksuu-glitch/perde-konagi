@@ -34,6 +34,14 @@
 .item>.item-bottom,.item>.meta,.item>h2{max-width:100%}
 .item:after{content:"";display:block;clear:both}
 @media(max-width:590px){.item>img{width:88px;height:112px;margin-right:12px}}
+
+/* Five evenly spaced customization fields; mobile displays two per row */
+.custom-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+.custom-cell{min-width:0;gap:7px;padding-left:9px;padding-right:9px}
+.custom-cell:first-child{padding-left:0}
+.custom-cell:last-child{border-right:0}
+@media(max-width:1100px){.custom-grid{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:16px}.custom-cell:nth-child(3){border-right:0}.custom-cell:nth-child(4){padding-left:0}}
+@media(max-width:590px){.custom-grid{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:16px}.custom-cell:nth-child(3){border-right:1px solid #d9c2ae}.custom-cell:nth-child(4){border-right:0;padding-left:9px}.custom-cell:nth-child(odd){padding-left:0}.custom-cell:last-child{border:0}}
 </style>
 </head>
 <body>
@@ -69,5 +77,5 @@
 </main>
 <footer class="site-footer">© 2026 Perde Konağı — Ölçüye Özel Perde Sistemleri</footer>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="shop-cart-page.js?v=20261108-cart-redesign-2"></script>
+<script defer src="shop-cart-page.js?v=20261108-customization-five"></script>
 </body></html>
