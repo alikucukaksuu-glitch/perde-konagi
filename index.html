@@ -109,6 +109,22 @@
 .hero-point svg{width:21px;height:21px}
 .hero-actions{flex-wrap:wrap}
 }
+
+/* Only the translucent product search bar below the centered logo */
+.hero-search-wrap{position:absolute;z-index:15;top:139px;left:50%;transform:translateX(-50%);width:min(760px,calc(100% - 36px))}
+.hero-search{display:flex;align-items:stretch;height:50px;width:100%;border:1px solid rgba(255,255,255,.64);background:rgba(32,30,28,.34);border-radius:5px;box-shadow:0 2px 13px #00000019;backdrop-filter:blur(3px)}
+.hero-search:focus-within{border-color:#fff;background:rgba(32,30,28,.52)}
+.hero-search input{min-width:0;flex:1;padding:0 16px;color:white;background:transparent;border:0;outline:0;font:14px Arial,Helvetica,sans-serif}
+.hero-search input::placeholder{color:#fff;opacity:.91}
+.hero-search input::-webkit-search-cancel-button{filter:grayscale(1) brightness(3)}
+.hero-search button{width:56px;flex-shrink:0;display:grid;place-items:center;border:0;color:white;background:transparent}
+.hero-search button:hover{background:#ffffff1e}
+.hero-search-results{background:#fffefa;border:1px solid #dbccb7;border-radius:0 0 7px 7px;box-shadow:0 12px 25px #0004;max-height:260px;overflow-y:auto}
+.hero-search-results a{display:block;padding:12px 17px;color:#302a24;font-size:13px;border-bottom:1px solid #eee6dc}
+.hero-search-results a:hover,.hero-search-results a:focus{background:#f1e7d9}
+.hero-search-results p{margin:0;padding:13px 17px;color:#655b50;font-size:13px}
+@media(max-width:850px){.hero-search-wrap{top:103px;width:min(690px,calc(100% - 32px))}.hero-search{height:46px}}
+@media(max-width:590px){.hero-search-wrap{top:95px;width:calc(100% - 30px)}.hero-search{height:43px}.hero-search input{font-size:12px;padding:0 11px}.hero-search button{width:43px}.hero-search button svg{width:20px;height:20px}}
 </style>
 </head>
 <body>
@@ -144,6 +160,14 @@
 <main>
 <section class="hero" id="anasayfa" aria-label="Perde Konağı özel ölçü perde">
 <div class="hero-photo" role="img" aria-label="Aydınlık salonda uygulanan zebra perde"></div>
+<div class="hero-search-wrap" role="search">
+<form id="home-product-search" class="hero-search" autocomplete="off">
+<label class="sr-only" for="home-search-input">Perde ürünlerinde ara</label>
+<input id="home-search-input" type="search" placeholder="Ürünün ismini, kodunu veya etiketini yazınız." aria-controls="home-search-results" aria-expanded="false" maxlength="90">
+<button type="submit" aria-label="Ürün ara"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.7"/><path d="m16 16 5 5"/></svg></button>
+</form>
+<div id="home-search-results" class="hero-search-results" role="listbox" hidden></div>
+</div>
 <div class="container hero-content"><div class="hero-copy">
 <span class="hero-kicker">Perde Konağı Koleksiyonları</span>
 <h1>Evinize Uygun<br>Özel Ölçü Perde<br>Çözümleri</h1>
@@ -236,6 +260,41 @@ menu.addEventListener('click',()=>{const open=panel.classList.toggle('open');men
 panel.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{panel.classList.remove('open');menu.setAttribute('aria-expanded','false')}));
 try{const cart=JSON.parse(localStorage.getItem('perdeKonagiCartV1')||'[]');const count=Array.isArray(cart)?cart.reduce((n,p)=>n+(Number(p.quantity)||0),0):0;if(count>0){const el=document.getElementById('cart-count');el.hidden=false;el.textContent=count>99?'99+':String(count)}}catch{}
 document.querySelectorAll('[data-gallery]').forEach(g=>{const pics=[...g.querySelectorAll('img')];if(pics.length<2)return;let timer=null,i=0;const reset=()=>{clearInterval(timer);timer=null;i=0;pics.forEach((p,j)=>p.classList.toggle('active',j===0))};const start=()=>{if(timer||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;timer=setInterval(()=>{pics[i].classList.remove('active');i=(i+1)%pics.length;pics[i].classList.add('active')},1650)};g.parentElement.addEventListener('mouseenter',start);g.parentElement.addEventListener('mouseleave',reset);g.parentElement.addEventListener('focusin',start);g.parentElement.addEventListener('focusout',reset)});
+})();
+</script>
+<script>
+(()=>{'use strict';
+const products=[
+['Bambu Bej Zebra Perde','bambu-bej-zebra-perde.html'],
+['Bambu Beyaz Zebra Perde','bambu-beyaz-zebra-perde.html'],
+['Bambu Gri Zebra Perde','bambu-gri-zebra-perde.html'],
+['Bambu Kahve Zebra Perde','bambu-kahve-zebra-perde.html'],
+['Bambu Siyah Zebra Perde','bambu-siyah-zebra-perde.html'],
+['Bambu Siyah Geçişli Zebra Perde','bambu-siyah-gecisli-zebra-perde.html'],
+['İthal Mat Stor Ultra Kalın Antrasit Perde','mat-stor-antrasit.html'],
+['İthal Mat Stor Ultra Kalın Gri Perde','mat-stor-gri.html'],
+['İthal Mat Stor Ultra Kalın Kahve Perde','mat-stor-kahve.html'],
+['İthal Mat Stor Ultra Kalın Kırık Beyaz Perde','mat-stor-kirik-beyaz.html'],
+['İthal Mat Stor Ultra Kalın Krem Perde','mat-stor-krem.html'],
+['İthal Mat Stor Ultra Kalın Mavi Perde','mat-stor-mavi.html'],
+['İthal Mat Stor Ultra Kalın Siyah Perde','mat-stor-siyah.html'],
+['İthal Mat Stor Ultra Kalın Turuncu Perde','mat-stor-turuncu.html']
+];
+const form=document.getElementById('home-product-search'),input=document.getElementById('home-search-input'),results=document.getElementById('home-search-results');
+const norm=s=>s.toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/[^a-z0-9]+/g,' ').trim();
+let matches=[];
+function update(){
+ const q=norm(input.value);results.replaceChildren();matches=[];
+ if(!q){results.hidden=true;input.setAttribute('aria-expanded','false');return}
+ matches=products.filter(p=>norm(p[0]+' '+p[1]).includes(q)).slice(0,7);
+ if(!matches.length){const text=document.createElement('p');text.textContent='Aramanıza uygun ürün bulunamadı.';results.append(text)}
+ else for(const [name,url] of matches){const a=document.createElement('a');a.href=url;a.textContent=name;a.setAttribute('role','option');results.append(a)}
+ results.hidden=false;input.setAttribute('aria-expanded','true');
+}
+input.addEventListener('input',update);
+input.addEventListener('keydown',e=>{if(e.key==='Escape'){results.hidden=true;input.setAttribute('aria-expanded','false')}})
+form.addEventListener('submit',e=>{e.preventDefault();update();if(matches.length)location.href=matches[0][1]});
+document.addEventListener('click',e=>{if(!e.target.closest('.hero-search-wrap')){results.hidden=true;input.setAttribute('aria-expanded','false')}})
 })();
 </script>
 </body>
