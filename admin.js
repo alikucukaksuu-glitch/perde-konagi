@@ -54,7 +54,7 @@ function renderProducts(){
  const list=products.filter(p=>p.title.toLocaleLowerCase('tr-TR').includes(term)||p.slug.toLocaleLowerCase('tr-TR').includes(term));
  const rows=list.map(p=>{
   const tr=document.createElement('tr'),td=document.createElement('td'),a=document.createElement('a');
-  a.href=p.slug+'.html';a.target='_blank';a.rel='noopener';a.className='order-link';a.textContent=p.title;td.append(a);tr.append(td,node('td',p.collection==='zebra'?'Zebra Perde':'Mat Stor'),node('td',money(p.price_per_sqm)));
+  a.href=(['bambu-bej-zebra-perde','bambu-beyaz-zebra-perde','bambu-gri-zebra-perde','bambu-kahve-zebra-perde','bambu-siyah-zebra-perde','bambu-siyah-gecisli-zebra-perde','mat-stor-krem','mat-stor-kirik-beyaz','mat-stor-gri','mat-stor-antrasit','mat-stor-kahve','mat-stor-mavi','mat-stor-siyah','mat-stor-turuncu'].includes(p.slug)?p.slug+'.html':'urun.html?slug='+encodeURIComponent(p.slug));a.target='_blank';a.rel='noopener';a.className='order-link';a.textContent=p.title;td.append(a);tr.append(td,node('td',p.collection==='zebra'?'Zebra Perde':'Mat Stor'),node('td',money(p.price_per_sqm)));
   const state=document.createElement('td'),status=node('span',p.is_active?'Satışta':'Kapalı','catalog-status '+(p.is_active?'yes':'no'));state.append(status);tr.append(state);
   const actions=document.createElement('td'),edit=node('button','Düzenle','catalog-edit');edit.type='button';edit.disabled=!['owner','admin'].includes(role);edit.addEventListener('click',()=>openProductEditor(p));actions.append(edit);tr.append(actions);
   return tr;
