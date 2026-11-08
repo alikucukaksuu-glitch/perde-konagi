@@ -24,19 +24,27 @@ function updateCards(){
   if(card.dataset.pkCampaignApplied==='true')continue;
   const a=card.querySelector('a[href*=".html"]')||(card.matches('a')?card:null);
   const href=a?.getAttribute('href')||'';
-  let itemSlug=href.includes('urun.html?')?new URLSearchParams(href.split('?')[1]||'').get('slug'):href.split('/').pop().replace(/\.html$/,'');
+  const itemSlug=href.includes('urun.html?')?new URLSearchParams(href.split('?')[1]||'').get('slug'):href.split('/').pop().replace(/\.html$/,'');
   if(!itemSlug)continue;
-  const entries=campaigns.filter(c=>c.product_slug===itemSlug),price=card.querySelector('.product-price');
+  const entries=campaigns.filter(c=>c.product_slug===itemSlug);
   if(!entries.length)continue;
-  const current=parseFloat((price?.textContent||'').replace(/\./g,'').replace(',','.').replace(/[^0-9.]/g,''))||0;
+  const price=card.querySelector('.product-price'),desc=card.querySelector('.desc');
+  const listed=(price?.textContent||'').match(/(\d[\d.,]*)\s*TL/)||(desc?.textContent||'').match(/(\d[\d.,]*)\s*TL\/m²/);
+  const current=listed?Number(listed[1].replace(/\./g,'').replace(',','.')):0;
   const c=best(entries,current);
   if(!c)continue;addBadge(card,c);
-  if(!price||!current)continue;
+  if(!current)continue;
   const off=priceDiscount(c,current);
-  if(off>0){
+  if(off>0&&price){
    const old=document.createElement('s');old.textContent=money(current);old.className='pk-campaign-original';
    price.replaceChildren(old,document.createTextNode(' '+money(current-off)+' / m²'));
    price.classList.add('pk-campaign-price');
+  }else if(off>0&&desc){
+   desc.textContent=desc.textContent.replace(/\s*·?\s*\d[\d.,]*\s*TL\/m²/,'').trim();
+   const line=document.createElement('div');line.className='pk-category-campaign-price';
+   const old=document.createElement('s');old.textContent=money(current);old.className='pk-campaign-original';
+   const discounted=document.createElement('strong');discounted.textContent=money(current-off)+' / m²';
+   line.append(old,discounted);desc.after(line);
   }
   card.dataset.pkCampaignApplied='true';
  }
