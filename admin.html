@@ -65,7 +65,22 @@
 </div>
 </section>
 <section class="view" id="view-orders" hidden><div class="section-heading"><h2>Siparişler</h2><p>Mağazadan oluşturulan gerçek siparişler.</p></div><div class="panel"><div class="table-wrap"><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Durum</th><th>Tutar</th><th>Tarih</th></tr></thead><tbody id="all-orders"></tbody></table></div></div></section>
-<section class="view" id="view-products" hidden><div class="section-heading"><h2>Ürünler</h2><p>Mevcut Supabase ürün kataloğu. Fiyat düzenleme sonraki aşamada açılacak.</p></div><div class="panel"><div class="table-wrap"><table><thead><tr><th>Ürün</th><th>Koleksiyon</th><th>m² Fiyat</th><th>Durum</th></tr></thead><tbody id="product-list"></tbody></table></div></div></section>
+<section class="view" id="view-products" hidden>
+<div class="section-heading"><h2>Ürün Yönetimi</h2><p>Ürün adını, m² fiyatını ve satış durumunu Supabase üzerinden güvenle yönetin. Değişiklikler sepet fiyatlandırmasına yansır.</p></div>
+<div class="product-toolbar"><span id="product-summary" class="product-summary">Ürünler yükleniyor…</span><label class="product-filter"><span class="sr-only">Ürünlerde ara</span><input id="product-search" type="search" placeholder="Ürün adına göre ara"></label></div>
+<div class="panel"><div class="table-wrap"><table class="product-table"><thead><tr><th>Ürün</th><th>Koleksiyon</th><th>m² Fiyat</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="product-list"></tbody></table></div></div>
+<p class="product-help">Yeni ürünün fotoğraflarını ve detay sayfasını oluşturma bölümü sonraki aşamada eklenecek. Mevcut 14 ürünün yönetimi burada aktiftir.</p>
+<dialog id="product-editor" class="product-editor">
+<form id="product-edit-form">
+<div class="editor-heading"><h2>Ürünü Düzenle</h2><button type="button" id="product-editor-close" class="editor-x" aria-label="Kapat">×</button></div>
+<p id="product-edit-slug" class="editor-slug"></p>
+<label for="product-edit-title">Ürün adı</label><input id="product-edit-title" name="title" required minlength="5" maxlength="160">
+<label for="product-edit-price">Metrekare fiyatı (TL)</label><input id="product-edit-price" name="price" required type="number" step="0.01" min="1" max="100000">
+<label class="editor-toggle"><input id="product-edit-active" type="checkbox"> Satışa açık</label>
+<p class="editor-warning">Ürün satışa kapatıldığında yeni sepete ekleme engellenir. Daha önce eklenen ürünler de fiyat doğrulama sırasında sepetten çıkarılır.</p>
+<p id="product-save-feedback" class="editor-feedback" role="status" aria-live="polite"></p>
+<div class="editor-actions"><button type="button" id="product-editor-cancel">Vazgeç</button><button type="submit" id="product-editor-save" class="quick-primary">Değişiklikleri Kaydet</button></div>
+</form></dialog></section>
 <section class="view" id="view-collections" hidden><div class="section-heading"><h2>Koleksiyonlar</h2><p>Katalogdaki ürün grupları.</p></div><div id="collection-list" class="collection-grid"></div></section>
 <section class="view" id="view-customers" hidden><div class="section-heading"><h2>Müşteriler</h2><p>Gerçek siparişlerden oluşan müşteri özeti.</p></div><div id="customer-list" class="panel section-pad"></div></section>
 <section class="view" id="view-reviews" hidden><div class="section-heading"><h2>Yorumlar</h2><p>Gelen değerlendirmeleri inceleyip onaylayın veya reddedin.</p></div><div class="panel section-pad"><div class="review-tabs"><button class="tab active" type="button" data-review-filter="pending">Onay Bekleyenler</button><button class="tab" type="button" data-review-filter="approved">Onaylananlar</button><button class="tab" type="button" data-review-filter="rejected">Reddedilenler</button></div><div id="review-list"></div></div></section>
@@ -75,4 +90,4 @@
 <section class="view" id="view-settings" hidden><div class="section-heading"><h2>Ayarlar</h2><p>Yönetici oturumu ve mağaza yapılandırması.</p></div><div class="panel section-pad"><h3>Yetkili yönetici</h3><p id="admin-email"></p><p>Ödeme entegrasyonu henüz aktif değildir. Yönetici erişimleri Supabase tarafından kontrol edilir.</p><button id="settings-signout" class="quick-primary" type="button">Oturumu Kapat</button></div></section>
 </main></div></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="admin.js?v=1"></script></body></html>
+<script defer src="admin.js?v=products-20261108"></script></body></html>
