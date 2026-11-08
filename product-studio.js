@@ -142,9 +142,10 @@ async function save(force){
  let justCreated=false;
  try{
   if(!current){
-   const {error}=await sb.from('shop_products').insert(product);if(error)throw error;justCreated=true;
+   const {error}=await sb.from('shop_products').insert({...product,is_active:false});if(error)throw error;justCreated=true;
+   current={...product,is_active:false};
   }else{
-   const {error}=await sb.from('shop_products').update({title:data.title,collection:product.collection,price_per_sqm:data.price,is_active:product.is_active}).eq('slug',slug);if(error)throw error;
+   const {error}=await sb.from('shop_products').update({title:data.title,collection:product.collection,price_per_sqm:data.price}).eq('slug',slug);if(error)throw error;
   }
   const stored=[];
   for(const image of images){
@@ -156,9 +157,10 @@ async function save(force){
   }
   const record={slug,short_description:cleanText($('ps-short').value),description_html:sanitize($('ps-desc').innerHTML),image_paths:stored,variant_options:variants(),measurement_options:data.m,seo_title:cleanText($('ps-seo-title').value),seo_description:cleanText($('ps-seo-desc').value),stock_qty:data.stock,display_status:status,updated_at:new Date().toISOString()};
   const {error:detailsError}=await sb.from('shop_product_details').upsert(record,{onConflict:'slug'});if(detailsError)throw detailsError;
+  const {error:publishError}=await sb.from('shop_products').update({is_active:status==='published'}).eq('slug',slug);if(publishError)throw publishError;
   current={...product,updated_at:record.updated_at};images.forEach(i=>{if(i.objectURL){URL.revokeObjectURL(i.objectURL);i.objectURL=null;i.file=null}});
   renderImages();$('ps-summary-date').textContent=new Date().toLocaleDateString('tr-TR');
-  feedback('✓ Ürün başarıyla '+(status==='published'?'yayınlandı.':'kaydedildi.')+' Mağaza bağlantısı: '+(slug.startsWith('mat-stor-')||slug.startsWith('bambu-')?'':'urun.html?slug=')+slug);
+  feedback('✓ Ürün başarıyla '+(status==='published'?'yayınlandı.':'kaydedildi.')+' Mağaza bağlantısı: urun.html?slug='+slug);
   // Keep the admin view visible to allow further photo/description changes.
   $('ps-crumb').textContent=data.title;$('ps-page-title').textContent='Ürünü Düzenle';setStatus(status);
   const link=document.createElement('a');link.href='urun.html?slug='+encodeURIComponent(slug);link.target='_blank';link.rel='noopener';link.textContent='Ürünü Mağazada Aç →';link.style.cssText='display:block;color:#865326;font-weight:700;margin-top:8px';$('ps-feedback').append(link);
