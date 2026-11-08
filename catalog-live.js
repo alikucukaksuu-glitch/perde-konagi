@@ -30,6 +30,7 @@ function blockPurchase(text){
 }
 function renderGallery(d){
  if(!Array.isArray(d?.image_paths)||!d.image_paths.length)return;
+ window.pkProductImage=publicPhoto(d.image_paths[0]);
  const main=document.getElementById('main'),thumbs=document.querySelector('.thumbs');
  if(!main||!thumbs)return;
  const paths=d.image_paths.map(publicPhoto);
@@ -119,7 +120,7 @@ function updateListings(products,details){
  if(slug==='zebra-perde'||slug==='stor-perde'){const grid=document.querySelector('.cards');if(grid)addProducts(products,byDetails,grid,slug==='zebra-perde'?'zebra':'mat-stor')}
  window.pkCatalogSearchProducts=products.map(p=>[p.title,staticSlugs.has(p.slug)?p.slug+'.html':'urun.html?slug='+encodeURIComponent(p.slug)]);
 }
-Promise.all([request('shop_products?select=slug,title,collection,price_per_sqm,is_active'),request('shop_product_details?select=slug,short_description,description_html,image_paths,seo_title,seo_description,display_status,stock_qty')]).then(([products,details])=>{
+Promise.all([request('shop_products?select=slug,title,collection,price_per_sqm,is_active'),request('shop_product_details?select=slug,short_description,description_html,image_paths,variant_options,measurement_options,seo_title,seo_description,display_status,stock_qty')]).then(([products,details])=>{
  if(productPage){const p=products.find(p=>p.slug===slug);if(p)showProduct(p,details.find(d=>d.slug===slug));else blockPurchase('Bu ürün şu anda satın alınamaz.')}
  else updateListings(products,details);
 }).catch(()=>{
