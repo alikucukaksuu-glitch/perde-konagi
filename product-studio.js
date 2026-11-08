@@ -112,7 +112,7 @@ async function open(slug){
   $('ps-mode-banner').className='ps-mode-banner editing';
   $('ps-copy-new').hidden=false;
   $('ps-name').value=p.title;$('ps-price').value=p.price_per_sqm;$('ps-category').value=p.collection;
-  $('ps-short').value=d?.short_description||'';$('ps-desc').innerHTML=sanitize(d?.description_html||'');
+  $('ps-short').value=d?.short_description||'';$('ps-desc').innerHTML=window.PKDescriptionFormat.normalize(d?.description_html||'');
   $('ps-seo-title').value=d?.seo_title||'';$('ps-seo-desc').value=d?.seo_description||'';
   $('ps-stock').value=d?.stock_qty??'';$('ps-sale-enabled').checked=Boolean(p.is_active);
   const m=d?.measurement_options||defaults;
@@ -190,7 +190,7 @@ async function save(force){
    const {error}=await sb.storage.from(bucket).upload(path,image.file,{contentType:image.file.type,cacheControl:'3600',upsert:false});
    if(error)throw error;image.path=path;stored.push(path);
   }
-  const record={slug,short_description:cleanText($('ps-short').value),description_html:sanitize($('ps-desc').innerHTML),image_paths:stored,variant_options:variants(),measurement_options:data.m,seo_title:cleanText($('ps-seo-title').value),seo_description:cleanText($('ps-seo-desc').value),stock_qty:data.stock,display_status:status,updated_at:new Date().toISOString()};
+  const record={slug,short_description:cleanText($('ps-short').value),description_html:window.PKDescriptionFormat.normalize($('ps-desc').innerHTML),image_paths:stored,variant_options:variants(),measurement_options:data.m,seo_title:cleanText($('ps-seo-title').value),seo_description:cleanText($('ps-seo-desc').value),stock_qty:data.stock,display_status:status,updated_at:new Date().toISOString()};
   const {error:detailsError}=await sb.from('shop_product_details').upsert(record,{onConflict:'slug'});if(detailsError)throw detailsError;
   const {error:publishError}=await sb.from('shop_products').update({is_active:product.is_active,visibility:status}).eq('slug',slug);if(publishError)throw publishError;
   // Shared product images must never be deleted when another product is edited.
@@ -227,6 +227,18 @@ $('ps-save-draft').addEventListener('click',()=>save());
 $('ps-publish').addEventListener('click',()=>{setStatus('published');save('published')});
 document.querySelectorAll('[data-ps-scroll]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-ps-scroll]').forEach(b=>b.classList.toggle('selected',b===button));$(button.dataset.psScroll)?.scrollIntoView({behavior:'smooth',block:'start'})}));
 document.querySelectorAll('[data-command]').forEach(button=>button.addEventListener('click',()=>{const editor=$('ps-desc');editor.focus();document.execCommand(button.dataset.command,false,button.dataset.value||null)}));
-$('ps-desc').addEventListener('paste',e=>{e.preventDefault();const text=e.clipboardData?.getData('text/plain')||'';document.execCommand('insertText',false,text)});
+$('ps-desc').addEventListener('paste',e=>{
+ e.preventDefault();
+ const text=e.clipboardData?.getData('text/plain')||'';
+ document.execCommand('insertText',false,text);
+ // Reformat at the end of the paste without interfering with typing/caret.
+ if(/^\s*(?:#{1,4}\s+|[-*]\s+|\*\*)/m.test(text)){
+  $('ps-desc').innerHTML=window.PKDescriptionFormat.normalize($('ps-desc').innerHTML);
+ }
+});
+$('ps-format-markdown').addEventListener('click',()=>{
+ $('ps-desc').innerHTML=window.PKDescriptionFormat.normalize($('ps-desc').innerHTML);
+ feedback('✓ Başlıklar, kalın yazılar ve listeler biçimlendirildi. Kaydet butonuna basınca ürün sayfasına da yansır.');
+});
 window.pkStudio={open};
 })();
