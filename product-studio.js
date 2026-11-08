@@ -84,14 +84,14 @@ function refreshSummary(){
  $('ps-summary-price').textContent=money($('ps-price').value);
  $('ps-summary-stock').textContent=$('ps-stock').value===''?'∞ (Sınırsız)':$('ps-stock').value+' adet';
  $('ps-summary-variants').textContent=variants().reduce((n,v)=>n+v.values.length,0)+' seçenek';
- const published=$('ps-active').value==='published';$('ps-summary-status').textContent=published?'● Yayında':'● Taslak';$('ps-summary-status').style.background=published?'#e5f1e4':'#f7e7d5';$('ps-summary-status').style.color=published?'#467b45':'#91683f';
+ const published=$('ps-active').value==='published',sale=$('ps-sale-enabled').checked;$('ps-summary-status').textContent=published?(sale?'● Yayında':'● Satışa Kapalı'):'● Taslak';$('ps-summary-status').style.background=published?'#e5f1e4':'#f7e7d5';$('ps-summary-status').style.color=published?'#467b45':'#91683f';
 }
 function reset(){
  clearImages();current=null;
  for(const id of ['ps-name','ps-price','ps-short','ps-desc','ps-seo-title','ps-seo-desc','ps-stock']){const field=$(id);if(field)field[field.isContentEditable?'innerHTML':'value']=''}
  $('ps-category').value='zebra';$('ps-variant-rows').replaceChildren();
  for(const [id,value] of [['ps-minw',50],['ps-maxw',280],['ps-minh',50],['ps-maxh',280]])$(id).value=value;
- $('ps-summary-date').textContent='—';$('ps-page-title').textContent='Yeni Ürün Ekle';$('ps-crumb').textContent='Yeni Ürün Ekle';
+ $('ps-sale-enabled').checked=true;$('ps-summary-date').textContent='—';$('ps-page-title').textContent='Yeni Ürün Ekle';$('ps-crumb').textContent='Yeni Ürün Ekle';
  setStatus('draft');renderImages();feedback('');
 }
 async function open(slug){
@@ -100,13 +100,13 @@ async function open(slug){
  $('product-index').hidden=true;$('ps-studio').hidden=false;
  if(slug){
   feedback('Ürün bilgileri yükleniyor…');
-  const [{data:p,error:e},{data:d,error:f}]=await Promise.all([sb.from('shop_products').select('slug,title,collection,price_per_sqm,is_active,updated_at').eq('slug',slug).single(),sb.from('shop_product_details').select('*').eq('slug',slug).maybeSingle()]);
+  const [{data:p,error:e},{data:d,error:f}]=await Promise.all([sb.from('shop_products').select('slug,title,collection,price_per_sqm,is_active,visibility,updated_at').eq('slug',slug).single(),sb.from('shop_product_details').select('*').eq('slug',slug).maybeSingle()]);
   if(e||f||!p){feedback('Ürün bilgileri yüklenemedi: '+(e?.message||f?.message||'Kayıt bulunamadı'));return}
   current=p;
   $('ps-name').value=p.title;$('ps-price').value=p.price_per_sqm;$('ps-category').value=p.collection;
   $('ps-short').value=d?.short_description||'';$('ps-desc').innerHTML=sanitize(d?.description_html||'');
   $('ps-seo-title').value=d?.seo_title||'';$('ps-seo-desc').value=d?.seo_description||'';
-  $('ps-stock').value=d?.stock_qty??'';
+  $('ps-stock').value=d?.stock_qty??'';$('ps-sale-enabled').checked=Boolean(p.is_active);
   const m=d?.measurement_options||defaults;
   for(const [id,key] of [['ps-minw','min_width'],['ps-maxw','max_width'],['ps-minh','min_height'],['ps-maxh','max_height']])$(id).value=m[key]??defaults[key];
   for(const item of Array.isArray(d?.variant_options)?d.variant_options:[])variantRow(item.label,(item.values||[]).join(', '));
@@ -114,7 +114,7 @@ async function open(slug){
   images=originalPaths.map(path=>({id:crypto.randomUUID(),path}));
   $('ps-page-title').textContent='Ürünü Düzenle';$('ps-crumb').textContent=p.title;
   $('ps-summary-date').textContent=new Date(d?.updated_at||p.updated_at).toLocaleDateString('tr-TR');
-  setStatus(d?.display_status|| (p.is_active?'published':'draft'));renderImages();feedback('');
+  setStatus(d?.display_status||p.visibility|| (p.is_active?'published':'draft'));renderImages();feedback('');
  }else feedback('Yeni ürün hazırlayın. Kaydet ile taslak oluşturabilir veya Yayınla ile satışa açabilirsiniz.');
  refreshSummary();$('ps-studio').scrollIntoView({block:'start',behavior:'smooth'});
 }
@@ -142,16 +142,16 @@ async function save(force){
  let data;try{data=validate()}catch(e){feedback(e.message);return}
  let status=force||$('ps-active').value;
  if(status==='published'&&!current&&!images.length){feedback('Yeni ürünü yayınlamak için en az bir fotoğraf yükleyin.');return}
- if(status==='published'&&data.stock===0){feedback('Stoku sıfır olan ürün yayınlanamaz. Önce stok girin veya Taslak kaydedin.');return}
+ if(status==='published'&&data.stock===0&&$('ps-sale-enabled').checked){feedback('Stok sıfırsa önce Satışa açık seçeneğini kapatın veya Taslak kaydedin.');return}
  busy=true;['ps-publish','ps-save-draft'].forEach(id=>$(id).disabled=true);
  feedback('Ürün ve fotoğraflar kaydediliyor…');
  const slug=current?.slug||slugify(data.title);
  if(!slug||slug.length<3){busy=false;feedback('Ürün adı geçerli bir kod oluşturamıyor.');['ps-publish','ps-save-draft'].forEach(id=>$(id).disabled=false);return}
- const product={slug,title:data.title,collection:$('ps-category').value,price_per_sqm:data.price,is_active:status==='published'};
+ const product={slug,title:data.title,collection:$('ps-category').value,price_per_sqm:data.price,is_active:status==='published'&&$('ps-sale-enabled').checked,visibility:status};
  let justCreated=false;
  try{
   if(!current){
-   const {error}=await sb.from('shop_products').insert({...product,is_active:false});if(error)throw error;justCreated=true;
+   const {error}=await sb.from('shop_products').insert({...product,is_active:false,visibility:'draft'});if(error)throw error;justCreated=true;
    current={...product,is_active:false};
   }else{
    const {error}=await sb.from('shop_products').update({title:data.title,collection:product.collection,price_per_sqm:data.price}).eq('slug',slug);if(error)throw error;
@@ -166,7 +166,7 @@ async function save(force){
   }
   const record={slug,short_description:cleanText($('ps-short').value),description_html:sanitize($('ps-desc').innerHTML),image_paths:stored,variant_options:variants(),measurement_options:data.m,seo_title:cleanText($('ps-seo-title').value),seo_description:cleanText($('ps-seo-desc').value),stock_qty:data.stock,display_status:status,updated_at:new Date().toISOString()};
   const {error:detailsError}=await sb.from('shop_product_details').upsert(record,{onConflict:'slug'});if(detailsError)throw detailsError;
-  const {error:publishError}=await sb.from('shop_products').update({is_active:status==='published'}).eq('slug',slug);if(publishError)throw publishError;
+  const {error:publishError}=await sb.from('shop_products').update({is_active:product.is_active,visibility:status}).eq('slug',slug);if(publishError)throw publishError;
   const removed=originalPaths.filter(path=>!stored.includes(path)&&!path.startsWith('legacy:'));
   if(removed.length){const {error:cleanupError}=await sb.storage.from(bucket).remove(removed);if(cleanupError)feedback('Ürün kaydedildi ancak kaldırılan fotoğraflar depodan silinemedi: '+cleanupError.message)}
   originalPaths=[...stored];
@@ -190,7 +190,7 @@ drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag
 drop.addEventListener('dragleave',()=>drop.classList.remove('dragging'));
 drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('dragging');addFiles(e.dataTransfer.files)});
 document.querySelectorAll('input[name="ps-publish"]').forEach(r=>r.addEventListener('change',()=>{$('ps-active').value=r.value;authorStatus()}));
-$('ps-active').addEventListener('change',()=>setStatus($('ps-active').value));
+$('ps-active').addEventListener('change',()=>setStatus($('ps-active').value));$('ps-sale-enabled').addEventListener('change',refreshSummary);
 ['ps-name','ps-price','ps-category','ps-stock','ps-short'].forEach(id=>$(id).addEventListener('input',refreshSummary));
 $('ps-save-draft').addEventListener('click',()=>save());
 $('ps-publish').addEventListener('click',()=>{setStatus('published');save('published')});
