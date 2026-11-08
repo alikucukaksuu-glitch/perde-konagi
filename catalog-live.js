@@ -140,6 +140,7 @@ function updateListings(products,details){
 Promise.all([request('shop_products?select=slug,title,collection,price_per_sqm,is_active'),request('shop_product_details?select=slug,short_description,description_html,image_paths,variant_options,measurement_options,seo_title,seo_description,display_status,stock_qty')]).then(([products,details])=>{
  if(productPage){const p=products.find(p=>p.slug===slug);if(p)showProduct(p,details.find(d=>d.slug===slug));else blockPurchase('Bu ürün şu anda satın alınamaz.')}
  else updateListings(products,details);
+ window.dispatchEvent(new Event('pk-catalog-ready'));
 }).catch(()=>{
  if(productPage){
   blockPurchase('Güncel ürün bilgileri doğrulanamadı. Lütfen sayfayı yenileyin.');
