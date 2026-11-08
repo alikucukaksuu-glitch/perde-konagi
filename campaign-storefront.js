@@ -51,7 +51,7 @@ async function refreshQuote(){
  const seq=++quotes,inputs=quoteOptions();
  if(!Number.isInteger(inputs.p_width_cm)||!Number.isInteger(inputs.p_height_cm)||inputs.p_width_cm<50||inputs.p_height_cm<50)return;
  const add=document.getElementById('add-cart'),box=document.getElementById('breakdown');if(!add||!box)return;
- add.disabled=true;add.textContent='İndirimli fiyat doğrulanıyor…';
+ add.disabled=true;add.textContent='İndirimli fiyat doğrulanıyor…';box.hidden=true;
  try{
   const response=await fetch(base+'/rest/v1/rpc/shop_quote_with_promo',{method:'POST',headers:{'Content-Type':'application/json',apikey:key},body:JSON.stringify(inputs),cache:'no-store'});
   if(!response.ok)throw new Error('Fiyat doğrulanamadı');
@@ -65,6 +65,7 @@ async function refreshQuote(){
    const last=box.querySelector('.break-total');if(last)last.before(row);
   }
   const last=box.querySelector('.break-total b:last-child');if(last)last.textContent=money(total);
+  box.hidden=false;
   add.textContent=money(total)+' — Sepete Ekle';add.disabled=false;
  }catch{
   if(seq!==quotes)return;
