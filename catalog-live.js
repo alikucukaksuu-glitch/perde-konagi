@@ -66,7 +66,11 @@ function showProduct(p,d){
  document.title=(d?.seo_title||p.title)+' | Perde Konağı';
  if(d?.seo_description){let meta=document.querySelector('meta[name="description"]');if(!meta){meta=document.createElement('meta');meta.name='description';document.head.append(meta)}meta.content=d.seo_description}
  if(d?.short_description){const desc=document.querySelector('h1 + p.desc');if(desc)desc.textContent=d.short_description}
- if(pageSlug==='urun'||(d&&typeof d.description_html==='string')){let section=document.querySelector('section.article');if(section){const heading=section.querySelector('h2')||document.createElement('h2');section.replaceChildren(heading);const body=document.createElement('div');body.innerHTML=d?.description_html?cleanHTML(d.description_html):'<p>Bu ürüne henüz açıklama eklenmemiştir.</p>';section.append(body)}}
+ if(pageSlug==='urun'||(d&&typeof d.description_html==='string')){let section=document.querySelector('section.article');if(section){const heading=section.querySelector('h2')||document.createElement('h2');section.replaceChildren(heading);const body=document.createElement('div');body.className='pk-description-content';
+ body.innerHTML=d?.description_html?window.PKDescriptionFormat.normalize(d.description_html):'<p>Bu ürüne henüz açıklama eklenmemiştir.</p>';
+ const first=body.firstElementChild;
+ if(first&&/^H[2-4]$/.test(first.tagName)&&first.textContent.trim().toLocaleLowerCase('tr-TR')==='ürün açıklaması')first.remove();
+ section.append(body)}}
  renderGallery(d);renderVariantChoices(d);
  if(pageSlug==='urun'){
    const crumb=document.getElementById('pk-crumb-name');
