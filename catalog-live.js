@@ -1,7 +1,8 @@
 (()=>{'use strict';
 const BASE='https://rwylhxrtggsicieuyjrm.supabase.co';
 const KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
-const slug=location.pathname.split('/').pop().replace(/\.html$/,'');
+const pageSlug=location.pathname.split('/').pop().replace(/\.html$/,'');
+const slug=pageSlug==='urun'?(new URLSearchParams(location.search).get('slug')||''):pageSlug;
 const productPage=Boolean(document.querySelector('#en')&&document.querySelector('#boy')&&document.querySelector('.customizer'));
 const fmt=value=>new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value));
 const statusMsg='Bu ürün şu anda satışa kapalıdır. Ürünü inceleyebilirsiniz ancak sepetinize ekleyemezsiniz.';
@@ -65,8 +66,20 @@ function showProduct(p,d){
  document.title=(d?.seo_title||p.title)+' | Perde Konağı';
  if(d?.seo_description){let meta=document.querySelector('meta[name="description"]');if(!meta){meta=document.createElement('meta');meta.name='description';document.head.append(meta)}meta.content=d.seo_description}
  if(d?.short_description){const desc=document.querySelector('h1 + p.desc');if(desc)desc.textContent=d.short_description}
- if(d&&typeof d.description_html==='string'){let section=document.querySelector('section.article');if(section){const heading=section.querySelector('h2')||document.createElement('h2');section.replaceChildren(heading);const body=document.createElement('div');body.innerHTML=d.description_html?cleanHTML(d.description_html):'<p>Bu ürüne henüz açıklama eklenmemiştir.</p>';section.append(body)}}
+ if(pageSlug==='urun'||(d&&typeof d.description_html==='string')){let section=document.querySelector('section.article');if(section){const heading=section.querySelector('h2')||document.createElement('h2');section.replaceChildren(heading);const body=document.createElement('div');body.innerHTML=d?.description_html?cleanHTML(d.description_html):'<p>Bu ürüne henüz açıklama eklenmemiştir.</p>';section.append(body)}}
  renderGallery(d);renderVariantChoices(d);
+ if(pageSlug==='urun'){
+   const crumb=document.getElementById('pk-crumb-name');
+   if(crumb)crumb.textContent=p.title;
+   const link=document.getElementById('pk-collection-link');
+   if(link){link.href=p.collection==='mat-stor'?'stor-perde.html':'zebra-perde.html';link.textContent=p.collection==='mat-stor'?'Stor Perdeler':'Zebra Perdeler'}
+   const subtitle=document.querySelector('.layout .eyebrow');
+   if(subtitle)subtitle.textContent=p.collection==='mat-stor'?'PERDE KONAĞI · STOR KOLEKSİYONU':'PERDE KONAĞI · ZEBRA KOLEKSİYONU';
+   const loader=document.getElementById('pk-loading');
+   const main=document.querySelector('main.wrap');
+   if(loader)loader.hidden=true;
+   if(main)main.style.display='';
+ }
  window.pkMeasureBounds=d?.measurement_options||{};
  const dimensions=[['en','min_width','max_width'],['boy','min_height','max_height']];
  for(const [id,minName,maxName] of dimensions){const input=document.getElementById(id);if(input){input.min=window.pkMeasureBounds[minName]??50;input.max=window.pkMeasureBounds[maxName]??280}}
@@ -124,7 +137,10 @@ Promise.all([request('shop_products?select=slug,title,collection,price_per_sqm,i
  if(productPage){const p=products.find(p=>p.slug===slug);if(p)showProduct(p,details.find(d=>d.slug===slug));else blockPurchase('Bu ürün şu anda satın alınamaz.')}
  else updateListings(products,details);
 }).catch(()=>{
- if(productPage)blockPurchase('Güncel fiyat doğrulanamadı. Lütfen daha sonra tekrar deneyin.');
+ if(productPage){
+  blockPurchase('Güncel ürün bilgileri doğrulanamadı. Lütfen sayfayı yenileyin.');
+  if(pageSlug==='urun'){const loader=document.getElementById('pk-loading');if(loader)loader.textContent='Ürün bilgileri doğrulanamadı. Lütfen sayfayı yenileyin.'}
+ }
  else document.querySelectorAll('.product-price').forEach(x=>x.textContent='Fiyat doğrulanamadı');
 });
 })();
