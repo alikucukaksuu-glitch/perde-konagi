@@ -28,7 +28,7 @@ root.append(h('h3','', 'Sipariş Aşaması · Üretimle Senkronize'),timeline(o)
 if(!allowed(o)){root.append(h('p','od-message','Ödeme onayı gelmeden üretime aktarılamaz. Mevcut durum: '+o.status));return}
 const field=(title,type,val)=>{const l=h('label','',title),e=h(type==='textarea'?'textarea':'input');if(type!=='textarea')e.type=type;e.value=val||'';l.append(e);return {l,e}};
 const due=field('Termin tarihi','date',p.due_date);const note=field('Atölye notu','textarea',p.workshop_note);const tracking=field('Kargo takip numarası','text',p.tracking_no);root.append(due.l,note.l,tracking.l);
-const bar=h('div','od-actions'),print=h('button','od-button primary','▣ A5 Üretim Fişi Yazdır'),save=h('button','od-button','Bilgileri Kaydet'),advance=h('button','od-button primary','Sonraki Aşamaya Geç →');
+const bar=h('div','od-actions'),print=h('button','od-button primary','▣ A5 Yazdır (2 Sayfa)'),save=h('button','od-button','Bilgileri Kaydet'),advance=h('button','od-button primary','Sonraki Aşamaya Geç →');
 for(const b of [print,save,advance])b.type='button';
 print.onclick=()=>printOrder(o);save.onclick=()=>update(o,step(o),due.e.value,note.e.value,tracking.e.value);
 advance.disabled=stages.indexOf(step(o))===6;advance.onclick=()=>{const ix=stages.indexOf(step(o));if(ix<6&&confirm(no(o)+' siparişi “'+labels[ix+1]+'” aşamasına ilerletilsin mi?'))update(o,stages[ix+1],due.e.value,note.e.value,tracking.e.value)};
