@@ -81,3 +81,10 @@ textarea.ps-input{resize:vertical;line-height:1.5}
 .ps-photo:not(:has(.ps-main-badge)) .ps-photo-moves{bottom:4px}
 
 .ps-sale-checkbox{display:flex;align-items:flex-start;gap:9px;background:#fffaf5;border:1px solid #e7d7c6;border-radius:9px;padding:11px;margin:12px 0;cursor:pointer;font:12px Arial,sans-serif;font-weight:700}.ps-sale-checkbox input{accent-color:#a47b50;margin-top:2px}.ps-sale-checkbox small{display:block;font-size:10px;line-height:1.5;color:#857361;font-weight:400;margin-top:4px}
+
+/* Distinct create vs edit modes: no accidental replacement of existing products */
+.ps-mode-banner{padding:13px 16px;margin:0 0 13px;border-radius:9px;border:1px solid #d8c6b3;font-weight:700;font-size:12px;line-height:1.6}
+.ps-mode-banner.new{background:#ecf6ed;border-color:#b7dbc0;color:#2d6b3d}
+.ps-mode-banner.editing{background:#fff1da;border-color:#dfb57c;color:#83551f}
+#ps-copy-new{display:block;margin:-3px 0 15px;font-size:13px}
+#ps-name[readonly]{background:#f3eee8;color:#796959;cursor:not-allowed}
