@@ -37,8 +37,50 @@ function renderReviews(){const pending=reviews.filter(r=>r.status==='pending');s
 const preview=pending.slice(0,3);fill(el('review-preview'),preview.length?preview.map(r=>makeReviewCard(r,'preview')):[empty('Onay bekleyen müşteri yorumu bulunmuyor.')]);
 const selected=reviews.filter(r=>r.status===filter);fill(el('review-list'),selected.length?selected.map(r=>makeReviewCard(r,'all')):[empty('Bu kategoride yorum bulunmuyor.')])}
 document.querySelectorAll('[data-review-filter]').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.reviewFilter;document.querySelectorAll('[data-review-filter]').forEach(x=>x.classList.toggle('active',x===b));renderReviews()}));
-function renderProducts(){const rows=products.map(p=>{const tr=document.createElement('tr');const td=document.createElement('td'),a=document.createElement('a');a.href=p.slug+'.html';a.target='_blank';a.rel='noopener';a.className='order-link';a.textContent=p.title;td.append(a);tr.append(td,node('td',p.collection==='zebra'?'Zebra Perde':'Mat Stor'),node('td',money(p.price_per_sqm)),node('td',p.is_active?'Aktif':'Pasif'));return tr});fill(el('product-list'),rows.length?rows:[emptyTr(4,'Henüz ürün yok.')]);
-const groups=['zebra','mat-stor'].map(cat=>{const count=products.filter(p=>p.collection===cat).length;const card=document.createElement('div');card.className='collection-card';card.append(node('h3',cat==='zebra'?'Zebra Perde':'Mat Stor'),node('strong',count+' ürün'),node('p','Ürün kataloğundan alınan güncel bilgi.'));return card});fill(el('collection-list'),groups)}
+let editingProductSlug=null;
+function openProductEditor(p){
+ if(!['owner','admin'].includes(role)){message('Ürün düzenleme yetkiniz bulunmuyor.');return}
+ editingProductSlug=p.slug;
+ setText('product-edit-slug','Ürün kodu: '+p.slug);
+ el('product-edit-title').value=p.title;
+ el('product-edit-price').value=String(p.price_per_sqm);
+ el('product-edit-active').checked=Boolean(p.is_active);
+ setText('product-save-feedback','');
+ el('product-editor').showModal();
+}
+function renderProducts(){
+ const term=(el('product-search')?.value||'').toLocaleLowerCase('tr-TR').trim();
+ const list=products.filter(p=>p.title.toLocaleLowerCase('tr-TR').includes(term)||p.slug.toLocaleLowerCase('tr-TR').includes(term));
+ const rows=list.map(p=>{
+  const tr=document.createElement('tr'),td=document.createElement('td'),a=document.createElement('a');
+  a.href=p.slug+'.html';a.target='_blank';a.rel='noopener';a.className='order-link';a.textContent=p.title;td.append(a);tr.append(td,node('td',p.collection==='zebra'?'Zebra Perde':'Mat Stor'),node('td',money(p.price_per_sqm)));
+  const state=document.createElement('td'),status=node('span',p.is_active?'Satışta':'Kapalı','catalog-status '+(p.is_active?'yes':'no'));state.append(status);tr.append(state);
+  const actions=document.createElement('td'),edit=node('button','Düzenle','catalog-edit');edit.type='button';edit.disabled=!['owner','admin'].includes(role);edit.addEventListener('click',()=>openProductEditor(p));actions.append(edit);tr.append(actions);
+  return tr;
+ });
+ fill(el('product-list'),rows.length?rows:[emptyTr(5,'Eşleşen ürün bulunamadı.')]);
+ setText('product-summary',products.length+' ürün · '+products.filter(p=>p.is_active).length+' satışta · '+products.filter(p=>!p.is_active).length+' kapalı');
+ const groups=['zebra','mat-stor'].map(cat=>{const count=products.filter(p=>p.collection===cat).length;const card=document.createElement('div');card.className='collection-card';card.append(node('h3',cat==='zebra'?'Zebra Perde':'Mat Stor'),node('strong',count+' ürün'),node('p','Ürün kataloğundan alınan güncel bilgi.'));return card});
+ fill(el('collection-list'),groups)
+}
+el('product-search').addEventListener('input',renderProducts);
+el('product-editor-close').addEventListener('click',()=>el('product-editor').close());
+el('product-editor-cancel').addEventListener('click',()=>el('product-editor').close());
+el('product-edit-form').addEventListener('submit',async event=>{
+ event.preventDefault();
+ if(!editingProductSlug||!['owner','admin'].includes(role))return;
+ const title=el('product-edit-title').value.trim(),price=Number(el('product-edit-price').value),active=el('product-edit-active').checked;
+ if(title.length<5||title.length>160||!Number.isFinite(price)||price<1||price>100000){setText('product-save-feedback','Geçerli ürün adı ve m² fiyatı giriniz.');return}
+ const button=el('product-editor-save');button.disabled=true;setText('product-save-feedback','Kaydediliyor…');
+ try{
+  const {data,error}=await client.from('shop_products').update({title,price_per_sqm:price,is_active:active}).eq('slug',editingProductSlug).select('slug,title,collection,price_per_sqm,is_active').single();
+  if(error||!data)throw error||new Error('Kayıt doğrulanamadı');
+  const index=products.findIndex(p=>p.slug===editingProductSlug);if(index<0)throw new Error('Ürün listesi değişti');
+  products[index]=data;renderProducts();message('✓ '+data.title+' güncellendi. Yeni sepette sunucu fiyatı kullanılacak.');
+  setText('product-save-feedback','✓ Kaydedildi.');el('product-editor').close();
+ }catch(error){setText('product-save-feedback','Kaydetme başarısız: '+(error?.message||'Bilinmeyen hata'))}
+ finally{button.disabled=false}
+});
 function renderTopProducts(){const sums=new Map();for(const item of orderItems){if(!orders.some(o=>o.id===item.order_id&&paidStatuses.includes(o.status)))continue;const old=sums.get(item.product_slug)||{name:item.product_title,count:0,sales:0};old.count+=item.quantity;old.sales+=Number(item.line_total);sums.set(item.product_slug,old)}const ranked=[...sums.entries()].sort((a,b)=>b[1].count-a[1].count).slice(0,3);fill(el('top-products'),ranked.length?ranked.map(([slug,d])=>{let row=node('div','','mini-product'),img=document.createElement('img');img.src=pimage(slug);img.alt=d.name;img.loading='lazy';let details=node('div','','details');details.append(node('strong',d.name),node('small',d.count+' adet • '+money(d.sales)));row.append(img,details);return row}):[empty('Henüz satış verisi yok.')])}
 function renderCustomers(){const ids=new Set(orders.map(o=>o.customer_id));el('customer-list').replaceChildren(empty(ids.size?'Sipariş oluşturmuş '+ids.size+' farklı müşteri hesabı var. Kişisel bilgi alanları güvenli sipariş sistemiyle tamamlanacak.':'Henüz müşteri siparişi bulunmuyor.'))}
 function renderChart(id){const target=el(id);target.replaceChildren();const today=new Date();let points=[],labels=[];for(let i=29;i>=0;i--){let d=new Date(today.getFullYear(),today.getMonth(),today.getDate()-i);let iso=d.toLocaleDateString('en-CA');labels.push(d.getDate()+'/'+(d.getMonth()+1));points.push(orders.filter(o=>paidStatuses.includes(o.status)&&new Date(o.created_at).toLocaleDateString('en-CA')===iso).reduce((n,o)=>n+Number(o.total_amount),0))}
