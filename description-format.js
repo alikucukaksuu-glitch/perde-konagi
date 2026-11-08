@@ -70,13 +70,12 @@ function normalize(source){
   const hasMarkdown=paragraphs.some(p=>/^\s*(?:#{1,4}\s+|[-*•]\s+|\d+[.)]\s+|\*\*.+\*\*)/.test(p.textContent||''));
   if(hasMarkdown || /^\s*#\s+/.test(parser.body.firstElementChild.textContent||'')){
    // Source came from a plain-text Markdown paste; paragraph gaps are formatting, not content.
-   const text=parser.body.firstElementChild.innerText; // not consistently available in parsed DOM
    const lineTexts=[];
    const walk=(node)=>{
     if(node.nodeType===3){lineTexts.push(node.nodeValue);return}
     if(node.nodeType!==1)return;
     if(node.tagName==='BR'){lineTexts.push('\n');return}
-    if(['P','DIV','H2','H3','H4','LI'].includes(node.tagName)){lineTexts.push('\n');for(const child of node.childNodes)walk(child);lineTexts.push('\n');return}
+    if(['P','DIV','H2','H3','H4','LI'].includes(node.tagName)){for(const child of node.childNodes)walk(child);lineTexts.push('\n');return}
     for(const child of node.childNodes)walk(child);
    };
    for(const child of parser.body.firstElementChild.childNodes)walk(child);
