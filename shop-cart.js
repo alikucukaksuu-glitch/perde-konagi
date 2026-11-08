@@ -26,7 +26,7 @@ window.addCart=async function(){
  const {data,error}=await sb.rpc('shop_quote_item',p);
  if(error||!data)throw Error(error?.message||'Fiyat alınamadı');
  const cart=safeCart();if(cart.length>=50)throw Error('Sepet dolu. Önce sepetinizi düzenleyin.');
- cart.push({id:crypto.randomUUID(),options:p,quote:data,quantity:1,variantSelections:{...(window.pkVariantSelections||{})},added_at:new Date().toISOString()});
+ cart.push({id:crypto.randomUUID(),options:p,quote:data,quantity:1,variantSelections:{...(window.pkVariantSelections||{})},productImage:window.pkProductImage||null,added_at:new Date().toISOString()});
  localStorage.setItem(CART_KEY,JSON.stringify(cart));
  msg.textContent='✓ '+money(data.unit_total)+' tutarında ürün sepete eklendi. ';
  const a=document.createElement('a');a.href='sepet.html';a.textContent='Sepetime git →';a.style.cssText='font-weight:700;color:#92621c;text-decoration:underline';msg.append(a);
