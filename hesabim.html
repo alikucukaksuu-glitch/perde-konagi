@@ -1,9 +1,44 @@
-<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Hesabım | Perde Konağı</title><link rel="stylesheet" href="hesabim.css?v=account-20261108-2"></head>
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Hesabım | Perde Konağı</title><link rel="stylesheet" href="hesabim.css?v=account-auth-20261108-1"></head>
 <body>
 <header class="ac-header"><div class="ac-header-inner"><a class="ac-logo" href="index.html">PERDE KONAĞI</a><nav><a href="index.html">⌂ &nbsp;Mağaza</a><span class="ac-sep">|</span><a href="#my-orders">⬡ &nbsp;Siparişlerim</a><a href="sepet.html">♧ &nbsp;Sepetim</a></nav></div></header>
 <section class="ac-hero"><div class="ac-wrap"><h1>Hesabım</h1><p>Üyelik bilgilerinizi, adreslerinizi ve siparişlerinizi buradan yönetebilirsiniz.</p></div></section>
 <main class="ac-wrap">
-<section id="login" class="ac-panel ac-login"><h2>Üye Girişi</h2><p>Hesabınıza giriş yapmak için e-posta adresinize güvenli bağlantı gönderelim.</p><form id="login-form" class="ac-formline"><input id="email" type="email" required autocomplete="email" placeholder="E-posta adresiniz"><button class="ac-primary" type="submit">Giriş Bağlantısı Gönder</button></form><p id="login-message" role="status"></p></section>
+<section id="login" class="ac-auth-section">
+<div class="ac-auth-backdrop">
+ <div class="ac-auth-grid">
+  <article class="ac-auth-card">
+   <div class="ac-auth-mark">♧</div>
+   <h2>Üye Girişi</h2>
+   <p>Perde Konağı üyeliğinizle hesabınıza güvenle giriş yapın, siparişlerinizi, favorilerinizi ve adreslerinizi kolayca yönetin.</p>
+   <form id="login-form" class="ac-auth-form">
+    <label><span class="ac-sr">E-posta adresiniz</span><input id="email" type="email" required autocomplete="email" placeholder="✉  E-posta adresiniz"></label>
+    <label><span class="ac-sr">Şifreniz</span><input id="login-password" type="password" required minlength="8" autocomplete="current-password" placeholder="♙  Şifreniz"></label>
+    <div class="ac-auth-inline"><label class="ac-checkbox"><input type="checkbox" id="ac-remember" checked> Beni hatırla</label><button type="button" class="ac-auth-link" id="ac-forgot">Şifremi unuttum</button></div>
+    <button class="ac-auth-submit" type="submit">Giriş Yap</button>
+   </form>
+   <div class="ac-or"><span>veya</span></div>
+   <form id="ac-magic-form"><label class="ac-sr" for="ac-magic-email">E-posta ile giriş</label><input class="ac-sr-input" type="email" id="ac-magic-email" autocomplete="email" aria-label="Bağlantı gönderilecek e-posta adresi"><button type="submit" class="ac-auth-outline">✉ &nbsp; E-posta ile giriş yap (Bağlantı gönder)</button></form>
+   <p id="login-message" class="ac-auth-message" role="status"></p>
+  </article>
+  <article class="ac-auth-card">
+   <div class="ac-auth-mark">♧</div>
+   <h2>Üyelik Oluştur</h2>
+   <p>Hemen ücretsiz üye olun, alışverişinizi daha hızlı, kolay ve avantajlı hale getirin.</p>
+   <form id="ac-signup-form" class="ac-auth-form">
+    <label><span class="ac-sr">Ad Soyad</span><input id="ac-signup-name" type="text" required minlength="2" maxlength="120" autocomplete="name" placeholder="♙  Ad Soyad"></label>
+    <label><span class="ac-sr">E-posta adresiniz</span><input id="ac-signup-email" type="email" required autocomplete="email" placeholder="✉  E-posta adresiniz"></label>
+    <label><span class="ac-sr">Telefon numaranız</span><input id="ac-signup-phone" type="tel" required minlength="7" maxlength="25" autocomplete="tel" placeholder="♧  Telefon numaranız"></label>
+    <label><span class="ac-sr">Şifreniz</span><input id="ac-signup-password" type="password" required minlength="8" autocomplete="new-password" placeholder="♙  Şifreniz (en az 8 karakter)"></label>
+    <label class="ac-checkbox ac-terms"><input id="ac-terms" type="checkbox" required> <span><a href="kvkk.html" id="ac-privacy-link">KVKK Aydınlatma Metni</a> ve üyelik koşullarını okudum, kabul ediyorum.</span></label>
+    <button class="ac-auth-submit" type="submit">Hesap Oluştur</button>
+   </form>
+   <p id="ac-signup-message" class="ac-auth-message" role="status"></p>
+   <p class="ac-auth-footnote">ⓘ Üyeliğinizle siparişlerinizi hesabınızdan takip edebilirsiniz.</p>
+  </article>
+ </div>
+ <div class="ac-auth-benefits"><div><span>▣</span><strong>Siparişlerinizi takip edin</strong><p>Tüm siparişlerinizin durumunu hesabınızdan anlık görüntüleyin.</p></div><div><span>♧</span><strong>Adreslerinizi kaydedin</strong><p>Teslimat adreslerinizi ekleyerek alışverişlerinizi hızlandırın.</p></div><div><span>♡</span><strong>Favori ürünlerinizi saklayın</strong><p>Beğendiğiniz ürünleri favorilerinize kaydedin.</p></div></div>
+</div>
+</section>
 <div id="account" class="ac-layout" hidden>
 <aside class="ac-sidebar">
 <section class="ac-panel ac-identity"><div class="ac-identity-top"><div class="ac-avatar">♙</div><div><h2 id="ac-display-name">Üye</h2><p id="who">—</p><p id="ac-phone-short">Telefon eklenmedi</p><p id="ac-member-date">Üyelik bilgisi</p></div></div><button id="ac-edit-profile-side" class="ac-primary ac-full" type="button">✎ &nbsp;Bilgileri Düzenle</button><button id="logout" class="ac-outline ac-full" type="button">⇥ &nbsp;Çıkış Yap</button></section>
@@ -20,4 +55,4 @@
 </div></div>
 </main>
 <div class="ac-modal-backdrop" id="ac-modal" hidden><div class="ac-modal" role="dialog" aria-modal="true" aria-labelledby="ac-modal-title"><div class="ac-panel-title"><h2 id="ac-modal-title">Düzenle</h2><button type="button" id="ac-modal-close" class="ac-text-button">✕ Kapat</button></div><form id="ac-modal-form"><div id="ac-modal-fields"></div><div class="ac-modal-actions"><button type="button" class="ac-outline" id="ac-modal-cancel">Vazgeç</button><button type="submit" class="ac-primary">Kaydet</button></div><p id="ac-modal-message" role="status"></p></form></div></div>
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="hesabim.js?v=account-20261108-2"></script></body></html>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="hesabim.js?v=account-auth-20261108-1"></script></body></html>
