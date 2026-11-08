@@ -4,7 +4,7 @@ const $=id=>document.getElementById(id);
 const bucket='product-images',money=v=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(v)||0);
 const defaults={min_width:50,max_width:280,min_height:50,max_height:280};
 const photoUrl=path=>path?.startsWith('https://')?path:sb.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-let current=null,images=[],busy=false,authorized=false;
+let current=null,images=[],originalPaths=[],busy=false,authorized=false;
 const slugify=text=>text.toLocaleLowerCase('tr-TR').replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,90);
 const cleanText=s=>String(s??'').trim();
 function feedback(s){$('ps-feedback').textContent=s||''}
@@ -25,7 +25,7 @@ function sanitize(html){
  }
  return [...(doc.body.firstElementChild?.childNodes||[])].map(safe).join('').slice(0,30000);
 }
-function clearImages(){images.forEach(i=>{if(i.objectURL)URL.revokeObjectURL(i.objectURL)});images=[]}
+function clearImages(){images.forEach(i=>{if(i.objectURL)URL.revokeObjectURL(i.objectURL)});images=[];originalPaths=[]}
 function addFiles(files){
  const available=12-images.length;
  if(available<=0){feedback('En fazla 12 fotoğraf eklenebilir.');return}
@@ -44,6 +44,14 @@ function renderImages(){
   box.append(assetImg(item.objectURL||photoUrl(item.path)));
   let remove=document.createElement('button');remove.type='button';remove.className='ps-delete';remove.textContent='×';remove.title='Fotoğrafı kaldır';remove.onclick=()=>{if(item.objectURL)URL.revokeObjectURL(item.objectURL);images=images.filter(x=>x.id!==item.id);renderImages();};
   box.append(remove);
+  const move=document.createElement('div');move.className='ps-photo-moves';
+  for(const [symbol,direction] of [['←',-1],['→',1]]){
+   const b=document.createElement('button');b.type='button';b.textContent=symbol;b.title=direction<0?'Sola taşı':'Sağa taşı';
+   b.disabled=index+direction<0||index+direction>=images.length;
+   b.addEventListener('click',()=>{const [v]=images.splice(index,1);images.splice(index+direction,0,v);renderImages()});
+   move.append(b);
+  }
+  box.append(move);
   let number=document.createElement('span');number.className='ps-move';number.textContent=(index+1)+' · ↔';box.append(number);
   if(index===0){let main=document.createElement('span');main.className='ps-main-badge';main.textContent='♛ Ana Görsel';box.append(main)}
   box.addEventListener('dragstart',e=>{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',item.id)});
@@ -102,7 +110,8 @@ async function open(slug){
   const m=d?.measurement_options||defaults;
   for(const [id,key] of [['ps-minw','min_width'],['ps-maxw','max_width'],['ps-minh','min_height'],['ps-maxh','max_height']])$(id).value=m[key]??defaults[key];
   for(const item of Array.isArray(d?.variant_options)?d.variant_options:[])variantRow(item.label,(item.values||[]).join(', '));
-  images=(d?.image_paths||[]).map(path=>({id:crypto.randomUUID(),path}));
+  originalPaths=[...(d?.image_paths||[])];
+  images=originalPaths.map(path=>({id:crypto.randomUUID(),path}));
   $('ps-page-title').textContent='Ürünü Düzenle';$('ps-crumb').textContent=p.title;
   $('ps-summary-date').textContent=new Date(d?.updated_at||p.updated_at).toLocaleDateString('tr-TR');
   setStatus(d?.display_status|| (p.is_active?'published':'draft'));renderImages();feedback('');
@@ -158,6 +167,9 @@ async function save(force){
   const record={slug,short_description:cleanText($('ps-short').value),description_html:sanitize($('ps-desc').innerHTML),image_paths:stored,variant_options:variants(),measurement_options:data.m,seo_title:cleanText($('ps-seo-title').value),seo_description:cleanText($('ps-seo-desc').value),stock_qty:data.stock,display_status:status,updated_at:new Date().toISOString()};
   const {error:detailsError}=await sb.from('shop_product_details').upsert(record,{onConflict:'slug'});if(detailsError)throw detailsError;
   const {error:publishError}=await sb.from('shop_products').update({is_active:status==='published'}).eq('slug',slug);if(publishError)throw publishError;
+  const removed=originalPaths.filter(path=>!stored.includes(path)&&!path.startsWith('legacy:'));
+  if(removed.length){const {error:cleanupError}=await sb.storage.from(bucket).remove(removed);if(cleanupError)feedback('Ürün kaydedildi ancak kaldırılan fotoğraflar depodan silinemedi: '+cleanupError.message)}
+  originalPaths=[...stored];
   current={...product,updated_at:record.updated_at};images.forEach(i=>{if(i.objectURL){URL.revokeObjectURL(i.objectURL);i.objectURL=null;i.file=null}});
   renderImages();$('ps-summary-date').textContent=new Date().toLocaleDateString('tr-TR');
   feedback('✓ Ürün başarıyla '+(status==='published'?'yayınlandı.':'kaydedildi.')+' Mağaza bağlantısı: urun.html?slug='+slug);
@@ -184,5 +196,6 @@ $('ps-save-draft').addEventListener('click',()=>save());
 $('ps-publish').addEventListener('click',()=>{setStatus('published');save('published')});
 document.querySelectorAll('[data-ps-scroll]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-ps-scroll]').forEach(b=>b.classList.toggle('selected',b===button));$(button.dataset.psScroll)?.scrollIntoView({behavior:'smooth',block:'start'})}));
 document.querySelectorAll('[data-command]').forEach(button=>button.addEventListener('click',()=>{const editor=$('ps-desc');editor.focus();document.execCommand(button.dataset.command,false,button.dataset.value||null)}));
+$('ps-desc').addEventListener('paste',e=>{e.preventDefault();const text=e.clipboardData?.getData('text/plain')||'';document.execCommand('insertText',false,text)});
 window.pkStudio={open};
 })();
