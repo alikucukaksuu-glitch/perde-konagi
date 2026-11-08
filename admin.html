@@ -3,7 +3,7 @@
 <meta name="robots" content="noindex,nofollow"><meta name="description" content="Perde Konağı yetkili yönetim ekranı">
 <title>Yönetim Paneli | Perde Konağı</title>
 <link rel="stylesheet" href="admin.css">
-<link rel="stylesheet" href="product-studio.css?v=20261108-markdown-fix-1"><link rel="stylesheet" href="campaign-manager.css?v=20261108-final-4"></head>
+<link rel="stylesheet" href="product-studio.css?v=20261108-markdown-fix-1"><link rel="stylesheet" href="campaign-manager.css?v=20261108-final-4"><link rel="stylesheet" href="admin-orders.css?v=20261108-order-1"></head>
 <body>
 <section class="login-screen" id="login-screen">
 <div class="login-card">
@@ -64,7 +64,13 @@
 <section class="panel"><div class="panel-heading"><h2>▥ &nbsp;Satış Trendi</h2><span class="period-label">Son 30 Gün</span></div><div id="sales-chart" class="chart-area"></div></section>
 </div>
 </section>
-<section class="view" id="view-orders" hidden><div class="section-heading"><h2>Siparişler</h2><p>Mağazadan oluşturulan gerçek siparişler.</p></div><div class="panel"><div class="table-wrap"><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Durum</th><th>Tutar</th><th>Tarih</th></tr></thead><tbody id="all-orders"></tbody></table></div></div></section>
+<section class="view" id="view-orders" hidden>
+<div class="section-heading"><h2>Sipariş Yönetimi</h2><p>Sipariş, üretim, A5 atölye fişi ve müşteri hesabı takibi tek merkezde.</p></div>
+<div class="od-summary" id="od-summary"></div>
+<div class="od-toolbar"><input id="od-search" type="search" aria-label="Sipariş ara" placeholder="Sipariş numarası veya ürün ara..."><select id="od-status" aria-label="Sipariş aşaması"><option value="all">Tüm Aşamalar</option><option value="received">Sipariş Alındı</option><option value="measure_approved">Ölçü Onayı</option><option value="preparing">Hazırlanıyor</option><option value="production">Üretimde</option><option value="ready">Kargoya Hazır</option><option value="shipped">Kargoda</option><option value="delivered">Teslim Edildi</option></select><button class="od-button" id="od-refresh" type="button">↻ Yenile</button><button class="od-button" id="od-print-all" type="button">▣ Seçili Siparişi A5 Yazdır</button></div>
+<div class="od-layout"><div class="od-panel"><h3>Sipariş Listesi</h3><div class="od-list" id="od-list"><div class="od-empty">Siparişler yükleniyor…</div></div></div><div class="od-panel od-detail" id="od-detail"><div class="od-empty">Sipariş seçin.</div></div></div>
+<div hidden aria-hidden="true"><table><tbody id="all-orders"></tbody></table></div>
+</section>
 <section class="view" id="view-products" hidden>
 <div id="product-index">
 <div class="section-heading ps-list-head"><div><h2>Ürün Yönetimi</h2><p>Ürünlerinizi görüntüleyin, düzenleyin veya yeni bir ürün oluşturun.</p></div><button id="ps-create" class="ps-gold-button" type="button">＋ &nbsp;Yeni Ürün Ekle</button></div>
@@ -161,7 +167,7 @@
 <section class="view" id="view-collections" hidden><div class="section-heading"><h2>Koleksiyonlar</h2><p>Katalogdaki ürün grupları.</p></div><div id="collection-list" class="collection-grid"></div></section>
 <section class="view" id="view-customers" hidden><div class="section-heading"><h2>Müşteriler</h2><p>Gerçek siparişlerden oluşan müşteri özeti.</p></div><div id="customer-list" class="panel section-pad"></div></section>
 <section class="view" id="view-reviews" hidden><div class="section-heading"><h2>Yorumlar</h2><p>Gelen değerlendirmeleri inceleyip onaylayın veya reddedin.</p></div><div class="panel section-pad"><div class="review-tabs"><button class="tab active" type="button" data-review-filter="pending">Onay Bekleyenler</button><button class="tab" type="button" data-review-filter="approved">Onaylananlar</button><button class="tab" type="button" data-review-filter="rejected">Reddedilenler</button></div><div id="review-list"></div></div></section>
-<section class="view" id="view-production" hidden><div class="section-heading"><h2>Üretim Takibi</h2><p>Ödeme onayı almış siparişlerin durumları.</p></div><div class="panel section-pad" id="production-detail"></div></section>
+<section class="view" id="view-production" hidden><div class="section-heading"><h2>Üretim Takibi</h2><p>Sipariş Yönetimi ile aynı üretim aşamalarını gösterir. Sipariş kartına tıklayarak ayrıntılarını Siparişler bölümünde açabilirsiniz.</p></div><div class="od-board" id="od-board"></div><div class="panel section-pad" id="production-detail" hidden></div></section>
 <section class="view" id="view-coupons" hidden>
 <div class="cm-intro"><p>Ürün bazlı kampanyaları, indirim etiketlerini ve kupon kodlarını yönetin. Ürün kartlarında gösterilecek fırsat etiketlerini tanımlayın.</p></div>
 <div class="cm-stats">
@@ -210,4 +216,4 @@
 <section class="view" id="view-settings" hidden><div class="section-heading"><h2>Ayarlar</h2><p>Yönetici oturumu ve mağaza yapılandırması.</p></div><div class="panel section-pad"><h3>Yetkili yönetici</h3><p id="admin-email"></p><p>Ödeme entegrasyonu henüz aktif değildir. Yönetici erişimleri Supabase tarafından kontrol edilir.</p><button id="settings-signout" class="quick-primary" type="button">Oturumu Kapat</button></div></section>
 </main></div></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="admin.js?v=product-studio-20261108-v2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=20261108-markdown-fix-1"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script></body></html>
+<script defer src="admin.js?v=product-studio-20261108-v2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=20261108-markdown-fix-1"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script><script defer src="admin-orders.js?v=20261108-order-1"></script></body></html>
