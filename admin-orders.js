@@ -1,0 +1,50 @@
+(()=>{'use strict';
+const sb=window.supabase?.createClient('https://rwylhxrtggsicieuyjrm.supabase.co','sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA');
+const $=id=>document.getElementById(id);
+const stages=['received','measure_approved','preparing','production','ready','shipped','delivered'];
+const labels=['Sipariş Alındı','Ölçü Onayı','Hazırlanıyor','Üretimde','Kargoya Hazır','Kargoda','Teslim Edildi'];
+let orders=[],items=[],progress=[],selected=null,query='',statusFilter='all',loading=false,initialized=false;
+const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
+const date=v=>v?new Date(v).toLocaleDateString('tr-TR'):'—';
+const h=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=String(text);return e};
+const step=o=>progress.find(p=>p.order_id===o.id)?.stage||(o.status==='completed'?'delivered':o.status==='shipped'?'shipped':o.status==='processing'?'production':'received');
+const prog=o=>progress.find(p=>p.order_id===o.id);
+const own=o=>items.filter(i=>i.order_id===o.id);
+const no=o=>'PK-'+o.id.slice(0,8).toUpperCase();
+const allowed=o=>['paid','processing','shipped','completed'].includes(o.status);
+const orderName=o=>own(o).map(i=>i.product_title).join(' • ')||'Ürün bilgisi bulunamadı';
+function summary(){const target=$('od-summary');if(!target)return;target.replaceChildren();for(const [name,test] of [['Yeni Siparişler',o=>o.status==='paid'&&step(o)==='received'],['Üretimde',o=>['preparing','production'].includes(step(o))&&allowed(o)],['Kargoya Hazır',o=>step(o)==='ready'],['Teslim Edilen',o=>step(o)==='delivered']]){const c=h('div','od-stat');c.append(h('span','',name),h('strong','',orders.filter(test).length+' sipariş'));target.append(c)}}
+function miniStep(o){const wrap=h('div','od-steps');stages.forEach((s,i)=>{const x=h('i','od-step '+(i<stages.indexOf(step(o))?'passed':i===stages.indexOf(step(o))?'current':''));x.title=labels[i];wrap.append(x)});return wrap}
+function orderCard(o){const b=h('button','od-order'+(selected===o.id?' selected':''));b.type='button';const top=h('div','od-order-top');top.append(h('strong','',no(o)),h('span','od-chip'+(step(o)==='delivered'?' done':''),labels[stages.indexOf(step(o))]));b.append(top,h('div','od-sub',orderName(o)),h('div','od-sub',date(o.created_at)+' · '+money(o.total_amount)+' · '+o.status),miniStep(o));b.onclick=()=>{selected=o.id;render();};return b}
+function filtered(){return orders.filter(o=>(statusFilter==='all'||step(o)===statusFilter)&&(!query||[no(o),orderName(o),o.id].join(' ').toLocaleLowerCase('tr-TR').includes(query))).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))}
+function timeline(o){const w=h('div','od-timeline'),index=stages.indexOf(step(o));labels.forEach((label,i)=>{const c=h('div',i<index?'passed':i===index?'current':'');c.append(h('i','',i<index?'✓':String(i+1)),h('span','',label));w.append(c)});return w}
+function summaryField(title,lines){const div=h('div','od-field');div.append(h('b','',title));lines.forEach(t=>div.append(h('p','',t)));return div}
+function detail(){const root=$('od-detail');if(!root)return;root.replaceChildren();const o=orders.find(z=>z.id===selected);if(!o){root.append(h('div','od-empty','Detaylarını görmek için listeden bir sipariş seçin.'));return}
+const p=prog(o)||{},list=own(o);root.append(h('h3','',no(o)),h('p','od-sub','Sipariş: '+date(o.created_at)+' · '+money(o.total_amount)+' · '+o.status));
+const grid=h('div','od-detail-grid');grid.append(summaryField('Sipariş Sahibi',['Üye kimliği: '+o.customer_id,'Müşterinin hesabına bağlı sipariş']),summaryField('Ürünler',list.length?list.map(i=>i.product_title+' · '+i.quantity+' adet · '+i.width_cm+' × '+i.height_cm+' cm'):['Henüz ürün kalemi bulunmuyor']));root.append(grid);
+for(const i of list){const opts=i.options||{};root.append(summaryField(i.product_title,[i.width_cm+' × '+i.height_cm+' cm · '+i.quantity+' adet','Kasa: '+(opts.kasaTip||'—')+' '+(opts.kasaRenk||''),'Zincir: '+(opts.zincir||'—')+' / yön: '+(opts.yon||'—'),'Boru: '+(opts.boru||'—')+' · Ayak: '+(opts.ayak||'—')]))}
+if(o.customer_note)root.append(summaryField('Müşteri Notu',[o.customer_note]));
+root.append(h('h3','', 'Sipariş Aşaması · Üretimle Senkronize'),timeline(o));
+if(!allowed(o)){root.append(h('p','od-message','Ödeme onayı gelmeden üretime aktarılamaz. Mevcut durum: '+o.status));return}
+const field=(title,type,val)=>{const l=h('label','',title),e=h(type==='textarea'?'textarea':'input');if(type!=='textarea')e.type=type;e.value=val||'';l.append(e);return {l,e}};
+const due=field('Termin tarihi','date',p.due_date);const note=field('Atölye notu','textarea',p.workshop_note);const tracking=field('Kargo takip numarası','text',p.tracking_no);root.append(due.l,note.l,tracking.l);
+const bar=h('div','od-actions'),print=h('button','od-button primary','▣ A5 Üretim Fişi Yazdır'),save=h('button','od-button','Bilgileri Kaydet'),advance=h('button','od-button primary','Sonraki Aşamaya Geç →');
+for(const b of [print,save,advance])b.type='button';
+print.onclick=()=>printOrder(o);save.onclick=()=>update(o,step(o),due.e.value,note.e.value,tracking.e.value);
+advance.disabled=stages.indexOf(step(o))===6;advance.onclick=()=>{const ix=stages.indexOf(step(o));if(ix<6&&confirm(no(o)+' siparişi “'+labels[ix+1]+'” aşamasına ilerletilsin mi?'))update(o,stages[ix+1],due.e.value,note.e.value,tracking.e.value)};
+bar.append(print,save,advance);root.append(bar,h('p','od-message','Müşteri bu aşamayı yalnızca kendi üyelik hesabında görebilir.'))
+}
+async function update(o,stage,due,note,tracking){const actions=$('od-detail').querySelectorAll('button');actions.forEach(b=>b.disabled=true);const {data,error}=await sb.rpc('shop_set_order_progress',{p_order_id:o.id,p_stage:stage,p_due_date:due||null,p_workshop_note:note,p_tracking_no:tracking});if(error){alert('Kaydedilemedi: '+error.message);actions.forEach(b=>b.disabled=false);return}progress=progress.filter(x=>x.order_id!==o.id).concat(data);await load(true)}
+function printOrder(o){const list=own(o),p=prog(o)||{};let root=document.getElementById('od-print-sheet');if(!root){root=h('div','od-print');root.id='od-print-sheet';document.body.append(root)}root.replaceChildren(h('h1','','PERDE KONAĞI · ÜRETİM FİŞİ (A5)'),h('div','od-print-line',no(o)+' · '+date(o.created_at)),h('div','od-print-line','Sipariş sahibi (üye ID): '+o.customer_id),h('div','od-print-line','Üretim aşaması: '+labels[stages.indexOf(step(o))]),h('div','od-print-line','Termin: '+(p.due_date||'—')));
+const table=h('table'),thead=h('tr');['Ürün','Ölçü','Adet','Seçenekler'].forEach(x=>thead.append(h('th','',x)));table.append(thead);list.forEach(i=>{const row=h('tr'),op=i.options||{};[i.product_title,i.width_cm+'×'+i.height_cm+' cm',i.quantity,['Kasa '+(op.kasaTip||'—')+' '+(op.kasaRenk||''),'Zincir '+(op.zincir||'—'),'Yön '+(op.yon||'—'),'Boru '+(op.boru||'—'),'Ayak '+(op.ayak||'—')].join(' / ')].forEach(x=>row.append(h('td','',x)));table.append(row)});root.append(table,h('div','od-print-line','Müşteri notu: '+(o.customer_note||'—')),h('div','od-print-line','Atölye notu: '+(p.workshop_note||'—')),h('div','od-print-line','Kargo takip no: '+(p.tracking_no||'—')));
+const checks=h('div','od-print-line','☐ Kesim     ☐ Dikim/Montaj     ☐ Kalite Kontrol     ☐ Paketleme');root.append(checks,h('div','od-print-line','Hazırlayan: __________________   Kontrol: __________________'));window.print()}
+function render(){summary();const list=$('od-list');if(list){list.replaceChildren();let data=filtered();if(!data.length)list.append(h('div','od-empty',orders.length?'Filtreye uygun sipariş yok.':'Henüz gerçek sipariş yok. Ödeme ve sipariş oluşturma altyapısı açıldığında burada görüntülenecek.'));else data.forEach(o=>list.append(orderCard(o)))}detail();const board=$('od-board');if(board){board.replaceChildren();[['Hazırlanıyor',['received','measure_approved','preparing']],['Üretimde',['production']],['Kargoya Hazır',['ready']],['Tamamlandı',['shipped','delivered']]].forEach(([name,s])=>{const col=h('div','od-column');const pool=orders.filter(o=>allowed(o)&&s.includes(step(o)));col.append(h('h3','',name+' · '+pool.length));pool.forEach(o=>col.append(orderCard(o)));board.append(col)})}}
+async function load(silent=false){if(loading||!sb)return;loading=true;try{const {data:{user}}=await sb.auth.getUser();if(!user)return;const access=await sb.from('admin_access').select('role').eq('user_id',user.id).maybeSingle();if(!['owner','admin','staff'].includes(access.data?.role))return;
+const res=await Promise.all([sb.from('shop_orders').select('id,customer_id,status,total_amount,customer_note,created_at').order('created_at',{ascending:false}).limit(500),sb.from('shop_order_items').select('order_id,product_title,width_cm,height_cm,quantity,options,unit_price,line_total').limit(1000),sb.from('shop_order_progress').select('*').limit(500)]);
+for(const x of res)if(x.error)throw x.error;[orders,items,progress]=res.map(x=>x.data||[]);if(!orders.some(o=>o.id===selected))selected=orders[0]?.id||null;render();}catch(e){if(!silent)alert('Sipariş verileri yüklenemedi: '+e.message)}finally{loading=false}}
+function init(){if(initialized)return;initialized=true;const q=$('od-search'),f=$('od-status');if(q)q.oninput=e=>{query=e.target.value.toLocaleLowerCase('tr-TR');render()};if(f)f.onchange=e=>{statusFilter=e.target.value;render()};$('od-refresh')?.addEventListener('click',()=>load());$('od-print-all')?.addEventListener('click',()=>{const o=orders.find(x=>x.id===selected);if(o)printOrder(o);else alert('Yazdırılacak bir sipariş seçin.')});load()}
+document.addEventListener('click',e=>{if(e.target.closest('[data-section="orders"],[data-section="production"]'))setTimeout(()=>{init();load(true)},30)});
+window.addEventListener('hashchange',()=>{if(['#orders','#production'].includes(location.hash)){init();load(true)}});
+sb?.auth.onAuthStateChange((event,session)=>{if(session?.user&&['SIGNED_IN','INITIAL_SESSION'].includes(event))setTimeout(()=>{if(['#orders','#production'].includes(location.hash))init()},50)});
+if(['#orders','#production'].includes(location.hash))setTimeout(init,350);
+})();
