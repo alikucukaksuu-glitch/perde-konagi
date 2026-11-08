@@ -5,7 +5,9 @@ const key='perdeKonagiCartV1';
 const items=document.getElementById('items'),status=document.getElementById('status'),total=document.getElementById('total'),count=document.getElementById('count'),badge=document.getElementById('cart-badge');
 const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(n);
 const read=()=>{try{const x=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(x)?x.filter(v=>v?.options?.p_slug&&v.quantity>=1):[]}catch{return[]}};
-let cart=read(),version=0;
+let cart=read(),version=0,couponCode=localStorage.getItem('pkCouponCode')||'';
+const couponInput=document.getElementById('coupon-code'),couponMsg=document.getElementById('coupon-message');
+if(couponInput)couponInput.value=couponCode;
 function save(){localStorage.setItem(key,JSON.stringify(cart))}
 function text(tag,value,cls){const e=document.createElement(tag);e.textContent=String(value);if(cls)e.className=cls;return e}
 const icons={
@@ -27,9 +29,10 @@ function show(){
  const top=document.createElement('div');top.className='item-main';
  const img=document.createElement('img');img.className='item-image';img.src=line.productImage||((q.slug.startsWith('mat-stor-')?q.slug+'-1.webp':q.slug.replace('-zebra-perde','')+'-1.'+(q.slug.includes('siyah')?'png':'webp')));img.alt=q.title;img.loading='lazy';img.onerror=()=>img.style.visibility='hidden';
  const block=document.createElement('div');block.className='item-info';
- const productLink=document.createElement('a');productLink.href=q.slug+'.html';productLink.append(text('h2',q.title));
+ const productLink=document.createElement('a');productLink.href=(q.slug.startsWith('mat-stor-')||q.slug.startsWith('bambu-'))?q.slug+'.html':'urun.html?slug='+encodeURIComponent(q.slug);productLink.append(text('h2',q.title));
  const sub=text('p',q.width_cm+' × '+q.height_cm+' cm · '+kasaName(o.kasaTip)+(o.kasaRenk?' ('+o.kasaRenk+')':'')+' · '+tr(o.zincir)+' Zincir · '+tr(o.boru)+' Boru · '+tr(o.yon)+' Yön','item-subtitle');
- const bottom=document.createElement('div');bottom.className='item-bottom';const price=text('strong',money(lineTotal),'price');const controls=document.createElement('div');controls.className='qty';
+ const bottom=document.createElement('div');bottom.className='item-bottom';const price=text('strong',money(lineTotal),'price');
+ if(Number(q.discount_amount)>0){const before=text('s',money(Number(q.original_unit_total)*line.quantity));before.style.cssText='display:block;color:#9e8e7d;font-size:12px;margin-bottom:4px;font-weight:400';block.append(before);const promo=text('p','✓ '+(q.campaign_badge||'Kampanya')+' · '+money(Number(q.discount_amount)*line.quantity)+' avantaj');promo.style.cssText='font-size:12px;color:#3c824e;font-weight:700;margin:7px 0';block.append(promo)}const controls=document.createElement('div');controls.className='qty';
  const minus=text('button','−');minus.type='button';minus.setAttribute('aria-label',q.title+' adedini azalt');minus.onclick=()=>change(line.id,line.quantity-1);
  const n=text('span',String(line.quantity),'qty-count');
  const plus=text('button','+');plus.type='button';plus.setAttribute('aria-label',q.title+' adedini artır');plus.onclick=()=>change(line.id,line.quantity+1);
@@ -46,14 +49,42 @@ function show(){
  }
  card.append(top,custom);items.append(card)}
  total.textContent=money(sum);count.textContent=qty+' adet ürün';if(badge)badge.textContent=qty>99?'99+':String(qty);
+ const savings=cart.reduce((n,l)=>n+Math.max(0,Number(l.quote?.discount_amount)||0)*l.quantity,0);
+ const savingsEl=document.getElementById('coupon-savings');if(savingsEl){savingsEl.hidden=savings<=0;document.getElementById('coupon-savings-value').textContent='−'+money(savings)}
 }
 function change(id,n){if(n>20){status.textContent='Bir üründen en fazla 20 adet ekleyebilirsiniz.';return}if(n<1)cart=cart.filter(x=>x.id!==id);else cart=cart.map(x=>x.id===id?{...x,quantity:n}:x);save();show()}
 async function verify(){
  const t=++version;if(!sb){status.textContent='Fiyat servisine bağlanılamadı. Sepet fiyatları doğrulanamadı.';return}
  if(!cart.length){status.textContent='Sepetiniz boş.';show();return}
- const next=[];let rejected=0;
- for(const line of cart.slice(0,50)){try{const {data,error}=await sb.rpc('shop_quote_item',line.options);if(error||!data)throw Error('Fiyat doğrulanamadı');next.push({...line,quote:data,quantity:Math.min(20,Math.max(1,Math.floor(line.quantity)))})}catch{rejected++}}
- if(t!==version)return;cart=next;save();show();status.textContent=rejected?rejected+' üründe fiyat doğrulanamadı ve ürün sepetten çıkarıldı.':'✓ Ürün fiyatları güncel katalog üzerinden doğrulandı.';
+ const next=[];let rejected=0,validCouponUses=0;
+ const applyBtn=document.getElementById('coupon-apply');if(applyBtn)applyBtn.disabled=true;
+ for(const line of cart.slice(0,50)){
+  try{
+   const {data:normal,error:normalError}=await sb.rpc('shop_quote_with_promo',line.options);
+   if(normalError||!normal)throw Error(normalError?.message||'Fiyat doğrulanamadı');
+   let selected=normal;
+   if(couponCode){
+    const {data:withCode,error:couponError}=await sb.rpc('shop_quote_with_promo',{...line.options,p_coupon_code:couponCode});
+    if(!couponError&&withCode){selected=withCode;validCouponUses++}
+   }
+   next.push({...line,quote:selected,quantity:Math.min(20,Math.max(1,Math.floor(line.quantity)))});
+  }catch{rejected++}
+ }
+ if(t!==version)return;
+ if(couponCode&&validCouponUses===0){couponMsg.textContent='Kupon geçersiz, süresi dolmuş veya sepetinizdeki ürünlere uygulanamıyor.';couponCode='';couponInput.value='';localStorage.removeItem('pkCouponCode')}
+ else if(couponCode){couponMsg.textContent='✓ '+couponCode+' kuponu doğrulandı. Uygun ürünlerde avantaj hesaplandı.';localStorage.setItem('pkCouponCode',couponCode)}
+ else couponMsg.textContent='';
+ cart=next;save();show();status.textContent=rejected?rejected+' üründe fiyat doğrulanamadı ve ürün sepetten çıkarıldı.':'✓ Ürün ve kampanya fiyatları güncel katalog üzerinden doğrulandı.';
+ if(applyBtn)applyBtn.disabled=false;
 }
+document.getElementById('coupon-form')?.addEventListener('submit',e=>{
+ e.preventDefault();
+ const raw=couponInput.value.trim().toUpperCase();
+ if(raw!==''&&!/^[A-Z0-9_-]{4,24}$/.test(raw)){couponMsg.textContent='Kupon kodu 4–24 harf/rakam olmalıdır.';return}
+ couponCode=raw;
+ couponMsg.textContent=raw?'Kupon doğrulanıyor…':'Kupon kaldırıldı.';
+ items.replaceChildren(text('div','Kampanya fiyatları hesaplanıyor…','empty'));total.textContent='—';
+ verify();
+});
 items.replaceChildren(text('div','Sepet fiyatları doğrulanıyor…','empty'));total.textContent='—';count.textContent='Ürünler kontrol ediliyor';verify();
 })();
