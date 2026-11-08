@@ -66,6 +66,9 @@ function showProduct(p,d){
  if(d?.short_description){const desc=document.querySelector('h1 + p.desc');if(desc)desc.textContent=d.short_description}
  if(d&&typeof d.description_html==='string'){let section=document.querySelector('section.article');if(section){const heading=section.querySelector('h2')||document.createElement('h2');section.replaceChildren(heading);const body=document.createElement('div');body.innerHTML=d.description_html?cleanHTML(d.description_html):'<p>Bu ürüne henüz açıklama eklenmemiştir.</p>';section.append(body)}}
  renderGallery(d);renderVariantChoices(d);
+ window.pkMeasureBounds=d?.measurement_options||{};
+ const dimensions=[['en','min_width','max_width'],['boy','min_height','max_height']];
+ for(const [id,minName,maxName] of dimensions){const input=document.getElementById(id);if(input){input.min=window.pkMeasureBounds[minName]??50;input.max=window.pkMeasureBounds[maxName]??280}}
  window.pkCatalogPricePerSqm=value;window.pkCatalogActive=p.is_active===true;window.pkCatalogValidated=p.is_active===true;
  if(!p.is_active||d?.stock_qty===0||d?.display_status==='draft'){blockPurchase(statusMsg);return}
  if(typeof window.calc==='function')window.calc();
