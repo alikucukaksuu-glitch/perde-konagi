@@ -21,6 +21,7 @@ function addBadge(card,c){
 }
 function updateCards(){
  for(const card of document.querySelectorAll('.product-card,.cards .product')){
+  if(card.dataset.pkCampaignApplied==='true')continue;
   const a=card.querySelector('a[href*=".html"]')||(card.matches('a')?card:null);
   const href=a?.getAttribute('href')||'';
   let itemSlug=href.includes('urun.html?')?new URLSearchParams(href.split('?')[1]||'').get('slug'):href.split('/').pop().replace(/\.html$/,'');
@@ -30,13 +31,14 @@ function updateCards(){
   const current=parseFloat((price?.textContent||'').replace(/\./g,'').replace(',','.').replace(/[^0-9.]/g,''))||0;
   const c=best(entries,current);
   if(!c)continue;addBadge(card,c);
-  if(!price||!current)return;
+  if(!price||!current)continue;
   const off=priceDiscount(c,current);
   if(off>0){
    const old=document.createElement('s');old.textContent=money(current);old.className='pk-campaign-original';
    price.replaceChildren(old,document.createTextNode(' '+money(current-off)+' / m²'));
    price.classList.add('pk-campaign-price');
   }
+  card.dataset.pkCampaignApplied='true';
  }
 }
 function getValue(name){return document.querySelector('input[name="'+name+'"]:checked')?.value||''}
