@@ -39,7 +39,12 @@ function show(){
  const title=document.createElement('h3');title.append(svg('gear'),text('span','Ürün Özelleştirmeleri'));
  const grid=document.createElement('div');grid.className='custom-grid';
  grid.append(detail('Ölçü',q.width_cm+' × '+q.height_cm+' cm','ruler'),detail('Kasa / Renk',kasaName(o.kasaTip)+(o.kasaRenk?' · '+o.kasaRenk:''),'layer'),detail('Zincir / Yön',tr(o.zincir)+' · '+tr(o.yon),'link'),detail('Mekanizma',tr(o.boru)+' Boru','gear'),detail('Yan Ayak',tr(o.ayak)+' Yan Ayak','gear'));
- custom.append(title,grid);card.append(top,custom);items.append(card)}
+ custom.append(title,grid);
+ if(line.variantSelections&&Object.keys(line.variantSelections).length){
+ const extra=text('p','Varyantlar: '+Object.entries(line.variantSelections).map(([k,v])=>k+': '+v).join(' · '),'extra-options');
+ custom.append(extra);
+ }
+ card.append(top,custom);items.append(card)}
  total.textContent=money(sum);count.textContent=qty+' adet ürün';if(badge)badge.textContent=qty>99?'99+':String(qty);
 }
 function change(id,n){if(n>20){status.textContent='Bir üründen en fazla 20 adet ekleyebilirsiniz.';return}if(n<1)cart=cart.filter(x=>x.id!==id);else cart=cart.map(x=>x.id===id?{...x,quantity:n}:x);save();show()}
