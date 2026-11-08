@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="description" content="Perde Konağı yetkili yönetim ekranı">
+<title>Yönetim Paneli | Perde Konağı</title>
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<section class="login-screen" id="login-screen">
+<div class="login-card">
+<div class="login-logo">♜ <span>PERDE KONAĞI</span></div>
+<div class="login-overline">YETKİLİ YÖNETİCİ GİRİŞİ</div>
+<h1>Yönetim Paneli</h1>
+<p>Bu sayfa yalnızca yetkilendirilmiş Perde Konağı yöneticilerine açıktır. Giriş bağlantısı e-postana gönderilir.</p>
+<form id="login-form"><label for="login-email">Yönetici e-posta adresi</label><input id="login-email" type="email" required autocomplete="email" placeholder="E-posta adresiniz">
+<button class="primary-action" type="submit">Giriş bağlantısı gönder →</button></form>
+<p id="login-status" class="message" role="status" aria-live="polite"></p>
+<a class="back-link" href="index.html">← Mağazaya dön</a>
+</div></section>
+<div id="admin-app" class="admin-shell" hidden>
+<aside class="sidebar" id="sidebar">
+<a href="index.html" class="sidebar-brand"><svg viewBox="0 0 48 54" aria-hidden="true"><path d="M6 18 24 4l18 14M11 18v30M37 18v30M18 48V25h12v23M18 36h12" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>PERDE KONAĞI<small>PERDE VE EV TEKSTİLİ</small></span></a>
+<div class="side-separator"></div>
+<nav class="side-nav" id="side-nav" aria-label="Yönetim menüsü">
+<button type="button" class="side-item active" data-section="dashboard"><span>⌂</span> Dashboard</button>
+<button type="button" class="side-item" data-section="orders"><span>🛒</span> Siparişler</button>
+<button type="button" class="side-item" data-section="products"><span>▣</span> Ürünler</button>
+<button type="button" class="side-item" data-section="collections"><span>▱</span> Koleksiyonlar</button>
+<button type="button" class="side-item" data-section="customers"><span>♧</span> Müşteriler</button>
+<button type="button" class="side-item" data-section="reviews"><span>☆</span> Yorumlar <b id="pending-count" class="side-count" hidden>0</b></button>
+<button type="button" class="side-item" data-section="production"><span>♧</span> Üretim Takibi</button>
+<button type="button" class="side-item" data-section="coupons"><span>◇</span> Kuponlar</button>
+<button type="button" class="side-item" data-section="reports"><span>▥</span> Raporlar</button>
+<button type="button" class="side-item" data-section="settings"><span>⚙</span> Ayarlar</button>
+</nav>
+<div class="sidebar-scene" aria-hidden="true"></div>
+</aside>
+<div class="admin-main">
+<header class="topbar"><button type="button" class="mobile-menu" id="sidebar-toggle" aria-label="Menüyü aç">☰</button><h1 id="page-heading">Yönetim Paneli</h1>
+<div class="top-actions"><label class="admin-search"><span aria-hidden="true">⌕</span><input id="global-search" type="search" placeholder="Sipariş, ürün, müşteri ara..." aria-label="Yönetim panelinde ara"></label>
+<span class="notification" aria-label="Bekleyen yorum sayısı">♧ <sup id="notification-count">0</sup></span>
+<div class="account"><span class="account-avatar">PK</span><div><b id="account-label">Yönetici</b><small id="account-role">Admin</small></div></div><button id="signout" class="logout" type="button">Çıkış</button></div>
+</header>
+<div id="app-notice" class="app-notice" role="status" aria-live="polite"></div>
+<main class="dashboard-content">
+<section class="view" id="view-dashboard">
+<div class="stats">
+<div class="stat-card"><span class="stat-icon">🛒</span><div class="stat-body"><span>Toplam Sipariş</span><strong id="stat-orders">—</strong><small>Gerçek kayıtlar</small></div></div>
+<div class="stat-card"><span class="stat-icon">▱</span><div class="stat-body"><span>Bekleyen Üretim</span><strong id="stat-production">—</strong><small>Ödeme sonrası işlemler</small></div></div>
+<div class="stat-card"><span class="stat-icon">▣</span><div class="stat-body"><span>Bugünkü Satış</span><strong id="stat-today">—</strong><small>Onaylı ödemeler</small></div></div>
+<div class="stat-card"><span class="stat-icon">▥</span><div class="stat-body"><span>Aylık Ciro</span><strong id="stat-month">—</strong><small>Onaylı ödemeler</small></div></div>
+</div>
+<div class="dashboard-row">
+<section class="panel recent-orders"><div class="panel-heading"><h2>▣ &nbsp;Son Siparişler</h2><button type="button" class="link-action" data-goto="orders">Tüm Siparişleri Gör →</button></div><div class="table-wrap"><table><thead><tr><th>Sipariş No</th><th>Müşteri</th><th>Ürün</th><th>Durum</th><th>Toplam</th><th>Tarih</th></tr></thead><tbody id="recent-orders"><tr><td colspan="6" class="empty-row">Yükleniyor…</td></tr></tbody></table></div></section>
+<section class="panel production-panel"><div class="panel-heading"><h2>♧ &nbsp;Üretim Durumu</h2><button type="button" class="link-action" data-goto="production">Detaya Git →</button></div><div id="production-bars" class="production-bars"></div></section>
+<section class="panel quick-panel"><div class="panel-heading"><h2>♧ &nbsp;Hızlı İşlemler</h2></div><div class="quick-actions">
+<button type="button" data-goto="products" class="quick-primary">＋ &nbsp;Ürünleri Gör</button>
+<button type="button" data-goto="orders">🛒 &nbsp;Siparişleri Aç</button>
+<button type="button" data-goto="reviews">☆ &nbsp;Yorum Onayı</button>
+<button type="button" data-goto="reports">▥ &nbsp;Raporları Gör</button></div></section>
+</div>
+<div class="dashboard-row lower">
+<section class="panel"><div class="panel-heading"><h2>☏ &nbsp;Yorum Onayı</h2><button type="button" class="link-action" data-goto="reviews">Tüm Yorumları Gör →</button></div><div id="review-preview"></div></section>
+<section class="panel"><div class="panel-heading"><h2>♛ &nbsp;En Çok Satan Ürünler</h2><button type="button" class="link-action" data-goto="products">Tümünü Gör →</button></div><div id="top-products"></div></section>
+<section class="panel"><div class="panel-heading"><h2>▥ &nbsp;Satış Trendi</h2><span class="period-label">Son 30 Gün</span></div><div id="sales-chart" class="chart-area"></div></section>
+</div>
+</section>
+<section class="view" id="view-orders" hidden><div class="section-heading"><h2>Siparişler</h2><p>Mağazadan oluşturulan gerçek siparişler.</p></div><div class="panel"><div class="table-wrap"><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Durum</th><th>Tutar</th><th>Tarih</th></tr></thead><tbody id="all-orders"></tbody></table></div></div></section>
+<section class="view" id="view-products" hidden><div class="section-heading"><h2>Ürünler</h2><p>Mevcut Supabase ürün kataloğu. Fiyat düzenleme sonraki aşamada açılacak.</p></div><div class="panel"><div class="table-wrap"><table><thead><tr><th>Ürün</th><th>Koleksiyon</th><th>m² Fiyat</th><th>Durum</th></tr></thead><tbody id="product-list"></tbody></table></div></div></section>
+<section class="view" id="view-collections" hidden><div class="section-heading"><h2>Koleksiyonlar</h2><p>Katalogdaki ürün grupları.</p></div><div id="collection-list" class="collection-grid"></div></section>
+<section class="view" id="view-customers" hidden><div class="section-heading"><h2>Müşteriler</h2><p>Gerçek siparişlerden oluşan müşteri özeti.</p></div><div id="customer-list" class="panel section-pad"></div></section>
+<section class="view" id="view-reviews" hidden><div class="section-heading"><h2>Yorumlar</h2><p>Gelen değerlendirmeleri inceleyip onaylayın veya reddedin.</p></div><div class="panel section-pad"><div class="review-tabs"><button class="tab active" type="button" data-review-filter="pending">Onay Bekleyenler</button><button class="tab" type="button" data-review-filter="approved">Onaylananlar</button><button class="tab" type="button" data-review-filter="rejected">Reddedilenler</button></div><div id="review-list"></div></div></section>
+<section class="view" id="view-production" hidden><div class="section-heading"><h2>Üretim Takibi</h2><p>Ödeme onayı almış siparişlerin durumları.</p></div><div class="panel section-pad" id="production-detail"></div></section>
+<section class="view" id="view-coupons" hidden><div class="section-heading"><h2>Kuponlar</h2><p>Kupon oluşturma özelliği satış altyapısının sonraki aşamasında eklenecek.</p></div><div class="panel section-pad empty-text">Henüz kupon oluşturma sistemi aktif değil.</div></section>
+<section class="view" id="view-reports" hidden><div class="section-heading"><h2>Raporlar</h2><p>Gerçek satışlar ve ürünlerin performansı.</p></div><div class="stats compact" id="report-stats"></div><div class="panel section-pad"><h2>Son 30 Gün Satış Trendi</h2><div id="reports-chart" class="chart-area"></div></div></section>
+<section class="view" id="view-settings" hidden><div class="section-heading"><h2>Ayarlar</h2><p>Yönetici oturumu ve mağaza yapılandırması.</p></div><div class="panel section-pad"><h3>Yetkili yönetici</h3><p id="admin-email"></p><p>Ödeme entegrasyonu henüz aktif değildir. Yönetici erişimleri Supabase tarafından kontrol edilir.</p><button id="settings-signout" class="quick-primary" type="button">Oturumu Kapat</button></div></section>
+</main></div></div>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
+<script defer src="admin.js?v=1"></script></body></html>
