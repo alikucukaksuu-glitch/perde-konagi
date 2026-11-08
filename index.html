@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Perde Konağı: ölçüye özel zebra ve stor perde modelleri. Renk, ölçü ve mekanizma seçenekleriyle yaşam alanınıza uygun perdenizi keşfedin.">
 <title>Perde Konağı | Ölçüye Özel Zebra ve Stor Perde</title>
+<script>
+/* Supabase password recovery emails sent from dashboard use the configured Site URL.
+   Route only recovery callbacks to the account page before other home scripts run. */
+(function(){
+ try{
+  var hash=new URLSearchParams(location.hash.slice(1)),query=new URLSearchParams(location.search);
+  var recovery=hash.get('type')==='recovery'||query.get('type')==='recovery';
+  var recoveryError=(hash.has('error')||query.has('error'))&&((hash.get('error_description')||query.get('error_description')||'').toLowerCase().includes('expired')||(hash.get('error_code')||query.get('error_code')||'').includes('otp'));
+  if(recovery||recoveryError)location.replace('hesabim.html'+location.search+location.hash);
+ }catch(_){}
+})();
+</script>
 <style>
 :root{--ink:#29231e;--muted:#746f67;--brown:#73533a;--gold:#ae8755;--paper:#fcf9f5;--cream:#f5f0e9;--border:#e7ded2;--shadow:0 12px 35px #392a2112}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#fffdfa;color:var(--ink);font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased}a{color:inherit;text-decoration:none}button{font:inherit;cursor:pointer}img{max-width:100%}svg{display:block}.container{max-width:1240px;margin:auto;padding:0 28px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.top-line{background:#f5efe8;text-align:center;color:#785b3b;padding:8px 16px;font-size:11px;letter-spacing:1.3px}.site-header{position:sticky;top:0;z-index:50;background:#fffefcf2;backdrop-filter:blur(15px);border-bottom:1px solid #e8dfd4}.header-layout{min-height:89px;display:flex;align-items:center;gap:32px}.brand{display:flex;align-items:center;gap:14px;flex-shrink:0}.brand-symbol{width:61px;height:51px;color:#b08c57}.brand-title{font-family:Georgia,'Times New Roman',serif;font-size:26px;white-space:nowrap;letter-spacing:.5px;line-height:1.08}.brand-subtitle{display:block;font-size:8.5px;font-weight:700;letter-spacing:3px;margin-top:6px;text-align:center}.header-rule{height:34px;width:1px;background:#ded3c6}.primary-nav{display:flex;align-items:center;gap:28px;margin-left:auto}.primary-nav a{font-size:13px;font-weight:600;padding:15px 0;white-space:nowrap;position:relative}.primary-nav a.active:after,.primary-nav a:hover:after{content:"";height:2px;background:var(--gold);position:absolute;bottom:7px;left:0;right:0}.header-icons{display:flex;align-items:center;gap:12px;margin-left:12px}.icon-link,.icon-button{width:36px;height:36px;display:grid;place-items:center;border:0;background:none;position:relative}.icon-link svg,.icon-button svg{width:21px;height:21px;stroke:#2d2824;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}.cart-badge{position:absolute;top:-1px;right:-1px;border-radius:50%;background:#b38a4f;color:white;font-size:10px;font-weight:700;min-width:17px;height:17px;display:grid;place-items:center;padding:2px}.menu-toggle{display:none}.mobile-panel{display:none}
