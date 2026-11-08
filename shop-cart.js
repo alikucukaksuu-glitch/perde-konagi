@@ -24,7 +24,7 @@ window.addCart=async function(){
  const sb=client();if(!sb){msg.textContent='Bağlantı kurulamadı. Lütfen sayfayı yenileyin.';return}
  btn.disabled=true;msg.textContent='Fiyat Supabase üzerinde doğrulanıyor…';
  try{
- const {data,error}=await sb.rpc('shop_quote_item',p);
+ const {data,error}=await sb.rpc('shop_quote_with_promo',p);
  if(error||!data)throw Error(error?.message||'Fiyat alınamadı');
  const cart=safeCart();if(cart.length>=50)throw Error('Sepet dolu. Önce sepetinizi düzenleyin.');
  cart.push({id:crypto.randomUUID(),options:p,quote:data,quantity:1,variantSelections:{...(window.pkVariantSelections||{})},productImage:window.pkProductImage||null,added_at:new Date().toISOString()});
