@@ -148,6 +148,7 @@ function values(){
  if(discount_type!=='none'&&discount_value<=0)throw Error('İndirim değeri sıfır olamaz');
  if(campaign_type==='kargo_bedava'&&discount_type!=='none')throw Error('Kargo etiketi fiyatı değiştiremez');
  if(campaign_type==='kargo_bedava'&&enabled)throw Error('Gerçek kargo sistemine geçilmeden Kargo Bedava etiketi aktifleştirilemez.');
+ if(/(?:2[.]?\s*ürün|ikinci\s*ürün)/i.test(badge_text))throw Error('İkinci ürüne özel indirim henüz desteklenmiyor; bunun yerine genel avantaj etiketi kullanın.');
  if(campaign_type==='kupon'&&!/^[A-Z0-9_-]{4,24}$/.test(coupon_code))throw Error('Kupon kodu 4–24 harf/rakam olmalıdır');
  if(usage_limit!=null&&(!Number.isInteger(usage_limit)||usage_limit<1))throw Error('Kullanım limiti pozitif tam sayı olmalıdır');
  return{product_slug,campaign_name,campaign_type,badge_text,discount_type,discount_value,coupon_code,starts_on,ends_on,enabled,usage_limit}
