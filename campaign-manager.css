@@ -39,3 +39,5 @@
 @media(max-width:1080px){.cm-columns{grid-template-columns:1fr}.cm-side{position:static}.cm-preview-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.cm-form{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.cm-form .cm-divider,.cm-form h3,.cm-form .cm-help,.cm-form .cm-item-preview,.cm-form .cm-save-actions,.cm-form .cm-feedback,.cm-form .cm-note{grid-column:1/-1}}
 @media(max-width:720px){.cm-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cm-filters{grid-template-columns:1fr 1fr}.cm-filters input{grid-column:1/-1}.cm-form{display:block}.cm-actions{display:grid;grid-template-columns:1fr 1fr}.cm-actions button:first-child{grid-column:1/-1}.cm-stat{padding:12px}.cm-stat-icon{width:34px;height:34px;font-size:21px}.cm-stat strong{font-size:23px}.cm-stat b{font-size:13px}}
 @media(max-width:420px){.cm-stats{grid-template-columns:1fr 1fr;gap:8px}.cm-stat{gap:7px}.cm-stat-icon{width:28px;height:28px;font-size:16px}.cm-stat small{font-size:9px}.cm-stat strong{font-size:21px}.cm-two{gap:7px}.cm-item-preview{gap:8px}}
+/* Ensure conditional coupon fields obey their actual hidden state */
+#view-coupons [hidden]{display:none!important}
