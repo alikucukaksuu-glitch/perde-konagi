@@ -1,0 +1,41 @@
+/* Perde Konagi campaign studio — approved warm cream and gold appearance */
+#view-coupons{font:13px/1.45 Arial,Helvetica,sans-serif;color:#302721}
+#view-coupons .cm-intro p{color:#7e6b5a;margin:0 0 16px;font-size:12px}
+.cm-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin:0 0 14px}
+.cm-stat{border:1px solid #e9dcd0;border-radius:14px;background:linear-gradient(120deg,#fffefd,#fffaf7);padding:17px 16px;display:flex;gap:14px;align-items:center;box-shadow:0 4px 15px #59412c0b;min-width:0}
+.cm-stat-icon{width:43px;height:43px;border-radius:13px;background:#f7eee4;display:grid;place-items:center;color:#9b754c;font-size:27px;flex-shrink:0}
+.cm-stat>div{min-width:0}.cm-stat b{font:600 16px/1.2 Georgia,serif;display:block;white-space:nowrap}.cm-stat strong{font:600 26px Georgia,serif;display:block;margin:5px 0}.cm-stat small{display:block;color:#827366;font-size:10px;line-height:1.5}
+.cm-actions{display:flex;gap:10px;margin:0 0 17px;flex-wrap:wrap}
+.cm-primary,.cm-outline{border-radius:9px;padding:11px 16px;font-size:12px;font-weight:700;cursor:pointer}
+.cm-primary{background:#9e805f;border:1px solid #9e805f;color:#fff}.cm-primary:hover{background:#876848}
+.cm-primary:disabled,.cm-outline:disabled{opacity:.5;cursor:wait}
+.cm-outline{background:#fffaf7;color:#62482f;border:1px solid #d6b999}.cm-outline:hover{background:#f4e8d9}
+.cm-columns{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(335px,.72fr);gap:19px;align-items:start}.cm-main,.cm-side{min-width:0;display:grid;gap:17px}.cm-side{position:sticky;top:14px}
+.cm-box{border-radius:14px;border:1px solid #e8dbd0;background:#fffdfb;box-shadow:0 5px 17px #59412c0b;overflow:hidden}
+.cm-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:17px 17px 12px;border-bottom:1px solid #eee4db}.cm-heading h2{font:600 22px Georgia,serif;margin:0}.cm-heading p{font:11px/1.6 Arial,sans-serif;color:#8a786a;margin:5px 0 0}.cm-preview-link{white-space:nowrap}
+.cm-filters{display:grid;grid-template-columns:1.8fr 1.2fr 1.2fr;gap:9px;padding:14px 13px}
+.cm-filters input,.cm-filters select{width:100%;height:36px;border:1px solid #e1d3c7;border-radius:8px;padding:0 10px;background:#fff;font-size:11px;color:#594c40;min-width:0}
+.cm-table-scroll{overflow-x:auto}.cm-table{width:100%;min-width:720px;border-collapse:collapse;font-size:11px}.cm-table th{background:#f6f0ea;text-align:left;padding:10px 8px;white-space:nowrap;font-size:10px}.cm-table td{padding:10px 8px;border-top:1px solid #eee7e0}.cm-table .cm-name{display:flex;gap:8px;align-items:center;min-width:150px}.cm-name img{width:36px;height:42px;object-fit:cover;border-radius:5px;background:#ede2d5;flex-shrink:0}.cm-name b{display:block;font-size:11px}.cm-name small{display:block;color:#87786c;font-size:10px;margin-top:3px}
+.cm-tag{display:inline-block;border-radius:6px;padding:5px 9px;color:#fff;background:#b67f42;white-space:nowrap;font-size:10px;font-weight:700}.cm-tag.indirim{background:#cc5147}.cm-tag.avantaj{background:#8565a2}.cm-tag.firsat{background:#ed8736}.cm-tag.yeni_fiyat{background:#d8a634}.cm-tag.kargo_bedava{background:#528c47}.cm-tag.kupon{background:#976a9d}
+.cm-status{font-size:10px;padding:4px 7px;border-radius:12px;background:#f2e8db;color:#805a34;font-weight:700;white-space:nowrap}.cm-status.active{background:#e5f3e2;color:#49773b}.cm-status.scheduled{background:#e3edf7;color:#426a97}.cm-status.paused{background:#f2ebe4;color:#876b53}.cm-status.expired{background:#f8e4e0;color:#ac5044}
+.cm-table button{border:1px solid #e8d8c8;background:#fffbf8;color:#73502b;border-radius:6px;padding:7px 9px;font-size:11px;white-space:nowrap;margin:2px}.cm-table button:hover{background:#f2e8dd}
+.cm-empty{text-align:center;padding:30px!important;color:#82776e}
+.cm-table-foot{display:flex;justify-content:space-between;gap:8px;padding:13px 15px;color:#8b7b6e;font-size:11px;border-top:1px solid #eee4dd}
+.cm-preview-grid{padding:15px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.cm-product-card{border:1px solid #e9dfd4;border-radius:11px;background:#fffbf8;padding:8px;min-width:0}.cm-product-image{position:relative}.cm-product-image img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:7px;background:#e4d9ce}.cm-product-image .cm-tag{position:absolute;top:6px;left:5px}.cm-product-card h4{font:600 13px Georgia,serif;margin:7px 0 4px}.cm-product-card s{display:block;font-size:10px;color:#9e8d81}.cm-product-card strong{display:block;margin-top:4px;color:#986e3c;font-size:14px}.cm-product-card small{display:block;font-size:10px;color:#987354;margin-top:6px}
+.cm-form{padding:16px}.cm-form>label,.cm-form .cm-two label{display:block;font-size:11px;font-weight:700;margin:0 0 12px}.cm-form em{color:#c06945;font-style:normal}
+.cm-form input:not([type=checkbox]),.cm-form select{display:block;margin:7px 0 0;width:100%;min-height:38px;border:1px solid #dccfc2;border-radius:8px;background:white;padding:8px 10px;font:12px Arial,sans-serif;color:#3e342b;min-width:0}
+.cm-form select{cursor:pointer}.cm-form input:focus-visible,.cm-form select:focus-visible{outline:2px solid #b29472}
+.cm-money-input{display:flex;align-items:center;border:1px solid #dccfc2;border-radius:8px;margin-top:7px;background:#fff;overflow:hidden}.cm-money-input span{padding:0 12px;align-self:stretch;display:flex;align-items:center;background:#f8f2ec;border-right:1px solid #e1d4c6;color:#826444}.cm-form .cm-money-input input{margin:0;border:0;border-radius:0;min-height:37px}
+.cm-two{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.cm-switch{border:1px solid #ebdfd3;background:#fff9f2;border-radius:8px;padding:12px;display:flex!important;gap:10px;align-items:start}
+.cm-switch input{accent-color:#a27c51;width:17px;height:17px;margin-top:0}.cm-switch small{display:block;font-size:10px;font-weight:400;color:#806e5e;margin-top:4px}
+.cm-divider{height:1px;background:#eadfd5;margin:14px 0}.cm-form h3{font:600 17px Georgia,serif;margin:0}.cm-help{font-size:10px;color:#806f61;margin:4px 0 12px}
+.cm-item-preview{border:1px solid #ece3da;border-radius:10px;background:#fff;display:flex;gap:12px;padding:10px}.cm-photo{width:42%;position:relative;flex-shrink:0}.cm-photo img{width:100%;height:116px;object-fit:cover;border-radius:7px}.cm-photo .cm-tag{position:absolute;left:5px;top:5px}
+.cm-item-details{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px}.cm-item-details h4{font:600 17px Georgia,serif;margin:0}.cm-item-details s{color:#958579;font-size:12px}.cm-item-details strong{font:700 18px Georgia,serif;color:#9b7040}.cm-item-details small{font-size:11px;color:#986c38}
+.cm-save-actions{display:flex;gap:10px;margin-top:13px}.cm-save-actions button:first-child{flex:2}.cm-save-actions button:last-child{flex:1}.cm-feedback{font-size:12px;color:#996833;margin:12px 0 0;line-height:1.6;overflow-wrap:anywhere}.cm-feedback:empty{display:none}
+.cm-note{background:#f6ede0;color:#785c41;border-radius:9px;font-size:10px;line-height:1.6;padding:11px;margin-top:13px}
+@media(max-width:1450px){.cm-columns{grid-template-columns:minmax(0,1.5fr) minmax(310px,.85fr)}.cm-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1080px){.cm-columns{grid-template-columns:1fr}.cm-side{position:static}.cm-preview-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.cm-form{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.cm-form .cm-divider,.cm-form h3,.cm-form .cm-help,.cm-form .cm-item-preview,.cm-form .cm-save-actions,.cm-form .cm-feedback,.cm-form .cm-note{grid-column:1/-1}}
+@media(max-width:720px){.cm-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cm-filters{grid-template-columns:1fr 1fr}.cm-filters input{grid-column:1/-1}.cm-form{display:block}.cm-actions{display:grid;grid-template-columns:1fr 1fr}.cm-actions button:first-child{grid-column:1/-1}.cm-stat{padding:12px}.cm-stat-icon{width:34px;height:34px;font-size:21px}.cm-stat strong{font-size:23px}.cm-stat b{font-size:13px}}
+@media(max-width:420px){.cm-stats{grid-template-columns:1fr 1fr;gap:8px}.cm-stat{gap:7px}.cm-stat-icon{width:28px;height:28px;font-size:16px}.cm-stat small{font-size:9px}.cm-stat strong{font-size:21px}.cm-two{gap:7px}.cm-item-preview{gap:8px}}
