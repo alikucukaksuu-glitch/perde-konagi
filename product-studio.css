@@ -79,3 +79,5 @@ textarea.ps-input{resize:vertical;line-height:1.5}
 .ps-photo-moves button{border:0;border-radius:5px;background:#fffdf5e8;color:#684827;width:22px;height:23px;font-size:14px;font-weight:700}
 .ps-photo-moves button:disabled{opacity:.4;cursor:not-allowed}
 .ps-photo:not(:has(.ps-main-badge)) .ps-photo-moves{bottom:4px}
+
+.ps-sale-checkbox{display:flex;align-items:flex-start;gap:9px;background:#fffaf5;border:1px solid #e7d7c6;border-radius:9px;padding:11px;margin:12px 0;cursor:pointer;font:12px Arial,sans-serif;font-weight:700}.ps-sale-checkbox input{accent-color:#a47b50;margin-top:2px}.ps-sale-checkbox small{display:block;font-size:10px;line-height:1.5;color:#857361;font-weight:400;margin-top:4px}
