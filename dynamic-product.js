@@ -114,7 +114,7 @@ el('dp-add').addEventListener('click',async()=>{
  const {data,error}=await sb.rpc('shop_quote_item',params());if(error||!data)throw error||new Error('Fiyat doğrulanamadı');
  let cart=JSON.parse(localStorage.getItem('perdeKonagiCartV1')||'[]');if(!Array.isArray(cart))cart=[];
  if(cart.length>=50)throw Error('Sepetiniz dolu');
- cart.push({id:crypto.randomUUID(),options:params(),quote:data,quantity:1,variantSelections:choices(),added_at:new Date().toISOString()});
+ cart.push({id:crypto.randomUUID(),options:params(),quote:data,quantity:1,variantSelections:choices(),productImage:el('dp-image').src,added_at:new Date().toISOString()});
  localStorage.setItem('perdeKonagiCartV1',JSON.stringify(cart));
  el('dp-quote-note').textContent='✓ Ürün sepete eklendi. Sepetimi Gör bağlantısını kullanabilirsiniz.';
  }catch(e){el('dp-quote-note').textContent='Sepete eklenemedi: '+e.message}
