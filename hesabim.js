@@ -77,6 +77,9 @@ async function saveModal(e){e.preventDefault();if(!user)return;const form=e.curr
  $('ac-modal').hidden=true;accountInfo();await loadData();
  }catch(e){$('ac-modal-message').textContent='Kaydedilemedi: '+e.message}finally{button.disabled=false}}
 function init(){if(!sb){$('login-message').textContent='Giriş servisine bağlanılamadı.';return}
+ const callbackParams=new URLSearchParams(location.hash.slice(1)),recoveryRequested=callbackParams.get('type')==='recovery';
+ const callbackError=callbackParams.get('error_description');
+ if(callbackError)$('login-message').textContent='Şifre yenileme bağlantısı geçersiz veya süresi dolmuş olabilir. Yeni bağlantı isteyin.';
  const authMessage=(id,message)=>{$(id).textContent=message};
  const cleanError=error=>{const x=String(error?.message||'');if(/invalid login credentials/i.test(x))return 'E-posta veya şifre hatalı.';if(/email not confirmed/i.test(x))return 'E-posta doğrulaması hâlâ açık. Yönetici tarafından Supabase e-posta onayı kapatılmalıdır.';if(/already registered|user already registered/i.test(x))return 'Bu e-posta ile üyelik mevcut. Giriş yapın veya şifrenizi yenileyin.';if(/password/i.test(x)&&/weak|short|least/i.test(x))return 'Daha güçlü, en az 8 karakterli bir şifre seçiniz.';return x||'İşlem gerçekleştirilemedi.'};
  $('login-form').onsubmit=async e=>{
@@ -126,7 +129,7 @@ function init(){if(!sb){$('login-message').textContent='Giriş servisine bağlan
  $('ac-modal-form').onsubmit=saveModal;
  $('ac-modal').onclick=e=>{if(e.target===$('ac-modal'))$('ac-modal').hidden=true};
  document.addEventListener('keydown',e=>{if(e.key==='Escape')$('ac-modal').hidden=true});
- sb.auth.onAuthStateChange((event)=>{if(['SIGNED_IN','SIGNED_OUT','USER_UPDATED','INITIAL_SESSION','PASSWORD_RECOVERY'].includes(event))setTimeout(()=>{refreshAuth();if(event==='PASSWORD_RECOVERY')openPasswordReset()},25)});
+ sb.auth.onAuthStateChange((event,session)=>{if(['SIGNED_IN','SIGNED_OUT','USER_UPDATED','INITIAL_SESSION','PASSWORD_RECOVERY'].includes(event))setTimeout(()=>{refreshAuth();if(event==='PASSWORD_RECOVERY'||(recoveryRequested&&session?.user&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')))openPasswordReset()},25)});
  refreshAuth();
 }
 function openPasswordReset(){
