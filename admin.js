@@ -19,7 +19,36 @@ document.querySelectorAll('[data-section],[data-goto]').forEach(b=>b.addEventLis
 el('sidebar-toggle').onclick=()=>el('sidebar').classList.toggle('open');
 async function signout(){await client?.auth.signOut();location.replace('admin.html')}
 el('signout').onclick=signout;el('settings-signout').onclick=signout;
-el('login-form').addEventListener('submit',async e=>{e.preventDefault();if(!client)return setText('login-status','Bağlantı kurulamadı.');const btn=e.currentTarget.querySelector('button');btn.disabled=true;const email=el('login-email').value.trim();setText('login-status','Giriş bağlantısı gönderiliyor…');try{const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});if(error)throw error;setText('login-status','Bu adres yetkiliyse e-postana giriş bağlantısı gönderildi.')}catch(error){const msg=String(error?.message||'');setText('login-status',msg.includes('otp_disabled')||msg.includes('Signups not allowed')?'Bu adres için henüz Supabase Auth hesabı yok. Supabase → Authentication → Users → Add user → Send invitation adımından yönetici daveti gönderin.':msg.includes('rate limit')||msg.includes('rate_limit')?'Çok fazla giriş denemesi yapıldı. Bir süre sonra tekrar deneyin.':'Giriş bağlantısı gönderilemedi: '+(error?.message||'Bilinmeyen hata'))}finally{btn.disabled=false}});
+el('login-toggle-password').addEventListener('click',()=>{
+ const field=el('login-password'),button=el('login-toggle-password');
+ const visible=field.type==='password';field.type=visible?'text':'password';
+ button.textContent=visible?'Gizle':'Göster';button.setAttribute('aria-pressed',String(visible));
+});
+el('login-form').addEventListener('submit',async e=>{
+ e.preventDefault();
+ if(!client)return setText('login-status','Giriş servisine bağlanılamadı.');
+ const btn=e.currentTarget.querySelector('button[type=submit]'),email=el('login-email').value.trim().toLowerCase(),password=el('login-password').value;
+ if(!email||!password)return setText('login-status','Lütfen e-posta ve şifrenizi giriniz.');
+ btn.disabled=true;setText('login-status','Giriş yapılıyor…');
+ try{
+  const {data,error}=await client.auth.signInWithPassword({email,password});
+  if(error)throw error;
+  if(!data?.user)throw Error('Oturum açılamadı.');
+  const {data:access,error:accessError}=await client.from('admin_access').select('role').eq('user_id',data.user.id).maybeSingle();
+  if(accessError)throw Error('Yönetici yetkisi kontrol edilemedi.');
+  if(!access||!['owner','admin','staff'].includes(access.role)){
+   await client.auth.signOut();
+   setText('login-status','Bu hesap için yönetim paneli yetkisi yok.');
+   return;
+  }
+  el('login-password').value='';
+  setText('login-status','Giriş başarılı.');
+  await boot();
+ }catch(error){
+  const m=String(error?.message||'');
+  setText('login-status',/invalid login credentials/i.test(m)?'E-posta veya şifre hatalı.':/email not confirmed/i.test(m)?'E-posta hesabınız doğrulanmamış.':/rate.?limit/i.test(m)?'Çok fazla giriş denemesi yapıldı. Daha sonra tekrar deneyin.':m==='Yönetici yetkisi kontrol edilemedi.'?m:'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.');
+ }finally{btn.disabled=false}
+});
 function stats(){const real=orders.filter(o=>paidStatuses.includes(o.status)),today=new Date().toLocaleDateString('en-CA'),month=today.slice(0,7),totalDay=real.filter(o=>new Date(o.created_at).toLocaleDateString('en-CA')===today).reduce((n,o)=>n+Number(o.total_amount),0),totalMonth=real.filter(o=>new Date(o.created_at).toLocaleDateString('en-CA').slice(0,7)===month).reduce((n,o)=>n+Number(o.total_amount),0);
 setText('stat-orders',orders.length.toLocaleString('tr-TR'));setText('stat-production',orders.filter(o=>o.status==='processing'||o.status==='paid').length.toLocaleString('tr-TR'));setText('stat-today',money(totalDay));setText('stat-month',money(totalMonth));
 return{real,totalDay,totalMonth}}
