@@ -4,7 +4,8 @@ const SUPA_URL='https://rwylhxrtggsicieuyjrm.supabase.co';
 const SUPA_KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const CART_KEY='perdeKonagiCartV1';
 const client=()=>window.supabase?.createClient(SUPA_URL,SUPA_KEY);
-const slug=location.pathname.split('/').pop().replace(/\.html$/,'');
+const pageSlug=location.pathname.split('/').pop().replace(/\.html$/,'');
+const slug=pageSlug==='urun'?(new URLSearchParams(location.search).get('slug')||''):pageSlug;
 const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(n);
 function getSelected(name){return document.querySelector('input[name="'+name+'"]:checked')?.value||''}
 function parameters(){
