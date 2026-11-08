@@ -88,3 +88,12 @@ textarea.ps-input{resize:vertical;line-height:1.5}
 .ps-mode-banner.editing{background:#fff1da;border-color:#dfb57c;color:#83551f}
 #ps-copy-new{display:block;margin:-3px 0 15px;font-size:13px}
 #ps-name[readonly]{background:#f3eee8;color:#796959;cursor:not-allowed}
+
+/* Markdown paste formatter action */
+#ps-format-markdown{background:#e9d6bd;color:#68431d;border:1px solid #d5b48c;border-radius:6px;font-weight:700;padding:7px 10px;min-width:auto}
+#ps-format-markdown:hover{background:#e1c5a3}
+.ps-editor h2,.ps-editor h3,.ps-editor h4{font-family:Georgia,'Times New Roman',serif;color:#322c25;margin:16px 0 9px}
+.ps-editor h2{font-size:24px}.ps-editor h3{font-size:21px}.ps-editor h4{font-size:17px}
+.ps-editor ul,.ps-editor ol{margin:8px 0 14px;padding-left:24px}
+.ps-editor li{margin:5px 0;line-height:1.6}
+.ps-editor p{margin:0 0 12px}
