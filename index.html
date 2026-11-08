@@ -126,9 +126,19 @@
 @media(max-width:850px){.hero-search-wrap{top:103px;width:min(690px,calc(100% - 32px))}.hero-search{height:46px}}
 @media(max-width:590px){.hero-search-wrap{top:95px;width:calc(100% - 30px)}.hero-search{height:43px}.hero-search input{font-size:12px;padding:0 11px}.hero-search button{width:43px}.hero-search button svg{width:20px;height:20px}}
 </style>
-<link rel="stylesheet" href="campaign-storefront.css?v=20261108-multi-3"><link rel="stylesheet" href="support-bot.css?v=pk-ai-20261108-1"><style>@media(max-width:600px){.pk-account-float{left:8px!important;bottom:10px!important;padding:12px!important;font-size:12px!important;max-width:calc(100vw - 165px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}</style></head>
+<link rel="stylesheet" href="campaign-storefront.css?v=20261108-multi-3"><link rel="stylesheet" href="support-bot.css?v=pk-ai-20261108-1"><style>@media(max-width:600px){.pk-account-float{left:8px!important;bottom:10px!important;padding:12px!important;font-size:12px!important;max-width:calc(100vw - 165px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}</style><style>
+/* Top announcement marquee only; keep existing header offset and hero untouched. */
+.top-line.pk-ticker{height:29px;min-height:29px;padding:0;overflow:hidden;display:flex;align-items:center;white-space:nowrap;line-height:29px;background:#2d2a28;color:#fff;letter-spacing:.45px}
+.pk-ticker-track{display:flex;width:max-content;flex:none;align-items:center;animation:pk-ticker-slide 34s linear infinite;will-change:transform}
+.pk-ticker-group{display:flex;flex:none;align-items:center;gap:30px;padding-right:30px}
+.pk-ticker-item{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;white-space:nowrap}
+.pk-ticker-sep{font-style:normal;font-size:12px;color:#c6a27e}
+@keyframes pk-ticker-slide{to{transform:translateX(-50%)}}
+@media(max-width:590px){.top-line.pk-ticker{height:29px;min-height:29px}.pk-ticker-track{animation-duration:40s}.pk-ticker-item{font-size:10px}.pk-ticker-group{gap:19px;padding-right:19px}}
+@media(prefers-reduced-motion:reduce){.pk-ticker-track{animation:none}}
+</style></head>
 <body>
-<div class="top-line">ÖLÇÜYE ÖZEL ÜRETİM &nbsp; ✦ &nbsp; ZEBRA & STOR PERDE ÇÖZÜMLERİ</div>
+<div class="top-line pk-ticker" aria-label="Perde Konağı duyuruları"><div class="pk-ticker-track"><div class="pk-ticker-group"><span class="pk-ticker-item">🚚 3.000 TL ve Üzeri Kargo Bedava</span><span class="pk-ticker-sep" aria-hidden="true">✦</span><span class="pk-ticker-item">🔒 Kolay ve Güvenli Alışveriş</span><span class="pk-ticker-sep" aria-hidden="true">✦</span><span class="pk-ticker-item">📦 Özenli Paketleme ve Güvenli Teslimat</span><span class="pk-ticker-sep" aria-hidden="true">✦</span><span class="pk-ticker-item">📏 Ölçünüze Özel Üretim</span><span class="pk-ticker-sep" aria-hidden="true">✦</span><span class="pk-ticker-item">💬 WhatsApp Destek Hattı</span><span class="pk-ticker-sep" aria-hidden="true">✦</span></div><div class="pk-ticker-group" aria-hidden="true"><span class="pk-ticker-item">🚚 3.000 TL ve Üzeri Kargo Bedava</span><span class="pk-ticker-sep" aria-hidden="true">✦</span><span class="pk-ticker-item">🔒 Kolay ve Güvenli Alışveriş</span><span class="pk-ticker-sep" aria-hidden="true">✦</span><span class="pk-ticker-item">📦 Özenli Paketleme ve Güvenli Teslimat</span><span class="pk-ticker-sep" aria-hidden="true">✦</span><span class="pk-ticker-item">📏 Ölçünüze Özel Üretim</span><span class="pk-ticker-sep" aria-hidden="true">✦</span><span class="pk-ticker-item">💬 WhatsApp Destek Hattı</span><span class="pk-ticker-sep" aria-hidden="true">✦</span></div></div></div>
 <header class="site-header">
 <div class="container header-layout">
 <nav class="primary-nav nav-left" aria-label="Ürün kategorileri">
