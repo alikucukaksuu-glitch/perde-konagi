@@ -286,7 +286,7 @@ let matches=[];
 function update(){
  const q=norm(input.value);results.replaceChildren();matches=[];
  if(!q){results.hidden=true;input.setAttribute('aria-expanded','false');return}
- matches=products.filter(p=>norm(p[0]+' '+p[1]).includes(q)).slice(0,7);
+ matches=(window.pkCatalogSearchProducts||products).filter(p=>norm(p[0]+' '+p[1]).includes(q)).slice(0,7);
  if(!matches.length){const text=document.createElement('p');text.textContent='Aramanıza uygun ürün bulunamadı.';results.append(text)}
  else for(const [name,url] of matches){const a=document.createElement('a');a.href=url;a.textContent=name;a.setAttribute('role','option');results.append(a)}
  results.hidden=false;input.setAttribute('aria-expanded','true');
