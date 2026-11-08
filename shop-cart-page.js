@@ -50,5 +50,5 @@ async function verify(){
  for(const line of cart.slice(0,50)){try{const {data,error}=await sb.rpc('shop_quote_item',line.options);if(error||!data)throw Error('Fiyat doğrulanamadı');next.push({...line,quote:data,quantity:Math.min(20,Math.max(1,Math.floor(line.quantity)))})}catch{rejected++}}
  if(t!==version)return;cart=next;save();show();status.textContent=rejected?rejected+' üründe fiyat doğrulanamadı ve ürün sepetten çıkarıldı.':'✓ Ürün fiyatları güncel katalog üzerinden doğrulandı.';
 }
-show();verify();
+items.replaceChildren(text('div','Sepet fiyatları doğrulanıyor…','empty'));total.textContent='—';count.textContent='Ürünler kontrol ediliyor';verify();
 })();
