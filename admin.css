@@ -13,3 +13,34 @@
 @media(max-width:1080px){.admin-shell{grid-template-columns:195px minmax(0,1fr)}.sidebar-brand{font-size:15px}.sidebar-brand svg{width:30px}.topbar{padding:0 17px}.dashboard-content{padding:18px 15px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-row{grid-template-columns:1fr}.quick-panel{grid-column:auto}.quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-row.lower{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.admin-shell{display:block}.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;transform:translateX(-105%);transition:transform .2s}.sidebar.open{transform:translateX(0)}.mobile-menu{display:block}.topbar{height:68px}.topbar h1{font-size:25px}.admin-search{width:210px}.account,.notification{display:none}.dashboard-row.lower{grid-template-columns:1fr}.dashboard-row.lower .panel:last-child{grid-column:auto}.sidebar-scene{min-height:100px}}
 @media(max-width:520px){.topbar h1{font-size:22px}.top-actions{gap:6px}.admin-search{width:115px;height:36px;padding:0 7px;border-radius:9px}.admin-search input{font-size:10px}.logout{font-size:11px;padding:6px 8px}.dashboard-content{padding:12px 10px 30px}.stats{gap:9px}.stat-card{padding:12px;gap:8px}.stat-icon{height:36px;width:36px;font-size:18px}.stat-body span{font-size:11px}.stat-body strong{font-size:22px}.stat-body small{font-size:9px}.panel-heading h2{font-size:18px}.quick-actions{gap:8px}.quick-actions button{font-size:11px}.collection-grid{grid-template-columns:1fr}.login-card{padding:28px 20px}.login-card h1{font-size:34px}}
+/* Product management */
+.sr-only{position:absolute;width:1px;height:1px;clip:rect(0,0,0,0);overflow:hidden}
+.product-toolbar{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:0 0 14px;flex-wrap:wrap}
+.product-summary{color:#846c55;font-size:13px;font-weight:700}
+.product-filter input{height:39px;min-width:230px;border:1px solid #d8c8b8;background:#fff;border-radius:9px;padding:0 12px;color:#342a24}
+.product-table{min-width:650px;font-size:12px}
+.product-table td{padding:13px 9px}
+.catalog-status{border-radius:20px;font-size:11px;font-weight:700;padding:6px 10px;white-space:nowrap}
+.catalog-status.yes{background:#e3f1e4;color:#39754b}
+.catalog-status.no{background:#f9e8e1;color:#aa5348}
+.catalog-edit{border:1px solid #cda980;background:#f8f0e5;color:#79542e;padding:8px 13px;font-size:12px;font-weight:700;border-radius:8px}
+.catalog-edit:hover{background:#e9dbc9}.catalog-edit:disabled{opacity:.45;cursor:not-allowed}
+.product-help{font-size:12px;line-height:1.7;color:#897769;margin:16px 2px}
+.product-editor{width:min(490px,calc(100vw - 24px));max-height:calc(100vh - 30px);overflow:auto;border-radius:17px;border:1px solid #ddcbb7;background:#fffdf9;color:#302820;box-shadow:0 25px 80px #2019155e;padding:24px}
+.product-editor::backdrop{background:rgba(26,22,18,.55);backdrop-filter:blur(3px)}
+.product-editor form{display:grid;gap:10px}
+.editor-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.editor-heading h2{font:27px Georgia,serif;margin:0}
+.editor-x{border:0;background:transparent;font-size:27px;color:#6c5d4e}
+.editor-slug{font-size:12px;color:#897462;overflow-wrap:anywhere;margin:0 0 8px}
+.product-editor label{font-size:13px;font-weight:700;margin-top:6px}
+.product-editor input:not([type=checkbox]){min-height:43px;border-radius:9px;border:1px solid #d8c5b2;padding:0 12px;width:100%;background:white;color:#302820}
+.editor-toggle{display:flex;align-items:center;gap:10px;padding:12px;background:#f5ede3;border-radius:9px}
+.editor-toggle input{width:17px;height:17px;accent-color:#96704c}
+.editor-warning{font-size:12px;color:#7c6855;line-height:1.6;margin:4px 0}
+.editor-feedback{min-height:19px;font-size:12px;color:#9b6333;margin:0}
+.editor-actions{display:flex;justify-content:flex-end;gap:10px}
+.editor-actions button{border-radius:9px;border:1px solid #ddcabb;padding:12px 15px;font-size:13px;font-weight:700;background:#fff}
+.editor-actions .quick-primary{background:#9f7b52;color:white;border-color:#9f7b52}
+.editor-actions button:disabled{opacity:.5;cursor:wait}
+@media(max-width:520px){.product-filter,.product-filter input{width:100%;min-width:0}.product-editor{padding:19px}.editor-actions button{padding:11px}}
