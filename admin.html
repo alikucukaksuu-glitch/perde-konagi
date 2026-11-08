@@ -3,7 +3,7 @@
 <meta name="robots" content="noindex,nofollow"><meta name="description" content="Perde Konağı yetkili yönetim ekranı">
 <title>Yönetim Paneli | Perde Konağı</title>
 <link rel="stylesheet" href="admin.css">
-</head>
+<link rel="stylesheet" href="product-studio.css?v=1"></head>
 <body>
 <section class="login-screen" id="login-screen">
 <div class="login-card">
@@ -66,21 +66,97 @@
 </section>
 <section class="view" id="view-orders" hidden><div class="section-heading"><h2>Siparişler</h2><p>Mağazadan oluşturulan gerçek siparişler.</p></div><div class="panel"><div class="table-wrap"><table><thead><tr><th>Sipariş</th><th>Müşteri</th><th>Durum</th><th>Tutar</th><th>Tarih</th></tr></thead><tbody id="all-orders"></tbody></table></div></div></section>
 <section class="view" id="view-products" hidden>
-<div class="section-heading"><h2>Ürün Yönetimi</h2><p>Ürün adını, m² fiyatını ve satış durumunu Supabase üzerinden güvenle yönetin. Değişiklikler sepet fiyatlandırmasına yansır.</p></div>
+<div id="product-index">
+<div class="section-heading ps-list-head"><div><h2>Ürün Yönetimi</h2><p>Ürünlerinizi görüntüleyin, düzenleyin veya yeni bir ürün oluşturun.</p></div><button id="ps-create" class="ps-gold-button" type="button">＋ &nbsp;Yeni Ürün Ekle</button></div>
 <div class="product-toolbar"><span id="product-summary" class="product-summary">Ürünler yükleniyor…</span><label class="product-filter"><span class="sr-only">Ürünlerde ara</span><input id="product-search" type="search" placeholder="Ürün adına göre ara"></label></div>
 <div class="panel"><div class="table-wrap"><table class="product-table"><thead><tr><th>Ürün</th><th>Koleksiyon</th><th>m² Fiyat</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="product-list"></tbody></table></div></div>
-<p class="product-help">Yeni ürünün fotoğraflarını ve detay sayfasını oluşturma bölümü sonraki aşamada eklenecek. Mevcut 14 ürünün yönetimi burada aktiftir.</p>
-<dialog id="product-editor" class="product-editor">
-<form id="product-edit-form">
-<div class="editor-heading"><h2>Ürünü Düzenle</h2><button type="button" id="product-editor-close" class="editor-x" aria-label="Kapat">×</button></div>
-<p id="product-edit-slug" class="editor-slug"></p>
-<label for="product-edit-title">Ürün adı</label><input id="product-edit-title" name="title" required minlength="5" maxlength="160">
-<label for="product-edit-price">Metrekare fiyatı (TL)</label><input id="product-edit-price" name="price" required type="number" step="0.01" min="1" max="100000">
-<label class="editor-toggle"><input id="product-edit-active" type="checkbox"> Satışa açık</label>
-<p class="editor-warning">Ürün satışa kapatıldığında yeni sepete ekleme engellenir. Daha önce eklenen ürünler de fiyat doğrulama sırasında sepetten çıkarılır.</p>
-<p id="product-save-feedback" class="editor-feedback" role="status" aria-live="polite"></p>
-<div class="editor-actions"><button type="button" id="product-editor-cancel">Vazgeç</button><button type="submit" id="product-editor-save" class="quick-primary">Değişiklikleri Kaydet</button></div>
-</form></dialog></section>
+</div>
+<div id="ps-studio" class="ps-studio" hidden>
+<div class="ps-breadcrumb"><button type="button" id="ps-back">⌂ &nbsp; Ürünler</button><span>›</span><strong id="ps-crumb">Yeni Ürün Ekle</strong></div>
+<div class="ps-title-row"><h2 id="ps-page-title">Yeni Ürün Ekle</h2><button type="button" id="ps-new" class="ps-gold-button">＋ &nbsp;Yeni Ürün Ekle</button></div>
+<div class="ps-tabbar" role="navigation" aria-label="Ürün düzenleme bölümleri">
+<button class="selected" data-ps-scroll="ps-base" type="button">◇ &nbsp;Ürün Bilgileri</button>
+<button data-ps-scroll="ps-variants" type="button">▱ &nbsp;Varyantlar</button>
+<button data-ps-scroll="ps-measures" type="button">♧ &nbsp;Ölçü Seçenekleri</button>
+<button data-ps-scroll="ps-seo" type="button">⌕ &nbsp;SEO</button>
+<button data-ps-scroll="ps-status" type="button">➤ &nbsp;Yayınla</button>
+</div>
+<div class="ps-layout">
+<div class="ps-left">
+<section class="ps-box" id="ps-base">
+<h3>▣ &nbsp;Temel Bilgiler</h3>
+<div class="ps-box-inner">
+<label class="ps-label" for="ps-name">Ürün Adı <b>*</b></label>
+<input class="ps-input" id="ps-name" maxlength="160" placeholder="Örn. Zebra Perde (Krem)">
+<div class="ps-fields-three">
+<div><label class="ps-label" for="ps-category">Kategori <b>*</b></label><select class="ps-input" id="ps-category"><option value="zebra">Zebra Perde</option><option value="mat-stor">Stor Perde</option></select></div>
+<div><label class="ps-label" for="ps-price">m² Fiyat (TL) <b>*</b></label><input class="ps-input" id="ps-price" type="number" min="1" max="100000" step="0.01" placeholder="450,00"></div>
+<div><label class="ps-label" for="ps-active">Durum</label><select class="ps-input" id="ps-active"><option value="published">Yayında</option><option value="draft">Taslak</option></select></div>
+</div>
+<label class="ps-label" for="ps-short">Kısa Açıklama</label>
+<textarea class="ps-input" id="ps-short" rows="3" maxlength="500" placeholder="Ürünü bir iki cümleyle anlatın…"></textarea>
+<div class="ps-count"><span id="ps-short-count">0</span>/500</div>
+</div></section>
+<section class="ps-box" id="ps-images">
+<div class="ps-section-title"><h3>▣ &nbsp;Ürün Fotoğrafları</h3><small>Sıralamayı Sürükle-Bırak ile Değiştir</small></div>
+<div class="ps-box-inner">
+<div class="ps-images">
+<label id="ps-dropzone" class="ps-dropzone" for="ps-file"><span class="ps-upload-icon">⇧</span><b>Fotoğraf Yükle</b><span>Sürükle ve bırak veya dosya seçin</span><small>JPG, PNG, WebP<br>En fazla 10 MB (adet)</small><input id="ps-file" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></label>
+<div id="ps-image-list" class="ps-image-list" aria-label="Ürün fotoğrafları"></div>
+</div>
+<p class="ps-hint">İlk fotoğraf ürünün ana görselidir. En fazla 12 fotoğraf yükleyebilirsiniz. Mevcut sitedeki eski fotoğraflar, yeni fotoğraf eklenmedikçe korunur.</p>
+</div></section>
+<section class="ps-box" id="ps-description">
+<h3>▤ &nbsp;Ürün Açıklaması</h3>
+<div class="ps-box-inner">
+<div class="ps-editor-toolbar" aria-label="Metin biçimlendirme">
+<button type="button" data-command="formatBlock" data-value="p">Paragraf</button>
+<button type="button" data-command="bold" title="Kalın yazı"><b>B</b></button>
+<button type="button" data-command="italic" title="İtalik"><i>I</i></button>
+<button type="button" data-command="underline" title="Altı çizili"><u>U</u></button>
+<button type="button" data-command="insertUnorderedList" title="Madde işaretleri">☷</button>
+<button type="button" data-command="insertOrderedList" title="Numaralı liste">≡</button>
+<button type="button" data-command="formatBlock" data-value="h3">Başlık</button>
+<button type="button" data-command="undo" title="Geri al">↶</button>
+<button type="button" data-command="redo" title="Yinele">↷</button>
+</div>
+<div id="ps-desc" class="ps-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Ürün açıklamasını buraya yazın. Kalın, italik, başlık ve liste biçimlendirmelerini kullanabilirsiniz."></div>
+</div></section>
+<section class="ps-box" id="ps-variants"><h3>▱ &nbsp;Varyantlar</h3>
+<div class="ps-box-inner"><p class="ps-hint">Renk, desen veya koleksiyon gibi seçenekleri ekleyin. Varyantlar ürün sayfasında seçilebilir; ek fiyat uygulanmaz.</p>
+<div id="ps-variant-rows"></div><button id="ps-add-variant" class="ps-outline" type="button">＋ Varyant Grubu Ekle</button></div></section>
+<section class="ps-box" id="ps-measures"><h3>♧ &nbsp;Ölçü Seçenekleri</h3>
+<div class="ps-box-inner"><p class="ps-hint">Kabul edilen en ve boy sınırları. Ölçü fiyatlandırmasında sunucunun mevcut en az 100 cm hesabı korunur.</p><div class="ps-fields-three">
+<div><label class="ps-label" for="ps-minw">Min. En (cm)</label><input id="ps-minw" class="ps-input" type="number" min="50" max="280" value="50"></div>
+<div><label class="ps-label" for="ps-maxw">Maks. En (cm)</label><input id="ps-maxw" class="ps-input" type="number" min="50" max="280" value="280"></div>
+<div><label class="ps-label" for="ps-minh">Min. Boy (cm)</label><input id="ps-minh" class="ps-input" type="number" min="50" max="280" value="50"></div>
+<div><label class="ps-label" for="ps-maxh">Maks. Boy (cm)</label><input id="ps-maxh" class="ps-input" type="number" min="50" max="280" value="280"></div>
+<div><label class="ps-label" for="ps-stock">Stok (Boş = Sınırsız)</label><input id="ps-stock" class="ps-input" type="number" min="0" step="1" placeholder="Sınırsız"></div>
+</div></div></section>
+<section class="ps-box" id="ps-seo"><h3>⌕ &nbsp;Arama Motoru (SEO)</h3>
+<div class="ps-box-inner"><label class="ps-label" for="ps-seo-title">SEO Başlığı</label><input id="ps-seo-title" class="ps-input" maxlength="180" placeholder="Perde Konağı | Ürün adı">
+<label class="ps-label" for="ps-seo-desc">SEO Açıklaması</label><textarea id="ps-seo-desc" class="ps-input" maxlength="320" rows="3" placeholder="Google arama sonuçları için açıklama…"></textarea></div></section>
+</div>
+<div class="ps-right">
+<section class="ps-box" id="ps-status"><h3>➤ &nbsp;Yayın &amp; Durum</h3><div class="ps-box-inner">
+<label class="ps-state"><input type="radio" name="ps-publish" value="draft"><span><b>Taslak</b><small>Ürün henüz yayında değil, sadece yöneticiler görür.</small></span></label>
+<label class="ps-state selected"><input type="radio" name="ps-publish" value="published" checked><span><b>Yayında</b><small>Ürün mağazada görünür ve müşteriler tarafından satın alınabilir.</small></span></label>
+<div class="ps-save-actions"><button type="button" id="ps-save-draft" class="ps-gold-button">✓ &nbsp;Kaydet</button><button type="button" id="ps-publish" class="ps-outline">➤ &nbsp;Yayınla</button></div>
+<p id="ps-feedback" role="status" aria-live="polite" class="ps-feedback"></p>
+</div></section>
+<section class="ps-box"><h3>◇ &nbsp;Ürün Özeti</h3><div class="ps-box-inner"><div class="ps-summary-product">
+<img id="ps-summary-img" src="perde-konagi-hero-banner.jpg" alt="Ürün önizlemesi">
+<div><strong id="ps-summary-name">Yeni Ürün</strong><small id="ps-summary-category">Zebra Perde</small><span id="ps-summary-status">● Taslak</span></div>
+</div><div class="ps-summary-line"><span>Fiyat</span><b id="ps-summary-price">—</b></div>
+<div class="ps-summary-line"><span>Stok</span><b id="ps-summary-stock">∞ (Sınırsız)</b></div>
+<div class="ps-summary-line"><span>Varyant</span><b id="ps-summary-variants">0 seçenek</b></div>
+<div class="ps-summary-line"><span>Ölçü Seçenekleri</span><b>Özel ölçü</b></div>
+<div class="ps-summary-line"><span>Son Güncelleme</span><b id="ps-summary-date">—</b></div>
+<div class="ps-hint ps-tip">💡 &nbsp;Daha iyi dönüşüm için en az 4 adet yüksek kaliteli fotoğraf, detaylı açıklama ve SEO bilgilerini tamamlamayı unutmayın.</div>
+</div></section>
+</div></div></div>
+<dialog id="product-editor" class="product-editor"><form id="product-edit-form"><div class="editor-heading"><h2>Ürünü Düzenle</h2><button type="button" id="product-editor-close" class="editor-x" aria-label="Kapat">×</button></div><p id="product-edit-slug"></p><label for="product-edit-title">Ürün adı</label><input id="product-edit-title"><label for="product-edit-price">Fiyat</label><input id="product-edit-price"><label><input type="checkbox" id="product-edit-active">Satışta</label><p id="product-save-feedback"></p><div class="editor-actions"><button id="product-editor-cancel" type="button">Vazgeç</button><button id="product-editor-save" type="submit">Kaydet</button></div></form></dialog>
+</section>
 <section class="view" id="view-collections" hidden><div class="section-heading"><h2>Koleksiyonlar</h2><p>Katalogdaki ürün grupları.</p></div><div id="collection-list" class="collection-grid"></div></section>
 <section class="view" id="view-customers" hidden><div class="section-heading"><h2>Müşteriler</h2><p>Gerçek siparişlerden oluşan müşteri özeti.</p></div><div id="customer-list" class="panel section-pad"></div></section>
 <section class="view" id="view-reviews" hidden><div class="section-heading"><h2>Yorumlar</h2><p>Gelen değerlendirmeleri inceleyip onaylayın veya reddedin.</p></div><div class="panel section-pad"><div class="review-tabs"><button class="tab active" type="button" data-review-filter="pending">Onay Bekleyenler</button><button class="tab" type="button" data-review-filter="approved">Onaylananlar</button><button class="tab" type="button" data-review-filter="rejected">Reddedilenler</button></div><div id="review-list"></div></div></section>
@@ -90,4 +166,4 @@
 <section class="view" id="view-settings" hidden><div class="section-heading"><h2>Ayarlar</h2><p>Yönetici oturumu ve mağaza yapılandırması.</p></div><div class="panel section-pad"><h3>Yetkili yönetici</h3><p id="admin-email"></p><p>Ödeme entegrasyonu henüz aktif değildir. Yönetici erişimleri Supabase tarafından kontrol edilir.</p><button id="settings-signout" class="quick-primary" type="button">Oturumu Kapat</button></div></section>
 </main></div></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="admin.js?v=products-20261108"></script></body></html>
+<script defer src="admin.js?v=products-20261108"></script><script defer src="product-studio.js?v=1"></script></body></html>
