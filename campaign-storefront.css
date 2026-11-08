@@ -1,2 +1,13 @@
 .pk-campaign-anchor{position:relative;display:block}.pk-campaign-tag{position:absolute;z-index:4;top:9px;left:9px;border-radius:6px;background:#c75043;color:white;padding:6px 10px;font:700 12px Arial,sans-serif;box-shadow:0 3px 8px #0002;pointer-events:none}.pk-campaign-tag.avantaj{background:#8663a5}.pk-campaign-tag.firsat{background:#e88937}.pk-campaign-tag.yeni_fiyat{background:#c99a2d}.pk-campaign-tag.kargo_bedava{background:#558a47}.pk-campaign-tag.kupon{background:#9160a4}.pk-campaign-original{display:inline-block;color:#9e958c;font:400 13px Arial,sans-serif;text-decoration:line-through;margin-right:7px}.pk-product-campaign{display:inline-flex;margin:4px 0 13px;background:#f7eadc;border:1px solid #dfb990;padding:8px 12px;border-radius:8px;font:700 13px Arial,sans-serif;color:#9b6231}.pk-campaign-price{color:#9a6530!important}.pk-campaign-discount{color:#427e4c!important;font-weight:700}.customizer .unit .pk-campaign-original{font-size:16px;vertical-align:middle}.customizer .unit strong{color:#aa6a30;font-weight:800}.cards a.product .pk-campaign-anchor{position:relative}.cards a.product .pk-campaign-tag{font-size:11px}@media(max-width:580px){.pk-campaign-tag{font-size:10px;padding:5px 8px}.pk-product-campaign{font-size:11px}}
 .pk-category-campaign-price{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:9px 0;color:#a07037}.pk-category-campaign-price strong{font-weight:800;font-size:16px}.pk-category-campaign-price s{font-size:12px;color:#9b8d80}
+
+/* Multiple simultaneous campaigns: display all badges without overlaying each other. */
+.pk-campaign-tags{position:absolute;z-index:5;top:9px;left:9px;right:9px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;pointer-events:none}
+.pk-campaign-tags .pk-campaign-tag{position:static;display:inline-block;max-width:100%;white-space:normal;line-height:1.2}
+.pk-product-campaigns{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:4px 0 13px}
+.pk-product-campaigns .pk-product-campaign{margin:0}
+.pk-product-campaign.avantaj{color:#765496;border-color:#cbb4d9;background:#f3eaf8}
+.pk-product-campaign.firsat{color:#ac641f;border-color:#e6c39b;background:#fff0df}
+.pk-product-campaign.yeni_fiyat{color:#8f6c17;border-color:#e7d194;background:#fcf4da}
+.pk-campaign-rule{display:block;flex-basis:100%;font:400 11px/1.4 Arial,sans-serif;color:#7b7166;margin-top:2px}
+@media(max-width:580px){.pk-campaign-tags{top:7px;left:7px;gap:4px}}
