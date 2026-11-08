@@ -1,0 +1,42 @@
+/* Perde Konağı premium footer – isolated to the home page footer */
+.footer.pk-footer{position:relative;overflow:hidden;background:radial-gradient(ellipse at 96% 18%,rgba(147,95,54,.22),transparent 42%),linear-gradient(125deg,#382319 0%,#271910 49%,#382314 100%);padding:0;color:#f6e9d5}
+.pk-footer:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.07;background:repeating-radial-gradient(ellipse at 95% 14%,transparent 0,transparent 28px,#c6a37e 30px,transparent 32px);transform:rotate(-7deg);transform-origin:right top}
+.pk-footer a{color:#f0e0c8;text-decoration:none}.pk-footer a:hover{text-decoration:underline;color:#fff}
+.pk-footer .pk-ft-inner{position:relative;z-index:1;max-width:1410px;margin:0 auto;padding:0 28px}
+.pk-ft-primary{display:grid;grid-template-columns:1.55fr .78fr 1fr;gap:44px;padding:48px 0 31px}
+.pk-ft-brand{border-right:1px solid #ac7d4b;padding-right:30px}
+.pk-ft-brandhead{display:flex;gap:20px;align-items:center}
+.pk-ft-brandhead svg{width:72px;height:70px;flex:none;color:#d6ae7b}
+.pk-ft-brandname{font:36px/1.05 Georgia,serif;white-space:nowrap;letter-spacing:.5px}
+.pk-ft-brandsub{font:11px Arial,sans-serif;letter-spacing:3px;color:#e9d6ba;margin-top:8px}
+.pk-ft-tagline{font:italic 20px/1.5 Georgia,serif;text-align:center;max-width:435px;margin:30px 0 22px;color:#f0decc}
+.pk-ft-trust{border-top:1px solid #ad854f;display:flex;align-items:center;gap:15px;padding-top:20px}
+.pk-ft-trust span{display:flex;align-items:center;gap:9px;flex:1;font:14px/1.35 Georgia,serif;white-space:nowrap}
+.pk-ft-trust svg{width:30px;height:30px;color:#d6ae7b;flex:none}
+.pk-ft-trust span+span{border-left:1px solid #8c6847;padding-left:15px}
+.pk-ft-column{border-right:1px solid #ad854f;padding-right:23px}
+.pk-ft-column:last-child{border-right:0}
+.pk-ft-column h3{font:28px Georgia,serif;color:#f0cfa3;margin:5px 0 19px;padding-bottom:11px;position:relative}
+.pk-ft-column h3:after{content:"";position:absolute;left:0;bottom:0;width:155px;max-width:85%;height:1px;background:linear-gradient(90deg,#c49a67,transparent)}
+.pk-ft-column a{display:block;font:15px/1.5 Georgia,serif;margin:0 0 9px}
+.pk-ft-column a:before{content:"›";color:#deb67e;font-weight:700;margin-right:13px}
+.pk-ft-secondary{border-top:1px solid #a67c47;border-bottom:1px solid #a67c47;padding:26px 0;display:grid;grid-template-columns:1.25fr 1.25fr .75fr .9fr .78fr;gap:22px}
+.pk-ft-info{padding:4px 16px 4px 0;border-right:1px solid #84603f;min-width:0}
+.pk-ft-info:last-child{border-right:0}
+.pk-ft-info h4{font:21px Georgia,serif;color:#f0cfa3;margin:0 0 10px}
+.pk-ft-info strong{font:700 15px Georgia,serif;color:#fff4e2}
+.pk-ft-info p{font:13px/1.55 Georgia,serif;margin:7px 0;color:#f0dfcc}
+.pk-ft-info a{font:13px Georgia,serif;display:inline-block;margin-top:7px;color:#f0c18a;text-decoration:underline;text-underline-offset:3px}
+.pk-ft-meta{display:flex;align-items:flex-start;gap:8px}.pk-ft-meta svg{width:22px;height:22px;flex:none;color:#d9ad78}
+.pk-ft-phone{display:inline-flex!important;font-size:22px!important;font-weight:bold!important;text-decoration:none!important;white-space:nowrap}
+.pk-ft-socials{display:flex;gap:10px;margin-top:17px}
+.pk-ft-socials a{display:grid;place-items:center;width:38px;height:38px;border:1px solid #ceaa76;color:#f0cc9f;border-radius:50%;margin:0;text-decoration:none}
+.pk-ft-socials a:hover{background:#d5ae7e;color:#2d1a0e;text-decoration:none}
+.pk-ft-socials svg{width:20px;height:20px}
+.pk-ft-legal{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 0 25px;font:12px Georgia,serif;color:#e4d4bf;flex-wrap:wrap}
+.pk-ft-legal-links{display:flex;flex-wrap:wrap;gap:11px;align-items:center}
+.pk-ft-legal-links a{font:13px Georgia,serif}
+.pk-ft-legal-links a+a:before{content:"|";color:#c29b6b;margin-right:12px}
+@media(max-width:1100px){.pk-ft-primary{grid-template-columns:1.25fr 1fr 1fr;gap:25px}.pk-ft-brandname{font-size:27px}.pk-ft-brandhead svg{width:54px}.pk-ft-trust{flex-wrap:wrap}.pk-ft-trust span{font-size:12px}.pk-ft-secondary{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:24px}.pk-ft-info:nth-child(3){border-right:0}}
+@media(max-width:750px){.pk-footer .pk-ft-inner{padding:0 18px}.pk-ft-primary{grid-template-columns:1fr 1fr;gap:23px;padding-top:35px}.pk-ft-brand{grid-column:1/-1;border-right:0;border-bottom:1px solid #ac7d4b;padding:0 0 24px}.pk-ft-brandname{font-size:27px}.pk-ft-tagline{text-align:left;font-size:17px;margin:17px 0}.pk-ft-trust{max-width:100%;gap:9px}.pk-ft-trust span{font-size:12px;white-space:normal}.pk-ft-column{border:0;padding:0}.pk-ft-column h3{font-size:21px}.pk-ft-column a{font-size:13px}.pk-ft-secondary{grid-template-columns:1fr 1fr}.pk-ft-info{border-right:0;border-bottom:1px solid #6e5038;padding:0 0 16px}.pk-ft-info:last-child{border:0}.pk-ft-legal{display:block;text-align:center}.pk-ft-legal-links{justify-content:center;margin-bottom:12px}}
+@media(max-width:460px){.pk-ft-secondary{grid-template-columns:1fr}.pk-ft-brandname{font-size:24px}.pk-ft-brandsub{font-size:8px}.pk-ft-trust span+span{padding-left:7px}.pk-ft-trust svg{width:23px}.pk-ft-phone{font-size:20px!important}}
