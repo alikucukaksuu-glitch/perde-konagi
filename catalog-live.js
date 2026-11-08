@@ -68,8 +68,8 @@ function showProduct(p,d,campaigns=[]){
    c.discount_type==='fixed'?Math.min(value,val):
    c.discount_type==='new_price'?Math.max(0,value-val):0
  };
- const maxDiscount=Math.max(0,...applicable.map(promoDiscount));
- window.pkHasActiveCampaign=maxDiscount>0;
+ const maxDiscount=Math.max(0,...applicable.filter(c=>c.discount_type!=='fixed').map(promoDiscount));
+ window.pkHasActiveCampaign=applicable.some(c=>promoDiscount(c)>0);
  if(unit){
   unit.replaceChildren();
   if(maxDiscount>0){
