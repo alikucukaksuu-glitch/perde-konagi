@@ -33,6 +33,8 @@ function updateCards(){
   const current=listed?Number(listed[1].replace(/\./g,'').replace(',','.')):0;
   const c=best(entries,current);
   if(!c)continue;addBadge(card,c);
+  // Fixed TL discounts apply to the entire configured curtain, not to each square metre.
+  if(c.discount_type==='fixed'){card.dataset.pkCampaignApplied='true';continue}
   if(!current)continue;
   const off=priceDiscount(c,current);
   if(off>0&&price){
@@ -92,7 +94,7 @@ function updateProduct(){
   title.after(notice);
  }
  const unit=document.querySelector('.customizer .unit'),off=priceDiscount(c,price);
- if(unit&&off>0){
+ if(unit&&off>0&&c.discount_type!=='fixed'){
   const suffix=c.discount_type==='fixed'?' (1 m² örneği)':'';
   unit.innerHTML='';
   const old=document.createElement('s');old.className='pk-campaign-original';old.textContent=money(price);
