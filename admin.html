@@ -3,7 +3,7 @@
 <meta name="robots" content="noindex,nofollow"><meta name="description" content="Perde Konağı yetkili yönetim ekranı">
 <title>Yönetim Paneli | Perde Konağı</title>
 <link rel="stylesheet" href="admin.css">
-<link rel="stylesheet" href="product-studio.css?v=20261108-markdown-fix-1"><link rel="stylesheet" href="campaign-manager.css?v=20261108-final-4"><link rel="stylesheet" href="admin-orders.css?v=20261108-two-page-2"></head>
+<link rel="stylesheet" href="product-studio.css?v=20261108-markdown-fix-1"><link rel="stylesheet" href="campaign-manager.css?v=20261108-final-4"><link rel="stylesheet" href="admin-orders.css?v=20261108-two-page-2"><link rel="stylesheet" href="admin-reports.css?v=20261108-r1"></head>
 <body>
 <section class="login-screen" id="login-screen">
 <div class="login-card">
@@ -212,8 +212,17 @@
 </form></div></div>
 </div>
 </section>
-<section class="view" id="view-reports" hidden><div class="section-heading"><h2>Raporlar</h2><p>Gerçek satışlar ve ürünlerin performansı.</p></div><div class="stats compact" id="report-stats"></div><div class="panel section-pad"><h2>Son 30 Gün Satış Trendi</h2><div id="reports-chart" class="chart-area"></div></div></section>
+<section class="view" id="view-reports" hidden>
+<div class="rp-heading"><div><h2>Raporlar ve Analizler</h2><p>Satış, ürün, üretim ve kampanya performansını gerçek verilerle izleyin.</p></div><div class="rp-actions"><button id="rp-refresh" type="button">↻ Yenile</button><button id="rp-excel" type="button">⬇ Excel Aktar</button><button id="rp-pdf" type="button">▣ PDF Raporu</button></div></div>
+<div class="rp-filters"><label>Başlangıç <input type="date" id="rp-start"></label><label>Bitiş <input type="date" id="rp-end"></label><label>Hızlı Dönem <select id="rp-range"><option value="7">Son 7 Gün</option><option value="30" selected>Son 30 Gün</option><option value="90">Son 90 Gün</option><option value="365">Son 1 Yıl</option><option value="custom">Özel Tarih</option></select></label><label>Grafik Aralığı <select id="rp-granularity"><option value="day">Günlük</option><option value="week">Haftalık</option><option value="month">Aylık</option><option value="year">Yıllık</option></select></label><button id="rp-apply" type="button">Filtrele</button></div>
+<p id="rp-info" class="rp-note" role="status">Gerçek sipariş verileri hazırlanıyor…</p>
+<div id="rp-kpis" class="rp-kpis"></div>
+<div class="rp-grid"><section class="rp-panel rp-wide"><header><h3>Satış Grafiği</h3><span id="rp-chart-caption">Gerçek ödenmiş siparişler</span></header><div id="rp-sales-chart" class="rp-chart"></div></section><section class="rp-panel"><header><h3>Ürün Dağılımı</h3><span>Net sipariş cirosu içindeki ürün payı</span></header><div id="rp-category-chart"></div></section></div>
+<div class="rp-grid"><section class="rp-panel rp-wide"><header><h3>Son Siparişler</h3><span>Seçilen dönem</span></header><div class="rp-scroll"><table><thead><tr><th>Sipariş</th><th>Ürün</th><th>Durum</th><th>Tutar</th><th>Tarih</th></tr></thead><tbody id="rp-orders"></tbody></table></div></section><section class="rp-panel"><header><h3>En Çok Satılan Ürünler</h3><span>Satış adedi ve gelir</span></header><div id="rp-top-products"></div></section></div>
+<div class="rp-grid"><section class="rp-panel"><header><h3>Üretim Performansı</h3><span>Üretim ve teslimat aşamaları</span></header><div id="rp-production"></div></section><section class="rp-panel"><header><h3>Kampanya Analizi</h3><span>Aktiflik ve kullanım sayısı</span></header><div id="rp-campaigns"></div></section></div>
+<div id="rp-legacy" hidden><div class="stats compact" id="report-stats"></div><div id="reports-chart" class="chart-area"></div></div>
+</section>
 <section class="view" id="view-settings" hidden><div class="section-heading"><h2>Ayarlar</h2><p>Yönetici oturumu ve mağaza yapılandırması.</p></div><div class="panel section-pad"><h3>Yetkili yönetici</h3><p id="admin-email"></p><p>Ödeme entegrasyonu henüz aktif değildir. Yönetici erişimleri Supabase tarafından kontrol edilir.</p><button id="settings-signout" class="quick-primary" type="button">Oturumu Kapat</button></div></section>
 </main></div></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="admin.js?v=product-studio-20261108-v2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=20261108-markdown-fix-1"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script><script defer src="admin-orders.js?v=20261108-two-page-1"></script></body></html>
+<script defer src="admin.js?v=product-studio-20261108-v2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=20261108-markdown-fix-1"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script><script defer src="admin-orders.js?v=20261108-two-page-1"></script><script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script defer src="admin-reports.js?v=20261108-r1"></script></body></html>
