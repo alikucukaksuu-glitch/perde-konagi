@@ -33,7 +33,7 @@ const selected=name=>document.querySelector('input[name="'+name+'"]:checked').va
 let current=null;
 function calc(){
  const en=Number(document.getElementById('en').value),boy=Number(document.getElementById('boy').value),rawEn=document.getElementById('en').value,rawBoy=document.getElementById('boy').value;
- const valid=rawEn!==''&&rawBoy!==''&&Number.isInteger(en)&&Number.isInteger(boy)&&en>=50&&en<=280&&boy>=50&&boy<=280;
+ const lim=window.pkMeasureBounds||{},minw=lim.min_width??50,maxw=lim.max_width??280,minh=lim.min_height??50,maxh=lim.max_height??280; const valid=rawEn!==''&&rawBoy!==''&&Number.isInteger(en)&&Number.isInteger(boy)&&en>=minw&&en<=maxw&&boy>=minh&&boy<=maxh;
  const button=document.getElementById('add-cart'),box=document.getElementById('breakdown'),msg=document.getElementById('measure-message');
  if(window.pkCatalogValidated!==true){
   button.disabled=true;box.hidden=true;current=null;
@@ -41,7 +41,7 @@ function calc(){
   return;
  }
  button.disabled=!valid;box.hidden=!valid;current=null;
- if(!valid){button.textContent='Ölçü Girerek Sepete Ekle';msg.textContent=(!rawEn||!rawBoy)?'En ve boy ölçülerini giriniz.':'⚠ En ve boy 50–280 cm arasında, tam sayı olmalıdır.';msg.className='measure-message '+((rawEn&&rawBoy)?'invalid':'');document.getElementById('pipe-warning').hidden=true;document.getElementById('foot-warning').hidden=true;return;}
+ if(!valid){button.textContent='Ölçü Girerek Sepete Ekle';msg.textContent=(!rawEn||!rawBoy)?'En ve boy ölçülerini giriniz.':'⚠ En '+minw+'–'+maxw+' cm, boy '+minh+'–'+maxh+' cm arasında, tam sayı olmalıdır.';msg.className='measure-message '+((rawEn&&rawBoy)?'invalid':'');document.getElementById('pipe-warning').hidden=true;document.getElementById('foot-warning').hidden=true;return;}
  const billedEn=Math.max(100,en),sqm=billedEn*boy/10000,base=sqm*window.pkCatalogPricePerSqm,metal=selected('Mekanizma Zincir Tipi')==='metal'?105:0,jumbo=selected('Mekanizma Borusu')==='jumbo'?en/100*200:0,kasaTip=selected('Kasa Seçeneği'),kasa=kasaTip==='klasik'?en/100*140:kasaTip==='renkli'?en/100*170:0,total=base+metal+jumbo+kasa;
  current={en,boy,billedEn,sqm,base,metal,jumbo,kasa,kasaTip,kasaRenk:kasaColor,total,zincir: selected('Mekanizma Zincir Tipi'),yon:selected('Mekanizma Zincir Yönü'),boru:selected('Mekanizma Borusu'),ayak:selected('Mekanizma Yan Ayak')};
  box.innerHTML='<div class="break-row"><span>▦ Perde: '+en+' × '+boy+' cm = '+sqm.toFixed(2)+' m²'+(en<100?' (fiyatlandırma eni 100 cm)':'')+'</span><span>'+money(base)+'</span></div>'+(metal?'<div class="break-row"><span>Metal zincir</span><span>'+money(metal)+'</span></div>':'')+(jumbo?'<div class="break-row"><span>38’lik Jumbo Boru ('+(en/100).toFixed(2)+' m)</span><span>'+money(jumbo)+'</span></div>':'')+(kasa?'<div class="break-row"><span>'+ (kasaTip==='klasik'?'Kapalı Kasa Klasik':'Kapalı Kasa Renkli')+' — '+kasaColor+' ('+(en/100).toFixed(2)+' m)</span><span>'+money(kasa)+'</span></div>':'')+'<div class="break-total"><b>Toplam Fiyat</b><b>'+money(total)+'</b></div>';
@@ -49,4 +49,4 @@ function calc(){
 }
 function addCart(){if(!current)return;const cart=JSON.parse(localStorage.getItem('perdeKonagiDemoCart')||'[]');cart.push({urun:'Bambu Kahve Zebra Perde',...current});localStorage.setItem('perdeKonagiDemoCart',JSON.stringify(cart));document.getElementById('cart-message').textContent='✓ Demo sepete eklendi. Gerçek sipariş ve ödeme henüz açık değil.';}
 calc();
-</script><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="reviews.js"></script><script defer src="product-guide.js"></script><script defer src="shop-cart.js"></script><script defer src="catalog-live.js?v=20261108-product-studio-1"></script></body></html>
+</script><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="reviews.js"></script><script defer src="product-guide.js"></script><script defer src="shop-cart.js?v=20261108-product-studio-2"></script><script defer src="catalog-live.js?v=20261108-product-studio-2"></script></body></html>
