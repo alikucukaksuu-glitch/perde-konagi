@@ -3,7 +3,7 @@
 <meta name="robots" content="noindex,nofollow"><meta name="description" content="Perde Konağı yetkili yönetim ekranı">
 <title>Yönetim Paneli | Perde Konağı</title>
 <link rel="stylesheet" href="admin.css">
-<link rel="stylesheet" href="product-studio.css?v=20261108-markdown-fix-1"><link rel="stylesheet" href="campaign-manager.css?v=20261108-final-4"><link rel="stylesheet" href="admin-orders.css?v=20261108-two-page-2"><link rel="stylesheet" href="admin-reports.css?v=20261108-r1"></head>
+<link rel="stylesheet" href="product-studio.css?v=20261108-markdown-fix-1"><link rel="stylesheet" href="campaign-manager.css?v=20261108-final-4"><link rel="stylesheet" href="admin-orders.css?v=20261108-two-page-2"><link rel="stylesheet" href="admin-reports.css?v=20261108-r1"><link rel="stylesheet" href="admin-messages.css?v=20261108-contact-1"></head>
 <body>
 <section class="login-screen" id="login-screen">
 <div class="login-card">
@@ -29,6 +29,7 @@
 <button type="button" class="side-item" data-section="reviews"><span>☆</span> Yorumlar <b id="pending-count" class="side-count" hidden>0</b></button>
 <button type="button" class="side-item" data-section="production"><span>♧</span> Üretim Takibi</button>
 <button type="button" class="side-item" data-section="coupons"><span>◇</span> Kuponlar</button>
+<button type="button" class="side-item" data-section="messages"><span>✉</span> Mesajlar</button>
 <button type="button" class="side-item" data-section="reports"><span>▥</span> Raporlar</button>
 <button type="button" class="side-item" data-section="settings"><span>⚙</span> Ayarlar</button>
 </nav>
@@ -222,7 +223,8 @@
 <div class="rp-grid"><section class="rp-panel"><header><h3>Üretim Performansı</h3><span>Üretim ve teslimat aşamaları</span></header><div id="rp-production"></div></section><section class="rp-panel"><header><h3>Kampanya Analizi</h3><span>Aktiflik ve kullanım sayısı</span></header><div id="rp-campaigns"></div></section></div>
 <div id="rp-legacy" hidden><div class="stats compact" id="report-stats"></div><div id="reports-chart" class="chart-area"></div></div>
 </section>
+<section class="view" id="view-messages" hidden><div class="section-heading"><h2>İletişim Mesajları</h2><p>Perde Konağı iletişim formundan gelen talepler.</p></div><div class="panel section-pad"><div class="cm-toolbar"><label><span class="sr-only">Mesaj durumu</span><select id="cm-status"><option value="all">Tüm Mesajlar</option><option value="new">Yeni</option><option value="read">Okundu</option><option value="closed">Kapandı</option></select></label><button id="cm-refresh" type="button">↻ Yenile</button></div><p id="cm-feedback" role="status"></p><div id="cm-list" class="cm-list"></div></div></section>
 <section class="view" id="view-settings" hidden><div class="section-heading"><h2>Ayarlar</h2><p>Yönetici oturumu ve mağaza yapılandırması.</p></div><div class="panel section-pad"><h3>Yetkili yönetici</h3><p id="admin-email"></p><p>Ödeme entegrasyonu henüz aktif değildir. Yönetici erişimleri Supabase tarafından kontrol edilir.</p><button id="settings-signout" class="quick-primary" type="button">Oturumu Kapat</button></div></section>
 </main></div></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="admin.js?v=product-studio-20261108-v2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=20261108-markdown-fix-1"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script><script defer src="admin-orders.js?v=20261108-two-page-1"></script><script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script defer src="admin-reports.js?v=20261108-r1"></script></body></html>
+<script defer src="admin.js?v=product-studio-20261108-v2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=20261108-markdown-fix-1"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script><script defer src="admin-orders.js?v=20261108-two-page-1"></script><script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script defer src="admin-reports.js?v=20261108-r1"></script><script defer src="admin-messages.js?v=20261108-contact-1"></script></body></html>
