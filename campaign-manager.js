@@ -125,7 +125,7 @@ async function load(){
  finally{loading=false}
 }
 function editCampaign(c){
- editing=c.id;$('cm-product').value=c.product_slug;$('cm-name').value=c.campaign_name;$('cm-type').value=c.campaign_type;
+ editing=c.id;$('cm-collection').value='';fillProducts();$('cm-product').value=c.product_slug;$('cm-name').value=c.campaign_name;$('cm-type').value=c.campaign_type;
  $('cm-badge').value=c.badge_text;$('cm-discount-type').value=c.discount_type;$('cm-value').value=c.discount_value;
  $('cm-coupon-code').value=c.coupon_code||'';$('cm-limit').value=c.usage_limit??'';$('cm-start').value=c.starts_on;$('cm-end').value=c.ends_on;
  $('cm-enabled').checked=c.enabled;$('cm-save').textContent='✓  Kampanyayı Güncelle';
