@@ -80,7 +80,7 @@ function adjustStatic(cards,bySlug,byDetails){
   if(!name)continue;
   const p=bySlug.get(name),card=a.closest('.product-card,.product');if(!card)continue;
   const price=card.querySelector('.product-price'),desc=card.querySelector('.desc');
-  if(!p){card.hidden=true;card.style.display='none';continue}
+  if(!p){if(price)price.textContent='Fiyat doğrulanamıyor';notice(card,'off','Güncel ürün bilgisi alınamadı. Ürün ayrıntılarını inceleyebilirsiniz.');continue}
   const h=card.querySelector('h3');if(h)h.textContent=p.title;
   if(price){price.textContent=fmt(p.price_per_sqm)+' TL ';let small=document.createElement('small');small.textContent='/ m²';price.append(small)}
   if(desc&&/Fiyat yükleniyor/.test(desc.textContent))desc.textContent=desc.textContent.replace('Fiyat yükleniyor…',fmt(p.price_per_sqm)+' TL/m²');
