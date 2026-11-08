@@ -35,9 +35,52 @@ advance.disabled=stages.indexOf(step(o))===6;advance.onclick=()=>{const ix=stage
 bar.append(print,save,advance);root.append(bar,h('p','od-message','Müşteri bu aşamayı yalnızca kendi üyelik hesabında görebilir.'))
 }
 async function update(o,stage,due,note,tracking){const actions=$('od-detail').querySelectorAll('button');actions.forEach(b=>b.disabled=true);const {data,error}=await sb.rpc('shop_set_order_progress',{p_order_id:o.id,p_stage:stage,p_due_date:due||null,p_workshop_note:note,p_tracking_no:tracking});if(error){alert('Kaydedilemedi: '+error.message);actions.forEach(b=>b.disabled=false);return}progress=progress.filter(x=>x.order_id!==o.id).concat(data);await load(true)}
-function printOrder(o){const list=own(o),p=prog(o)||{};let root=document.getElementById('od-print-sheet');if(!root){root=h('div','od-print');root.id='od-print-sheet';document.body.append(root)}root.replaceChildren(h('h1','','PERDE KONAĞI · ÜRETİM FİŞİ (A5)'),h('div','od-print-line',no(o)+' · '+date(o.created_at)),h('div','od-print-line','Sipariş sahibi (üye ID): '+o.customer_id),h('div','od-print-line','Üretim aşaması: '+labels[stages.indexOf(step(o))]),h('div','od-print-line','Termin: '+(p.due_date||'—')));
-const table=h('table'),thead=h('tr');['Ürün','Ölçü','Adet','Seçenekler'].forEach(x=>thead.append(h('th','',x)));table.append(thead);list.forEach(i=>{const row=h('tr'),op=i.options||{};[i.product_title,i.width_cm+'×'+i.height_cm+' cm',i.quantity,['Kasa '+(op.kasaTip||'—')+' '+(op.kasaRenk||''),'Zincir '+(op.zincir||'—'),'Yön '+(op.yon||'—'),'Boru '+(op.boru||'—'),'Ayak '+(op.ayak||'—')].join(' / ')].forEach(x=>row.append(h('td','',x)));table.append(row)});root.append(table,h('div','od-print-line','Müşteri notu: '+(o.customer_note||'—')),h('div','od-print-line','Atölye notu: '+(p.workshop_note||'—')),h('div','od-print-line','Kargo takip no: '+(p.tracking_no||'—')));
-const checks=h('div','od-print-line','☐ Kesim     ☐ Dikim/Montaj     ☐ Kalite Kontrol     ☐ Paketleme');root.append(checks,h('div','od-print-line','Hazırlayan: __________________   Kontrol: __________________'));window.print()}
+function printOrder(o){
+ const list=own(o),p=prog(o)||{};
+ let root=document.getElementById('od-print-sheet');
+ if(!root){root=h('div','od-print');root.id='od-print-sheet';document.body.append(root)}
+ root.replaceChildren();
+ const line=(label,value,cls='')=>{const row=h('div','od-print-field '+cls);row.append(h('span','od-print-label',label),h('strong','od-print-value',value==null||value===''?'—':String(value)));return row};
+ const section=(title)=>{const wrap=h('section','od-print-section');wrap.append(h('h3','',title));return wrap};
+ const title=(caption,sub)=>{const head=h('header','od-print-header');const brand=h('div','od-print-brand','PERDE KONAĞI');const t=h('div','od-print-document');t.append(h('strong','',caption),h('small','',sub));head.append(brand,t);return head};
+ const opts=i=>{const op=i.options||{};return [
+  'Kasa: '+(op.kasaTip||'—')+(op.kasaRenk?' / '+op.kasaRenk:''),
+  'Zincir: '+(op.zincir||'—'),'Yön: '+(op.yon||'—'),
+  'Boru: '+(op.boru||'—'),'Ayak: '+(op.ayak||'—')].join(' · ')};
+ const table=(customer)=>{const t=h('table','od-print-table');const thead=h('thead'),tr=h('tr');['Ürün','Ölçüler (En × Boy)','Adet',customer?'Ürün Seçenekleri':'Mekanizma / Seçenekler'].forEach(x=>tr.append(h('th','',x)));thead.append(tr);t.append(thead);const tbody=h('tbody');
+  list.forEach(i=>{const row=h('tr');[i.product_title,i.width_cm+' × '+i.height_cm+' cm',i.quantity,opts(i)].forEach(x=>row.append(h('td','',x)));tbody.append(row)});
+  t.append(tbody);return t};
+ const stageLabel=labels[stages.indexOf(step(o))]||'Sipariş Alındı';
+ // Page 1: internal workshop production sheet
+ const workshop=h('article','od-print-page od-print-workshop');
+ workshop.append(title('ÜRETİM FİŞİ','ATÖLYE KOPYASI · A5 YATAY'));
+ const meta=h('div','od-print-meta');
+ const orderBox=section('SİPARİŞ BİLGİLERİ');orderBox.append(line('Sipariş No',no(o)),line('Tarih',date(o.created_at)),line('Üretim Aşaması',stageLabel));
+ const dueBox=section('ÜRETİM / TERMİN');dueBox.append(line('Termin',p.due_date?date(p.due_date):'—'),line('Sipariş Kalemi',list.length+' çeşit'),line('Toplam Adet',list.reduce((n,i)=>n+Number(i.quantity||0),0)));
+ meta.append(orderBox,dueBox);workshop.append(meta);
+ const products=section('ÜRETİLECEK ÜRÜNLER');products.append(table(false));workshop.append(products);
+ const notes=section('ÜRETİM NOTLARI');notes.append(line('Müşteri Notu',o.customer_note||'—'),line('Atölye Notu',p.workshop_note||'—'));workshop.append(notes);
+ const checks=section('ÜRETİM KONTROL LİSTESİ');const checkrow=h('div','od-print-checks');['Kesim','Dikim / Montaj','Kalite Kontrol','Paketleme'].forEach(label=>{const item=h('span','od-print-check');item.append(h('i',''),document.createTextNode(label));checkrow.append(item)});checks.append(checkrow);workshop.append(checks);
+ const foot=h('div','od-print-signatures');foot.append(line('Hazırlayan','________________________'),line('Kontrol Eden','________________________'));workshop.append(foot);
+ workshop.append(h('div','od-print-footer','1 / 2 · ATÖLYEDE KALACAKTIR'));
+ // Page 2: customer-facing packing information, without workshop internals or account identifiers
+ const customer=h('article','od-print-page od-print-customer');
+ customer.append(title('SİPARİŞ BİLGİ FİŞİ','PAKET İÇERİSİNE KONULACAK · A5 YATAY'));
+ const greeting=h('section','od-print-greeting');greeting.append(h('h2','','Siparişiniz için teşekkür ederiz!'),h('p','','Perde Konağı olarak ürününüzü ölçülerinize özel hazırladık. Ürün bilgilerinizi aşağıda kontrol edebilirsiniz.'));customer.append(greeting);
+ const cmeta=h('div','od-print-meta');
+ const corder=section('SİPARİŞ BİLGİLERİ');corder.append(line('Sipariş No',no(o)),line('Sipariş Tarihi',date(o.created_at)));
+ const cinfo=section('ÜRÜN BİLGİSİ');cinfo.append(line('Ürün Çeşidi',list.length),line('Toplam Ürün Adedi',list.reduce((n,i)=>n+Number(i.quantity||0),0)));
+ cmeta.append(corder,cinfo);customer.append(cmeta);
+ const ordered=section('PAKET İÇERİĞİ VE ÖLÇÜLER');ordered.append(table(true));customer.append(ordered);
+ const guidance=section('ÜRÜNÜNÜZÜ TESLİM ALDIĞINIZDA');
+ const instructions=h('div','od-print-instructions');
+ ['Paketinizi ve ürününüzü teslim sırasında kontrol ediniz.','Montajdan önce ürün ölçülerini ve mekanizma seçeneklerini kontrol ediniz.','Destek için perdekonagi.com üzerinden bizimle iletişime geçebilirsiniz.'].forEach(x=>instructions.append(h('p','',x)));
+ guidance.append(instructions);customer.append(guidance);
+ customer.append(h('p','od-print-thanks','Güzel günlerde kullanmanız dileğiyle.  ·  PERDE KONAĞI'));
+ customer.append(h('div','od-print-footer','2 / 2 · MÜŞTERİ BİLGİLENDİRME FİŞİ'));
+ root.append(workshop,customer);
+ window.print();
+}
 function render(){summary();const list=$('od-list');if(list){list.replaceChildren();let data=filtered();if(!data.length)list.append(h('div','od-empty',orders.length?'Filtreye uygun sipariş yok.':'Henüz gerçek sipariş yok. Ödeme ve sipariş oluşturma altyapısı açıldığında burada görüntülenecek.'));else data.forEach(o=>list.append(orderCard(o)))}detail();const board=$('od-board');if(board){board.replaceChildren();[['Hazırlanıyor',['received','measure_approved','preparing']],['Üretimde',['production']],['Kargoya Hazır',['ready']],['Tamamlandı',['shipped','delivered']]].forEach(([name,s])=>{const col=h('div','od-column');const pool=orders.filter(o=>allowed(o)&&s.includes(step(o)));col.append(h('h3','',name+' · '+pool.length));pool.forEach(o=>col.append(orderCard(o)));board.append(col)})}}
 async function load(silent=false){if(loading||!sb)return;loading=true;try{const {data:{user}}=await sb.auth.getUser();if(!user)return;const access=await sb.from('admin_access').select('role').eq('user_id',user.id).maybeSingle();if(!['owner','admin','staff'].includes(access.data?.role))return;
 const res=await Promise.all([sb.from('shop_orders').select('id,customer_id,status,total_amount,customer_note,created_at').order('created_at',{ascending:false}).limit(500),sb.from('shop_order_items').select('order_id,product_title,width_cm,height_cm,quantity,options,unit_price,line_total').limit(1000),sb.from('shop_order_progress').select('*').limit(500)]);
