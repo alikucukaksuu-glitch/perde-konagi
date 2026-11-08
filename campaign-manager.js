@@ -18,7 +18,7 @@ function feedback(msg,isError=false){$('cm-feedback').textContent=msg;$('cm-feed
 function defaultDates(){const date=new Date();const days=new Date(date.getTime()+30*86400000);const format=d=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);$('cm-start').value=format(date);$('cm-end').value=format(days)}
 function resetForm(mode='indirim'){
  editing=null;$('cm-form').reset();
- $('cm-type').value=mode;$('cm-discount-type').value=mode==='kargo_bedava'?'none':'percent';
+ $('cm-type').value=mode;$('cm-discount-type').value=(mode==='kargo_bedava'||mode==='firsat')?'none':'percent';
  $('cm-value').value=mode==='kargo_bedava'?0:20;
  $('cm-name').value='';$('cm-coupon-code').value='';$('cm-limit').value='';
  $('cm-enabled').checked=true;
