@@ -39,6 +39,7 @@ const selected=reviews.filter(r=>r.status===filter);fill(el('review-list'),selec
 document.querySelectorAll('[data-review-filter]').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.reviewFilter;document.querySelectorAll('[data-review-filter]').forEach(x=>x.classList.toggle('active',x===b));renderReviews()}));
 let editingProductSlug=null;
 function openProductEditor(p){
+ if(window.pkStudio?.open){window.pkStudio.open(p.slug);return}
  if(!['owner','admin'].includes(role)){message('Ürün düzenleme yetkiniz bulunmuyor.');return}
  editingProductSlug=p.slug;
  setText('product-edit-slug','Ürün kodu: '+p.slug);
