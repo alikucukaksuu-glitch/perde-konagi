@@ -31,6 +31,7 @@ function configureForm(){
  const coupon=type==='kupon';$('cm-coupon-wrap').hidden=!coupon;$('cm-limit-wrap').hidden=!coupon;
  $('cm-coupon-code').required=coupon;
  if(type==='kargo_bedava'&&discountType!=='none'){$('cm-discount-type').value='none'}
+ if(type==='kargo_bedava')$('cm-enabled').checked=false;
  if(type==='kupon'&&$('cm-discount-type').value==='none')$('cm-discount-type').value='percent';
  const kind=$('cm-discount-type').value,disabled=kind==='none';
  $('cm-value-label').hidden=disabled;$('cm-value').required=!disabled;
@@ -146,6 +147,7 @@ function values(){
  if(discount_type==='percent'&&(discount_value<=0||discount_value>90))throw Error('Yüzde indirim 0 ile 90 arasında olmalıdır');
  if(discount_type!=='none'&&discount_value<=0)throw Error('İndirim değeri sıfır olamaz');
  if(campaign_type==='kargo_bedava'&&discount_type!=='none')throw Error('Kargo etiketi fiyatı değiştiremez');
+ if(campaign_type==='kargo_bedava'&&enabled)throw Error('Gerçek kargo sistemine geçilmeden Kargo Bedava etiketi aktifleştirilemez.');
  if(campaign_type==='kupon'&&!/^[A-Z0-9_-]{4,24}$/.test(coupon_code))throw Error('Kupon kodu 4–24 harf/rakam olmalıdır');
  if(usage_limit!=null&&(!Number.isInteger(usage_limit)||usage_limit<1))throw Error('Kullanım limiti pozitif tam sayı olmalıdır');
  return{product_slug,campaign_name,campaign_type,badge_text,discount_type,discount_value,coupon_code,starts_on,ends_on,enabled,usage_limit}
