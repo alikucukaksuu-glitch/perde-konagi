@@ -65,7 +65,7 @@ async function verify(){
    let selected=normal;
    if(couponCode){
     const {data:withCode,error:couponError}=await sb.rpc('shop_quote_with_promo',{...line.options,p_coupon_code:couponCode});
-    if(!couponError&&withCode){selected=withCode;validCouponUses++}
+    if(!couponError&&withCode){selected=withCode;if(withCode.coupon_applied===couponCode)validCouponUses++}
    }
    next.push({...line,quote:selected,quantity:Math.min(20,Math.max(1,Math.floor(line.quantity)))});
   }catch{rejected++}
