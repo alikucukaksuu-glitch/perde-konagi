@@ -57,11 +57,28 @@ function renderVariantChoices(d){
  }
  breakdown.after(wrapper);selected();
 }
-function showProduct(p,d){
+function showProduct(p,d,campaigns=[]){
  const value=Number(p.price_per_sqm);
  if(!Number.isFinite(value)||value<=0){blockPurchase('Ürünün fiyat bilgisi doğrulanamadı.');return}
  const unit=document.querySelector('.customizer .unit');
- if(unit){unit.replaceChildren(document.createTextNode(fmt(value)+' TL '));const small=document.createElement('small');small.textContent='/ m²';unit.append(small)}
+ const applicable=campaigns.filter(x=>x.product_slug===p.slug);
+ const promoDiscount=c=>{
+  const val=Number(c.discount_value)||0;
+  return c.discount_type==='percent'?Math.round(value*val)/100:
+   c.discount_type==='fixed'?Math.min(value,val):
+   c.discount_type==='new_price'?Math.max(0,value-val):0
+ };
+ const maxDiscount=Math.max(0,...applicable.map(promoDiscount));
+ window.pkHasActiveCampaign=maxDiscount>0;
+ if(unit){
+  unit.replaceChildren();
+  if(maxDiscount>0){
+   const previous=document.createElement('s');previous.textContent=fmt(value)+' TL';previous.className='pk-campaign-original';
+   const current=document.createElement('strong');current.textContent=fmt(value-maxDiscount)+' TL';
+   const small=document.createElement('small');small.textContent=' / m²';
+   unit.append(previous,document.createTextNode(' '),current,small);
+  }else{unit.append(document.createTextNode(fmt(value)+' TL '));const small=document.createElement('small');small.textContent='/ m²';unit.append(small)}
+ }
  const h=document.querySelector('h1');if(h)h.textContent=p.title;
  document.title=(d?.seo_title||p.title)+' | Perde Konağı';
  if(d?.seo_description){let meta=document.querySelector('meta[name="description"]');if(!meta){meta=document.createElement('meta');meta.name='description';document.head.append(meta)}meta.content=d.seo_description}
@@ -90,6 +107,11 @@ function showProduct(p,d){
  window.pkCatalogPricePerSqm=value;window.pkCatalogActive=p.is_active===true;window.pkCatalogValidated=p.is_active===true;
  if(!p.is_active||d?.stock_qty===0||d?.display_status==='draft'){blockPurchase(statusMsg);return}
  if(typeof window.calc==='function')window.calc();
+ if(window.pkHasActiveCampaign){
+  const button=document.getElementById('add-cart'),box=document.getElementById('breakdown');
+  if(button){button.disabled=true;button.textContent='İndirimli fiyat doğrulanıyor…'}
+  if(box)box.hidden=true;
+ }
 }
 function adjustStatic(cards,bySlug,byDetails){
  for(const a of cards){
@@ -137,8 +159,8 @@ function updateListings(products,details){
  if(slug==='zebra-perde'||slug==='stor-perde'){const grid=document.querySelector('.cards');if(grid)addProducts(products,byDetails,grid,slug==='zebra-perde'?'zebra':'mat-stor')}
  window.pkCatalogSearchProducts=products.map(p=>[p.title,staticSlugs.has(p.slug)?p.slug+'.html':'urun.html?slug='+encodeURIComponent(p.slug)]);
 }
-Promise.all([request('shop_products?select=slug,title,collection,price_per_sqm,is_active'),request('shop_product_details?select=slug,short_description,description_html,image_paths,variant_options,measurement_options,seo_title,seo_description,display_status,stock_qty')]).then(([products,details])=>{
- if(productPage){const p=products.find(p=>p.slug===slug);if(p)showProduct(p,details.find(d=>d.slug===slug));else blockPurchase('Bu ürün şu anda satın alınamaz.')}
+Promise.all([request('shop_products?select=slug,title,collection,price_per_sqm,is_active'),request('shop_product_details?select=slug,short_description,description_html,image_paths,variant_options,measurement_options,seo_title,seo_description,display_status,stock_qty'),request('shop_campaigns?select=product_slug,discount_type,discount_value').catch(()=>[])]).then(([products,details,campaigns])=>{
+ if(productPage){const p=products.find(p=>p.slug===slug);if(p)showProduct(p,details.find(d=>d.slug===slug),campaigns);else blockPurchase('Bu ürün şu anda satın alınamaz.')}
  else updateListings(products,details);
  window.dispatchEvent(new Event('pk-catalog-ready'));
 }).catch(()=>{
