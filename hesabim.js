@@ -60,7 +60,11 @@ function openAddress(a){openModal(a?'Adresi Düzenle':'Yeni Adres Ekle','address
  const check=make('label','','Varsayılan adres olarak kullan'),input=make('input');input.type='checkbox';input.name='is_default';input.checked=a?.is_default||false;input.style.width='auto';check.prepend(input);$('ac-modal-fields').append(check)}
 async function saveModal(e){e.preventDefault();if(!user)return;const form=e.currentTarget,button=form.querySelector('[type=submit]');button.disabled=true;$('ac-modal-message').textContent='Kaydediliyor…';try{
  const fd=new FormData(form);let error=null;
- if(mode==='profile'){
+ if(mode==='password_reset'){
+  const newPassword=String(fd.get('new_password')||'');
+  if(newPassword.length<8)throw Error('Şifreniz en az 8 karakter olmalıdır.');
+  const r=await sb.auth.updateUser({password:newPassword});error=r.error;
+ }else if(mode==='profile'){
  const name=String(fd.get('full_name')||'').trim(),phone=String(fd.get('phone_number')||'').trim();if(name.length<2||name.length>120)throw Error('Ad soyad 2–120 karakter olmalıdır.');if(phone&&!/^[+0-9 ()-]{7,25}$/.test(phone))throw Error('Telefon numarası geçerli değil.');
  const res=await sb.auth.updateUser({data:{full_name:name,phone_number:phone}});error=res.error;if(!error)user=res.data.user;
  }else{
@@ -73,7 +77,48 @@ async function saveModal(e){e.preventDefault();if(!user)return;const form=e.curr
  $('ac-modal').hidden=true;accountInfo();await loadData();
  }catch(e){$('ac-modal-message').textContent='Kaydedilemedi: '+e.message}finally{button.disabled=false}}
 function init(){if(!sb){$('login-message').textContent='Giriş servisine bağlanılamadı.';return}
- $('login-form').onsubmit=async e=>{e.preventDefault();const button=e.currentTarget.querySelector('button');button.disabled=true;$('login-message').textContent='Giriş bağlantısı gönderiliyor…';try{const email=$('email').value.trim();const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:true}});if(error)throw error;$('login-message').textContent='Giriş bağlantısı e-postanıza gönderildi.'}catch(e){$('login-message').textContent='Bağlantı gönderilemedi: '+e.message}finally{button.disabled=false}};
+ const authMessage=(id,message)=>{$(id).textContent=message};
+ const cleanError=error=>{const x=String(error?.message||'');if(/invalid login credentials/i.test(x))return 'E-posta veya şifre hatalı.';if(/email not confirmed/i.test(x))return 'E-posta doğrulaması hâlâ açık. Yönetici tarafından Supabase e-posta onayı kapatılmalıdır.';if(/already registered|user already registered/i.test(x))return 'Bu e-posta ile üyelik mevcut. Giriş yapın veya şifrenizi yenileyin.';if(/password/i.test(x)&&/weak|short|least/i.test(x))return 'Daha güçlü, en az 8 karakterli bir şifre seçiniz.';return x||'İşlem gerçekleştirilemedi.'};
+ $('login-form').onsubmit=async e=>{
+  e.preventDefault();const button=e.currentTarget.querySelector('button[type=submit]');button.disabled=true;authMessage('login-message','Giriş yapılıyor…');
+  try{
+   const email=$('email').value.trim().toLowerCase(),password=$('login-password').value;
+   const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;
+   if(!data?.session)throw Error('Oturum açılamadı. Lütfen tekrar deneyin.');
+   authMessage('login-message','Giriş başarılı. Hesabınız açılıyor…');await refreshAuth();
+  }catch(err){authMessage('login-message',cleanError(err))}finally{button.disabled=false}
+ };
+ $('ac-signup-form').onsubmit=async e=>{
+  e.preventDefault();const button=e.currentTarget.querySelector('button[type=submit]');button.disabled=true;authMessage('ac-signup-message','Üyeliğiniz oluşturuluyor…');
+  try{
+   const name=$('ac-signup-name').value.trim(),email=$('ac-signup-email').value.trim().toLowerCase(),phone=$('ac-signup-phone').value.trim(),password=$('ac-signup-password').value;
+   if(name.length<2||name.length>120)throw Error('Ad soyad 2–120 karakter olmalıdır.');
+   if(!/^[+0-9 ()-]{7,25}$/.test(phone))throw Error('Geçerli bir telefon numarası giriniz.');
+   if(password.length<8)throw Error('Şifreniz en az 8 karakter olmalıdır.');
+   if(!$('ac-terms').checked)throw Error('Üyelik koşullarını kabul etmeniz gerekiyor.');
+   const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name:name,phone_number:phone}}});if(error)throw error;
+   if(data?.session?.user){
+    authMessage('ac-signup-message','Üyeliğiniz oluşturuldu. Hesabınız açılıyor…');
+    await refreshAuth();
+   }else{
+    authMessage('ac-signup-message','Hesabınız henüz oturum açamadı. Supabase e-posta doğrulaması açık olabilir; anında üyelik için bu ayarın kapatılması gerekir.');
+   }
+  }catch(err){authMessage('ac-signup-message',cleanError(err))}finally{button.disabled=false}
+ };
+ $('ac-magic-form').onsubmit=async e=>{
+  e.preventDefault();const button=e.currentTarget.querySelector('button[type=submit]');button.disabled=true;
+  try{
+   const email=($('ac-magic-email').value||$('email').value).trim().toLowerCase();
+   if(!email)throw Error('Lütfen önce e-posta adresinizi girin.');
+   const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});
+   if(error)throw error;authMessage('login-message','Giriş bağlantısı e-posta adresinize gönderildi.');
+  }catch(err){authMessage('login-message',cleanError(err))}finally{button.disabled=false}
+ };
+ $('ac-forgot').onclick=async()=>{
+  const email=($('email').value||'').trim().toLowerCase();if(!email){authMessage('login-message','Şifre yenilemek için e-posta adresinizi giriniz.');return}
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  authMessage('login-message',error?cleanError(error):'Bu e-posta için hesap varsa şifre yenileme bağlantısı gönderilir.');
+ };
  $('logout').onclick=async()=>{await sb.auth.signOut();user=null;orders=[];items=[];progress=[];showLogin()};
  $('refresh').onclick=()=>loadData();$('ac-edit-profile').onclick=$('ac-edit-profile-side').onclick=openProfile;$('ac-add-address').onclick=()=>openAddress(null);
  $('ac-all-favorites').onclick=()=>{const el=$('ac-favorites');el.scrollIntoView({behavior:'smooth',block:'center'})};
@@ -81,8 +126,12 @@ function init(){if(!sb){$('login-message').textContent='Giriş servisine bağlan
  $('ac-modal-form').onsubmit=saveModal;
  $('ac-modal').onclick=e=>{if(e.target===$('ac-modal'))$('ac-modal').hidden=true};
  document.addEventListener('keydown',e=>{if(e.key==='Escape')$('ac-modal').hidden=true});
- sb.auth.onAuthStateChange((event)=>{if(['SIGNED_IN','SIGNED_OUT','USER_UPDATED','INITIAL_SESSION'].includes(event))setTimeout(refreshAuth,25)});
+ sb.auth.onAuthStateChange((event)=>{if(['SIGNED_IN','SIGNED_OUT','USER_UPDATED','INITIAL_SESSION','PASSWORD_RECOVERY'].includes(event))setTimeout(()=>{refreshAuth();if(event==='PASSWORD_RECOVERY')openPasswordReset()},25)});
  refreshAuth();
+}
+function openPasswordReset(){
+ openModal('Yeni Şifre Belirle','password_reset');
+ field('new_password','Yeni şifre (en az 8 karakter)','password','');
 }
 async function refreshAuth(){if(!sb)return;const {data,error}=await sb.auth.getUser();if(error){user=null;showLogin();return}const previous=user?.id;user=data.user||null;showLogin();if(user){accountInfo();if(previous!==user.id||!orders.length)loadData()}}
 init();
