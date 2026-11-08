@@ -3,7 +3,7 @@
 <meta name="robots" content="noindex,nofollow"><meta name="description" content="Perde Konağı yetkili yönetim ekranı">
 <title>Yönetim Paneli | Perde Konağı</title>
 <link rel="stylesheet" href="admin.css">
-<link rel="stylesheet" href="product-studio.css?v=20261108-markdown-fix-1"></head>
+<link rel="stylesheet" href="product-studio.css?v=20261108-markdown-fix-1"><link rel="stylesheet" href="campaign-manager.css?v=1"></head>
 <body>
 <section class="login-screen" id="login-screen">
 <div class="login-card">
@@ -162,9 +162,52 @@
 <section class="view" id="view-customers" hidden><div class="section-heading"><h2>Müşteriler</h2><p>Gerçek siparişlerden oluşan müşteri özeti.</p></div><div id="customer-list" class="panel section-pad"></div></section>
 <section class="view" id="view-reviews" hidden><div class="section-heading"><h2>Yorumlar</h2><p>Gelen değerlendirmeleri inceleyip onaylayın veya reddedin.</p></div><div class="panel section-pad"><div class="review-tabs"><button class="tab active" type="button" data-review-filter="pending">Onay Bekleyenler</button><button class="tab" type="button" data-review-filter="approved">Onaylananlar</button><button class="tab" type="button" data-review-filter="rejected">Reddedilenler</button></div><div id="review-list"></div></div></section>
 <section class="view" id="view-production" hidden><div class="section-heading"><h2>Üretim Takibi</h2><p>Ödeme onayı almış siparişlerin durumları.</p></div><div class="panel section-pad" id="production-detail"></div></section>
-<section class="view" id="view-coupons" hidden><div class="section-heading"><h2>Kuponlar</h2><p>Kupon oluşturma özelliği satış altyapısının sonraki aşamasında eklenecek.</p></div><div class="panel section-pad empty-text">Henüz kupon oluşturma sistemi aktif değil.</div></section>
+<section class="view" id="view-coupons" hidden>
+<div class="cm-intro"><p>Ürün bazlı kampanyaları, indirim etiketlerini ve kupon kodlarını yönetin. Ürün kartlarında gösterilecek fırsat etiketlerini tanımlayın.</p></div>
+<div class="cm-stats">
+<div class="cm-stat"><span class="cm-stat-icon">⚑</span><div><b>Aktif Kampanya</b><strong id="cm-stat-active">0</strong><small>Şu an yayında olan kampanya sayısı</small></div></div>
+<div class="cm-stat"><span class="cm-stat-icon">▦</span><div><b>Planlanan</b><strong id="cm-stat-scheduled">0</strong><small>Yakında başlayacak kampanyalar</small></div></div>
+<div class="cm-stat"><span class="cm-stat-icon">▱</span><div><b>Etiketli Ürün</b><strong id="cm-stat-products">0</strong><small>Etkin kampanya veya etiketi bulunan ürün</small></div></div>
+<div class="cm-stat"><span class="cm-stat-icon">♧</span><div><b>Toplam Kullanım</b><strong id="cm-stat-usage">0</strong><small>Ödeme tamamlanan kupon kullanımları</small></div></div>
+</div>
+<div class="cm-actions">
+<button class="cm-primary" id="cm-create" type="button">＋ &nbsp;Yeni Kampanya Oluştur</button>
+<button class="cm-outline" id="cm-create-label" type="button">◇ &nbsp;Etiket Tanımla</button>
+<button class="cm-outline" id="cm-create-coupon" type="button">♧ &nbsp;Kupon Kodu Oluştur</button>
+</div>
+<div class="cm-columns">
+<div class="cm-main">
+<div class="cm-box"><div class="cm-heading"><div><h2>⌕ &nbsp;Ürün Bazlı Fırsatlar</h2><p>Ürünlere özel kampanya ve etiket tanımlarını görüntüleyin, düzenleyin veya yeni kampanya ekleyin.</p></div></div>
+<div class="cm-filters"><input id="cm-search" placeholder="Ürün adı veya kampanya ara..." type="search" aria-label="Kampanyalarda ara"><select id="cm-type-filter" aria-label="Kampanya türü"><option value="">Tüm Kampanya Türleri</option><option value="indirim">İndirim</option><option value="avantaj">Avantaj</option><option value="firsat">Fırsat</option><option value="yeni_fiyat">Yeni Fiyat</option><option value="kargo_bedava">Kargo Bedava</option><option value="kupon">Kupon Kodu</option></select><select id="cm-status-filter" aria-label="Durum"><option value="">Tüm Durumlar</option><option value="active">Aktif</option><option value="scheduled">Planlanan</option><option value="paused">Durdurulan</option><option value="expired">Süresi Dolan</option></select></div>
+<div class="cm-table-scroll"><table class="cm-table"><thead><tr><th>Ürün</th><th>Kampanya Türü</th><th>Uygulanan Etiket</th><th>Tarih Aralığı</th><th>Durum</th><th>İşlemler</th></tr></thead><tbody id="cm-rows"><tr><td colspan="6" class="cm-empty">Kampanyalar yükleniyor...</td></tr></tbody></table></div>
+<div class="cm-table-foot"><span id="cm-count">0 kayıt</span><span>Perde Konağı Kampanya Yönetimi</span></div>
+</div>
+<div class="cm-box cm-preview-box"><div class="cm-heading"><div><h2>▱ &nbsp;Aktif Etiketler Önizleme</h2><p>Ürün kartlarında kampanya etiketlerinin nasıl görüneceğini inceleyin.</p></div><a class="cm-outline cm-preview-link" href="index.html" target="_blank" rel="noopener">Mağaza Önizlemesi ↗</a></div><div id="cm-preview-grid" class="cm-preview-grid"></div></div>
+</div>
+<div class="cm-side">
+<div class="cm-box"><div class="cm-heading"><div><h2>⚙ &nbsp;Etiket & Kampanya Ayarları</h2><p>Seçili ürüne kampanya ve etiket tanımlayın.</p></div></div>
+<form id="cm-form" class="cm-form">
+<label>Ürün Seç <em>*</em><select id="cm-product" required><option value="">Ürün seçiniz...</option></select></label>
+<label>Kampanya Adı <em>*</em><input id="cm-name" required maxlength="120" placeholder="Örn. Kasım Zebra Fırsatı"></label>
+<label>Etiket Tipi <em>*</em><select id="cm-type"><option value="indirim">İndirim</option><option value="avantaj">Avantaj</option><option value="firsat">Fırsat</option><option value="yeni_fiyat">Yeni Fiyat</option><option value="kargo_bedava">Kargo Bedava</option><option value="kupon">Kupon Kodu</option></select></label>
+<label>Etiket Yazısı <em>*</em><input id="cm-badge" maxlength="32" required value="İndirim" placeholder="Örn. %20 İndirim"></label>
+<label>İndirim Türü <em>*</em><select id="cm-discount-type"><option value="percent">Yüzde İndirimi</option><option value="fixed">Sabit TL İndirimi</option><option value="new_price">Yeni m² Fiyatı</option><option value="none">Yalnızca Etiket</option></select></label>
+<label id="cm-value-label">İndirim Oranı <em>*</em><div class="cm-money-input"><span id="cm-value-symbol">%</span><input id="cm-value" type="number" step="0.01" min="0" max="90" required value="20"></div></label>
+<label id="cm-coupon-wrap" hidden>Kupon Kodu <em>*</em><input id="cm-coupon-code" maxlength="24" placeholder="Örn. KASIM20" autocapitalize="characters" autocomplete="off"></label>
+<div class="cm-two"><label>Başlangıç Tarihi <em>*</em><input type="date" id="cm-start" required></label><label>Bitiş Tarihi <em>*</em><input type="date" id="cm-end" required></label></div>
+<label>Hedef Koleksiyon<select id="cm-collection"><option value="">Tüm Koleksiyonlar</option><option value="zebra">Zebra Perde</option><option value="mat-stor">Stor Perde</option></select></label>
+<label id="cm-limit-wrap" hidden>Kullanım Limiti (Boş = Sınırsız)<input id="cm-limit" type="number" min="1" step="1" placeholder="Sınırsız"></label>
+<label class="cm-switch"><input id="cm-enabled" type="checkbox" checked><span>Kampanya Aktif <small>Başlangıç ve bitiş tarihleri içinde yayınlanır.</small></span></label>
+<div class="cm-divider"></div><h3>◉ &nbsp;Görünüm Önizleme</h3><p class="cm-help">Ürün kartında kampanyanın nasıl görüneceği.</p>
+<div class="cm-item-preview"><div class="cm-photo"><img id="cm-preview-image" src="perde-konagi-hero-banner.jpg" alt="Ürün önizlemesi"><span id="cm-preview-badge">İndirim</span></div><div class="cm-item-details"><h4 id="cm-preview-name">Bir ürün seçin</h4><s id="cm-preview-old">—</s><strong id="cm-preview-new">—</strong><small id="cm-preview-description">%20 indirim</small></div></div>
+<p id="cm-feedback" class="cm-feedback" role="status" aria-live="polite"></p>
+<div class="cm-save-actions"><button type="submit" class="cm-primary" id="cm-save">✓ &nbsp;Kampanyayı Kaydet</button><button type="button" class="cm-outline" id="cm-cancel">İptal</button></div>
+<div class="cm-note">Not: İndirim ürünün perde bedeline uygulanır; kasa ve mekanizma seçenekleri ayrıca hesaplanır. Kupon kullanım sayısı ancak gerçek ödeme tamamlandığında artar. Kargo bedava etiketi, kargo ücretlendirmesi bağlanana kadar bilgilendirme amaçlıdır.</div>
+</form></div></div>
+</div>
+</section>
 <section class="view" id="view-reports" hidden><div class="section-heading"><h2>Raporlar</h2><p>Gerçek satışlar ve ürünlerin performansı.</p></div><div class="stats compact" id="report-stats"></div><div class="panel section-pad"><h2>Son 30 Gün Satış Trendi</h2><div id="reports-chart" class="chart-area"></div></div></section>
 <section class="view" id="view-settings" hidden><div class="section-heading"><h2>Ayarlar</h2><p>Yönetici oturumu ve mağaza yapılandırması.</p></div><div class="panel section-pad"><h3>Yetkili yönetici</h3><p id="admin-email"></p><p>Ödeme entegrasyonu henüz aktif değildir. Yönetici erişimleri Supabase tarafından kontrol edilir.</p><button id="settings-signout" class="quick-primary" type="button">Oturumu Kapat</button></div></section>
 </main></div></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="admin.js?v=product-studio-20261108-v2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=20261108-markdown-fix-1"></script></body></html>
+<script defer src="admin.js?v=product-studio-20261108-v2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=20261108-markdown-fix-1"></script><script defer src="campaign-manager.js?v=1"></script></body></html>
