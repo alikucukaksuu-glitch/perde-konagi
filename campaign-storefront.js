@@ -11,13 +11,40 @@ async function fetchCampaigns(){
  const r=await fetch(base+'/rest/v1/shop_campaigns?select=product_slug,campaign_type,badge_text,discount_type,discount_value,starts_on,ends_on,enabled,coupon_code',{headers:{apikey:key,Accept:'application/json'},cache:'no-store'});
  if(!r.ok)throw new Error('Kampanyalar yüklenemedi');return r.json();
 }
-function addBadge(card,c){
- if(!card||card.querySelector('.pk-campaign-tag'))return;
+function renderBadges(card,entries){
+ if(!card||!entries.length)return;
  const anchor=card.querySelector('.product-image')||card.querySelector('img')?.parentElement;
  if(!anchor)return;
  anchor.classList.add('pk-campaign-anchor');
- const tag=document.createElement('span');tag.className='pk-campaign-tag '+c.campaign_type;tag.textContent=c.badge_text;
- anchor.append(tag);
+ let holder=anchor.querySelector('.pk-campaign-tags');
+ if(!holder){holder=document.createElement('div');holder.className='pk-campaign-tags';anchor.append(holder)}
+ holder.replaceChildren();
+ const seen=new Set();
+ for(const c of entries){
+  const label=String(c.badge_text||'').trim();
+  const key=c.campaign_type+'|'+label;
+  if(!label||seen.has(key))continue;
+  seen.add(key);
+  const tag=document.createElement('span');tag.className='pk-campaign-tag '+c.campaign_type;tag.textContent=label;
+  holder.append(tag);
+ }
+}
+function renderProductBadges(title,entries){
+ let holder=document.querySelector('.pk-product-campaigns');
+ if(!holder){holder=document.createElement('div');holder.className='pk-product-campaigns';title.after(holder)}
+ holder.replaceChildren();
+ const seen=new Set();
+ for(const c of entries){
+  const label=String(c.badge_text||'').trim(),key=c.campaign_type+'|'+label;
+  if(!label||seen.has(key))continue;
+  seen.add(key);
+  const notice=document.createElement('span');notice.className='pk-product-campaign '+c.campaign_type;
+  notice.textContent='✦ '+label;holder.append(notice);
+ }
+ if(entries.length>1){
+  const note=document.createElement('small');note.className='pk-campaign-rule';
+  note.textContent='Fiyata en avantajlı tek kampanya uygulanır.';holder.append(note);
+ }
 }
 function updateCards(){
  for(const card of document.querySelectorAll('.product-card,.cards .product')){
@@ -32,7 +59,7 @@ function updateCards(){
   const listed=(price?.textContent||'').match(/(\d[\d.,]*)\s*TL/)||(desc?.textContent||'').match(/(\d[\d.,]*)\s*TL\/m²/);
   const current=listed?Number(listed[1].replace(/\./g,'').replace(',','.')):0;
   const c=best(entries,current);
-  if(!c)continue;addBadge(card,c);
+  if(!c)continue;renderBadges(card,entries);
   // Fixed TL discounts apply to the entire configured curtain, not to each square metre.
   if(c.discount_type==='fixed'){card.dataset.pkCampaignApplied='true';continue}
   if(!current)continue;
@@ -89,10 +116,7 @@ function updateProduct(){
  const price=Number(window.pkCatalogPricePerSqm)||0,c=best(list,price);
  if(!c)return;
  const title=document.querySelector('h1');if(!title)return;
- if(!document.querySelector('.pk-product-campaign')){
-  const notice=document.createElement('div');notice.className='pk-product-campaign';notice.textContent='✦ '+c.badge_text;
-  title.after(notice);
- }
+ renderProductBadges(title,list);
  const unit=document.querySelector('.customizer .unit'),off=priceDiscount(c,price);
  if(unit&&off>0&&c.discount_type!=='fixed'){
   const suffix=c.discount_type==='fixed'?' (1 m² örneği)':'';
