@@ -9,3 +9,27 @@ body{background:#fbf7f3}.pp-wrapper{max-width:1580px;padding:20px 28px 55px}.pp-
 
 /* Account-entry affordance for the existing moderated reviews module */
 #pp-bottom .pk-account-link{display:inline-flex;padding:10px 16px;border-radius:8px;background:#7e5438;color:#fff;font-weight:700;font-size:13px;text-decoration:none}#pp-bottom .pk-account-link:hover{background:#593c2b}#pp-bottom .pk-write{background:#fbf7f3;border-radius:12px}#pp-bottom .pk-reviews{border-color:#e7d7c7}#pp-bottom .pk-reviews h2{color:#3d2a1f}
+
+/* Zebra koleksiyonuyla eşleşen Plise ürün kartları; ürün detay sayfası korunur */
+html[data-plise-view="collection"] .pp-product-only{display:none!important}
+html[data-plise-view="product"] #pp-list-box{display:none!important}
+.pp-collection{max-width:1160px;margin:16px auto 70px;padding:0 6px}
+.pp-collection-kicker{color:#a47e48;letter-spacing:2px;font-size:11px;font-weight:700;margin:0 0 7px}
+.pp-collection h1{font:38px/1.15 Georgia,serif;color:#2d2b27;margin:0 0 14px}
+.pp-collection-desc{font-size:14px;color:#686d66;margin:0 0 17px;line-height:1.6}
+.pp-collection-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.pp-collection-card{display:block;background:#fff;border:1px solid #e7e4de;border-radius:9px;overflow:hidden;transition:transform .15s,box-shadow .15s}
+.pp-collection-card:hover{box-shadow:0 9px 25px #55402a1b;transform:translateY(-2px)}
+.pp-collection-card>img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;background:#f4eee8}
+.pp-card-body{padding:17px}
+.pp-card-eyebrow{color:#a47e48;font-weight:700;letter-spacing:2px;font-size:11px}
+.pp-card-body h3{font:22px Georgia,serif;margin:5px 0 11px;color:#25231e}
+.pp-card-body p{color:#686d66;line-height:1.7;font-size:14px;margin:0 0 11px}
+.pp-card-body strong{color:#a9824b;font-weight:700;font-size:14px}
+.pp-collection-message{font-size:13px;color:#847768}
+.pp-collection-message:empty{display:none}
+html[data-plise-view="collection"] body{background:#faf9f7}
+html[data-plise-view="collection"] .pp-wrapper{max-width:1160px;margin:auto;padding-top:25px}
+html[data-plise-view="collection"] .pp-crumb{margin:0 0 27px;color:#797a72}
+@media(max-width:750px){.pp-collection-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.pp-collection h1{font-size:31px}.pp-card-body{padding:13px}.pp-card-body h3{font-size:19px}}
+@media(max-width:460px){.pp-collection-cards{grid-template-columns:1fr}.pp-collection-card>img{aspect-ratio:4/4.4}}
