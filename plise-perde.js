@@ -37,9 +37,25 @@ async function init(){
   const {data:rows,error:listError}=await sb.from('shop_products').select('slug,title,price_per_sqm').eq('collection','plise').eq('visibility','published').eq('is_active',true).order('title');
   if(listError)throw listError;products=rows||[];
   const listing=$('pp-product-list');listing.replaceChildren();
-  for(const p of products){const a=document.createElement('a');a.href='plise-perde.html?slug='+encodeURIComponent(p.slug);a.className='pp-product-link';a.textContent=p.title+' · '+money(p.price_per_sqm)+'/m²';if(slug===p.slug)a.classList.add('chosen');listing.append(a)}
-  if(!products.length){$('pp-product-message').textContent='Henüz yayında plise perde ürünü bulunmuyor. Yeni bir ürünü yönetim panelinden ekleyebilirsiniz.';note('Plise modelleri henüz satışa açılmadı.');return}
-  if(!slug){$('pp-product-message').textContent='Özelleştirmek istediğiniz plise modeline tıklayın.';note('Önce yukarıdan bir plise perde modeli seçin.');return}
+  if(!products.length){$('pp-product-message').textContent='Şu anda satışa açık plise perde bulunmuyor.';return}
+  if(!slug){
+   const {data:details,error:detailsError}=await sb.from('shop_product_details').select('slug,image_paths,short_description,display_status').in('slug',products.map(p=>p.slug)).eq('display_status','published');
+   if(detailsError)throw detailsError;
+   const bySlug=new Map((details||[]).map(d=>[d.slug,d]));
+   for(const p of products){
+    const d=bySlug.get(p.slug);if(!d)continue;
+    const a=document.createElement('a');a.href='plise-perde.html?slug='+encodeURIComponent(p.slug);a.className='pp-collection-card';
+    const img=document.createElement('img');img.src=d.image_paths?.[0]?photo(d.image_paths[0]):'plise-product.svg';img.alt=p.title;img.loading='lazy';img.addEventListener('error',()=>{if(!img.dataset.fallback){img.dataset.fallback='1';img.src='plise-product.svg'}});
+    const body=document.createElement('div');body.className='pp-card-body';
+    const eyebrow=document.createElement('div');eyebrow.className='pp-card-eyebrow';eyebrow.textContent='PLİSE PERDE';
+    const title=document.createElement('h3');title.textContent=p.title;
+    const desc=document.createElement('p');desc.textContent=d.short_description||'Özel ölçü plise perde';
+    const action=document.createElement('strong');action.textContent='Ürünü İncele →';
+    body.append(eyebrow,title,desc,action);a.append(img,body);listing.append(a);
+   }
+   $('pp-product-message').textContent=listing.childElementCount?'':'Şu anda listelenecek plise perde bulunmuyor.';
+   return;
+  }
   currentProduct=products.find(p=>p.slug===slug);
   if(currentProduct)$('pp-list-box').hidden=true;
   if(!currentProduct){note('Bu plise ürününe şu anda ulaşılamıyor. Lütfen başka bir model seçin.');return}
