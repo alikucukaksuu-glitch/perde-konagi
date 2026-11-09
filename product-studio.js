@@ -131,7 +131,7 @@ function reset(){
  $('ps-name').readOnly=false;$('ps-category').disabled=false;
  $('ps-mode-banner').textContent='YENİ ÜRÜN OLUŞTURUYORSUNUZ — Bu kayıt diğer ürünleri değiştirmez.';
  $('ps-mode-banner').className='ps-mode-banner new';
- $('ps-copy-new').hidden=true;
+ $('ps-copy-new').hidden=true;$('ps-delete-product').hidden=true;
  setStatus('draft');syncCategory();renderImages();feedback('');
 }
 async function open(slug){
@@ -146,7 +146,7 @@ async function open(slug){
   $('ps-name').readOnly=true;$('ps-category').disabled=true;
   $('ps-mode-banner').textContent='MEVCUT ÜRÜNÜ DÜZENLİYORSUNUZ: '+p.title+' — Ayrı bir ürün oluşturmak için aşağıdaki butonu kullanın.';
   $('ps-mode-banner').className='ps-mode-banner editing';
-  $('ps-copy-new').hidden=false;
+  $('ps-copy-new').hidden=false;$('ps-delete-product').hidden=false;
   $('ps-name').value=p.title;$('ps-price').value=p.price_per_sqm;$('ps-category').value=p.collection;if(p.collection==='plise'){const {data:pc,error:pcError}=await sb.from('plise_product_config').select('*').eq('slug',slug).maybeSingle();if(pcError)feedback('Plise ayarları okunamadı: '+pcError.message);applyPliseConfig(pc||pliseDefaults)}if(p.collection==='ahsap-jaluzi'){const {data:wc,error:wcError}=await sb.from('wood_blind_product_config').select('*').eq('slug',slug).maybeSingle();if(wcError)feedback('Ahşap jaluzi ayarları yüklenemedi: '+wcError.message);applyWoodConfig(wc||woodDefaults)}syncCategory();
   $('ps-short').value=d?.short_description||'';$('ps-desc').innerHTML=window.PKDescriptionFormat.normalize(d?.description_html||'');
   $('ps-seo-title').value=d?.seo_title||'';$('ps-seo-desc').value=d?.seo_description||'';
@@ -174,7 +174,7 @@ function copyAsNew(){
  $('ps-summary-date').textContent='—';
  $('ps-mode-banner').textContent='YENİ ÜRÜN: '+oldTitle+' aynen korunacak; farklı isimle ayrı kayıt oluşturulacak.';
  $('ps-mode-banner').className='ps-mode-banner new';
- $('ps-copy-new').hidden=true;
+ $('ps-copy-new').hidden=true;$('ps-delete-product').hidden=true;
  setStatus('draft');refreshSummary();
  feedback('Yeni ürüne farklı bir ad verin. Mevcut ürün değişmeyecek.');
  $('ps-name').focus();
@@ -236,7 +236,7 @@ async function save(force){
   originalPaths=[...stored];
   current={...product,updated_at:record.updated_at};
   $('ps-name').readOnly=true;
-  $('ps-copy-new').hidden=false;
+  $('ps-copy-new').hidden=false;$('ps-delete-product').hidden=false;
   $('ps-mode-banner').textContent='MEVCUT ÜRÜNÜ DÜZENLİYORSUNUZ: '+data.title+' — Yeni ürün için ayrı kayıt oluşturun.';
   $('ps-mode-banner').className='ps-mode-banner editing';
   images.forEach(i=>{if(i.objectURL){URL.revokeObjectURL(i.objectURL);i.objectURL=null;i.file=null}});
@@ -248,9 +248,38 @@ async function save(force){
  }catch(e){feedback('Kaydedilemedi: '+(e?.message||'Beklenmeyen hata')+(justCreated?' Yeni ürün taslak kaydı oluşturulmuş olabilir; aynı ürünü listeden açıp işlemi yeniden deneyin.':''))}
  finally{busy=false;['ps-publish','ps-save-draft'].forEach(id=>$(id).disabled=false)}
 }
+async function deleteCurrentProduct(){
+ if(busy||!current){feedback('Önce silinecek ürünü açın.');return}
+ if(!await checkAccess())return;
+ const item={slug:current.slug,title:current.title};
+ if(!confirm('“'+item.title+'” ürününü kalıcı olarak silmek istiyor musunuz?\n\nBu işlem geri alınamaz. Sipariş geçmişi veya kampanya bağlantısı bulunan ürünler silinemez.'))return;
+ const typed=prompt('Silme işlemini onaylamak için ürün adını aynen yazın:\n\n'+item.title);
+ if(typed===null)return;
+ if(typed!==item.title){feedback('Ürün adı eşleşmediği için silme iptal edildi.');return}
+ busy=true;
+ const btn=$('ps-delete-product');btn.disabled=true;
+ ['ps-save-draft','ps-publish'].forEach(id=>$(id).disabled=true);
+ feedback('Ürün güvenli şekilde siliniyor…');
+ try{
+  const {data,error}=await sb.rpc('admin_delete_shop_product',{p_slug:item.slug,p_confirm_title:item.title});
+  if(error)throw error;
+  if(!data?.deleted||data.slug!==item.slug)throw Error('Sunucu silme işlemini doğrulamadı.');
+  current=null;clearImages();
+  $('ps-delete-product').hidden=true;$('ps-studio').hidden=true;$('product-index').hidden=false;
+  window.location.hash='products';
+  alert('“'+item.title+'” ürünü başarıyla silindi.');
+  location.reload();
+ }catch(e){
+  feedback('Ürün silinemedi: '+(e?.message||'Beklenmeyen hata')+' Siparişe veya kampanyaya bağlıysa silmek yerine satışa kapatabilirsiniz.');
+ }finally{
+  busy=false;btn.disabled=false;['ps-save-draft','ps-publish'].forEach(id=>$(id).disabled=false);
+ }
+}
+
 function back(){$('ps-studio').hidden=true;$('product-index').hidden=false;window.location.hash='products';if(current){location.reload()}}
 $('ps-create').addEventListener('click',()=>open());
 $('ps-copy-new').addEventListener('click',copyAsNew);
+$('ps-delete-product').addEventListener('click',deleteCurrentProduct);
 $('ps-new').addEventListener('click',()=>open());
 $('ps-back').addEventListener('click',back);
 $('ps-add-variant').addEventListener('click',()=>variantRow());
