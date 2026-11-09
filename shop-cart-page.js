@@ -27,10 +27,10 @@ function show(){
  for(const line of cart){const q=line.quote;if(!q)continue;const unit=Number(q.unit_total),lineTotal=unit*line.quantity;sum+=lineTotal;qty+=line.quantity;
  const o=q.options||{};const card=document.createElement('article');card.className='item';
  const top=document.createElement('div');top.className='item-main';
- const img=document.createElement('img');img.className='item-image';img.src=line.productImage||((q.slug.startsWith('mat-stor-')?q.slug+'-1.webp':q.slug.replace('-zebra-perde','')+'-1.'+(q.slug.includes('siyah')?'png':'webp')));img.alt=q.title;img.loading='lazy';img.onerror=()=>img.style.visibility='hidden';
+ const img=document.createElement('img');img.className='item-image';img.src=line.productImage||(q.slug==='plise-perde'?'zebra-koleksiyon.png':(q.slug.startsWith('mat-stor-')?q.slug+'-1.webp':q.slug.replace('-zebra-perde','')+'-1.'+(q.slug.includes('siyah')?'png':'webp')));img.alt=q.title;img.loading='lazy';img.onerror=()=>img.style.visibility='hidden';
  const block=document.createElement('div');block.className='item-info';
- const productLink=document.createElement('a');productLink.href=(q.slug.startsWith('mat-stor-')||q.slug.startsWith('bambu-'))?q.slug+'.html':'urun.html?slug='+encodeURIComponent(q.slug);productLink.append(text('h2',q.title));
- const sub=text('p',q.width_cm+' × '+q.height_cm+' cm · '+kasaName(o.kasaTip)+(o.kasaRenk?' ('+o.kasaRenk+')':'')+' · '+tr(o.zincir)+' Zincir · '+tr(o.boru)+' Boru · '+tr(o.yon)+' Yön','item-subtitle');
+ const productLink=document.createElement('a');productLink.href=q.slug==='plise-perde'?'plise-perde.html':(q.slug.startsWith('mat-stor-')||q.slug.startsWith('bambu-'))?q.slug+'.html':'urun.html?slug='+encodeURIComponent(q.slug);productLink.append(text('h2',q.title));
+ const sub=text('p',q.slug==='plise-perde'?q.width_cm+' × '+q.height_cm+' cm · '+o.fabric+' Kumaş · '+o.profile+' Profil · '+o.surface+' · '+o.mounting:q.width_cm+' × '+q.height_cm+' cm · '+kasaName(o.kasaTip)+(o.kasaRenk?' ('+o.kasaRenk+')':'')+' · '+tr(o.zincir)+' Zincir · '+tr(o.boru)+' Boru · '+tr(o.yon)+' Yön','item-subtitle');
  const bottom=document.createElement('div');bottom.className='item-bottom';const price=text('strong',money(lineTotal),'price');
  if(Number(q.discount_amount)>0){const before=text('s',money(Number(q.original_unit_total)*line.quantity));before.style.cssText='display:block;color:#9e8e7d;font-size:12px;margin-bottom:4px;font-weight:400';block.append(before);const promo=text('p','✓ '+(q.campaign_badge||'Kampanya')+' · '+money(Number(q.discount_amount)*line.quantity)+' avantaj');promo.style.cssText='font-size:12px;color:#3c824e;font-weight:700;margin:7px 0';block.append(promo)}const controls=document.createElement('div');controls.className='qty';
  const minus=text('button','−');minus.type='button';minus.setAttribute('aria-label',q.title+' adedini azalt');minus.onclick=()=>change(line.id,line.quantity-1);
@@ -41,7 +41,7 @@ function show(){
  const custom=document.createElement('section');custom.className='custom-box';custom.setAttribute('aria-label','Ürün özelleştirmeleri');
  const title=document.createElement('h3');title.append(svg('gear'),text('span','Ürün Özelleştirmeleri'));
  const grid=document.createElement('div');grid.className='custom-grid';
- grid.append(detail('Ölçü',q.width_cm+' × '+q.height_cm+' cm','ruler'),detail('Kasa / Renk',kasaName(o.kasaTip)+(o.kasaRenk?' · '+o.kasaRenk:''),'layer'),detail('Zincir / Yön',tr(o.zincir)+' · '+tr(o.yon),'link'),detail('Mekanizma',tr(o.boru)+' Boru','gear'),detail('Yan Ayak',tr(o.ayak)+' Yan Ayak','gear'));
+ if(q.slug==='plise-perde'){grid.append(detail('Ölçü',q.width_cm+' × '+q.height_cm+' cm','ruler'),detail('Kumaş Rengi',o.fabric||'—','layer'),detail('Profil Rengi',o.profile||'—','layer'),detail('Montaj Yeri',o.surface||'—','gear'),detail('Montaj Şekli',o.mounting||'—','gear'));if(line.orderNote)custom.append(text('p','Sipariş Notu: '+line.orderNote,'extra-options'))}else{grid.append(detail('Ölçü',q.width_cm+' × '+q.height_cm+' cm','ruler'),detail('Kasa / Renk',kasaName(o.kasaTip)+(o.kasaRenk?' · '+o.kasaRenk:''),'layer'),detail('Zincir / Yön',tr(o.zincir)+' · '+tr(o.yon),'link'),detail('Mekanizma',tr(o.boru)+' Boru','gear'),detail('Yan Ayak',tr(o.ayak)+' Yan Ayak','gear'));}
  custom.append(title,grid);
  if(line.variantSelections&&Object.keys(line.variantSelections).length){
  const extra=text('p','Varyantlar: '+Object.entries(line.variantSelections).map(([k,v])=>k+': '+v).join(' · '),'extra-options');
@@ -60,10 +60,10 @@ async function verify(){
  const applyBtn=document.getElementById('coupon-apply');if(applyBtn)applyBtn.disabled=true;
  for(const line of cart.slice(0,50)){
   try{
-   const {data:normal,error:normalError}=await sb.rpc('shop_quote_with_promo',line.options);
+   const isPlise=line.type==='plise'||line.options?.p_slug==='plise-perde';const {data:normal,error:normalError}=isPlise?await sb.rpc('plise_quote',{p_width_cm:line.options.p_width_cm,p_height_cm:line.options.p_height_cm,p_fabric:line.options.p_fabric,p_profile:line.options.p_profile,p_surface:line.options.p_surface,p_mounting:line.options.p_mounting}):await sb.rpc('shop_quote_with_promo',line.options);
    if(normalError||!normal)throw Error(normalError?.message||'Fiyat doğrulanamadı');
    let selected=normal;
-   if(couponCode){
+   if(couponCode&&!isPlise){
     const {data:withCode,error:couponError}=await sb.rpc('shop_quote_with_promo',{...line.options,p_coupon_code:couponCode});
     if(!couponError&&withCode){selected=withCode;if(withCode.coupon_applied===couponCode)validCouponUses++}
    }
