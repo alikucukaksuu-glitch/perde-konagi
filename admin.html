@@ -245,6 +245,17 @@
 <div class="pk-settings-info-item"><i>🌐</i><div><strong>www.perdekonagi.com</strong><small>Canlı internet sitesi</small></div></div>
 <div class="pk-settings-info-item"><i>🛒</i><div><strong>Ödeme Altyapısı</strong><small>Online ödeme entegrasyonu henüz aktif değil.</small></div></div></section>
 </div>
+<section class="pk-settings-card" style="grid-column:1/-1" aria-labelledby="pk-plise-pricing-title">
+<div class="pk-settings-heading"><div><h3 id="pk-plise-pricing-title">Plise Perde Fiyatları</h3><p>Özel ölçülü plise perdenin temel m² fiyatı ve montaj yöntemi ek ücretlerini yönetin.</p></div></div>
+<form id="pk-plise-prices"><div class="pk-plise-price-grid">
+<label>Temel m² Fiyatı (TL)<input type="text" name="base_price_sqm" inputmode="decimal" placeholder="650" required></label>
+<label>Minimum Fiyatlandırma Alanı (m²)<input type="text" name="minimum_area_sqm" inputmode="decimal" placeholder="1" required></label>
+<label>Yapışkanlı Montaj Ek Ücreti (TL/m²)<input type="text" name="adhesive_fee_sqm" inputmode="decimal" placeholder="Henüz tanımlı değil"></label>
+<label>Vida + Yapışkanlı Ek Ücreti (TL/m²)<input type="text" name="combined_fee_sqm" inputmode="decimal" placeholder="Henüz tanımlı değil"></label>
+</div><p class="pk-settings-note">Ek ücret alanları boş bırakılırsa ilgili montaj yöntemi için sepete ekleme kapalı kalır. Vidalı montaj ücretsizdir. Yapıştırma için onayladığınız kesin tutarları girin.</p>
+<div class="pk-settings-actions"><button id="pk-plise-save" class="pk-settings-btn" type="submit" disabled>Fiyatları Kaydet</button><a class="pk-settings-outline" href="plise-perde.html" target="_blank" rel="noopener noreferrer">Plise Sayfasını Aç</a></div>
+<p id="pk-plise-feedback" class="pk-settings-feedback" aria-live="polite"></p></form>
+</section>
 </div></section>
 </main></div></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
