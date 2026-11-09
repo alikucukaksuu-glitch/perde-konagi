@@ -6,6 +6,7 @@ let profiles=[['Beyaz','#e7e5e0'],['Krem','#d8cfb6'],['Gri','#b4b7b8'],['Bronz',
 let surfaces=['Pimapen','Cam Balkon','Sürgülü Kapı/Pencere','Cam Balkon Isıcam'];
 let mountings=['Vidalı','Yapışkanlı','Vida + Yapışkanlı'];
 const slug=new URLSearchParams(location.search).get('slug')||'';
+if(slug){const shortName=slug.split('-').filter(Boolean).map(w=>w.charAt(0).toLocaleUpperCase('tr-TR')+w.slice(1)).join(' ');const el=document.getElementById('pp-title');if(el)el.textContent=shortName;const bread=document.getElementById('pp-breadcrumb-title');if(bread)bread.textContent=shortName;}
 let currentProduct=null,detail=null,products=[];
 function makeGallery(paths){const strip=$('pp-gallery-strip');strip.replaceChildren();const photos=(paths||[]).filter(Boolean);if(!photos.length)return;const main=$('pp-main-image');main.style.display='block';document.querySelector('.pp-curtain').style.display='none';document.querySelector('.pp-window-ledger').style.display='none';const pick=(path,button)=>{main.src=photo(path);main.alt=currentProduct.title+' ürün fotoğrafı';for(const b of strip.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b===button))};for(let i=0;i<photos.length;i++){const b=document.createElement('button');b.type='button';b.className='pp-gallery-thumb';b.setAttribute('aria-label',(i+1)+'. ürün fotoğrafını göster');b.setAttribute('aria-pressed',String(i===0));const image=document.createElement('img');image.src=photo(photos[i]);image.alt=currentProduct.title+' '+(i+1)+'. fotoğraf';image.loading='lazy';b.append(image);b.onclick=()=>pick(photos[i],b);strip.append(b)}main.src=photo(photos[0]);main.alt=currentProduct.title+' ürün fotoğrafı'}
 let selected={fabric:'Beyaz',profile:'Beyaz',surface:'Pimapen',mounting:'Vidalı'},config=null,price=null,version=0,priceTimer=null,busy=false;
@@ -76,14 +77,8 @@ async function init(){
   $('pp-limits').textContent='En '+(m.min_width??20)+'–'+(m.max_width??200)+' cm, Boy '+(m.min_height??20)+'–'+(m.max_height??200)+' cm.';
   makeGallery(detail.image_paths);const desc=$('pp-description');if(detail.description_html&&window.PKDescriptionFormat?.sanitize){desc.innerHTML=window.PKDescriptionFormat.sanitize(detail.description_html)}else desc.textContent='Bu ürüne henüz açıklama eklenmemiş.';
   render();update();
-  const mainImage=$('pp-main-image');
-  if(mainImage && mainImage.style.display==='block' && !mainImage.complete){
-   await Promise.race([new Promise(resolve=>{mainImage.addEventListener('load',resolve,{once:true});mainImage.addEventListener('error',resolve,{once:true})}),new Promise(resolve=>setTimeout(resolve,1800))]);
-  }
-  document.documentElement.dataset.pliseReady='true';
  }catch(e){
   note('Ürün yüklenemedi: '+e.message);$('pp-add').disabled=true;
-  if(slug){const loading=$('pp-product-loading');if(loading){loading.replaceChildren();const message=document.createElement('p');message.textContent='Ürün bilgileri yüklenemedi: '+e.message;const a=document.createElement('a');a.href='plise-perde.html';a.textContent='Plise perde modellerine dön →';loading.append(message,a)}}
  }
 }
 ['pp-width','pp-height'].forEach(id=>$(id).addEventListener('input',update));
