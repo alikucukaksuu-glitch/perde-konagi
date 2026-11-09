@@ -12,6 +12,35 @@ function isPlise(){return $('ps-category').value==='plise'}
 function syncPlise(){const active=isPlise();$('ps-plise-config').hidden=!active;$('ps-variants').hidden=active;for(const id of ['ps-minw','ps-maxw','ps-minh','ps-maxh']){$(id).step=active?'0.1':'1';$(id).min=active?'20':'50';$(id).max=active?('200'):'280'}refreshSummary()}
 function pliseConfig(){const arrays=pliseIds.map(id=>[...new Set($(id).value.split(',').map(v=>v.trim()).filter(Boolean))]);if(arrays.some(a=>a.length<1||a.length>20))throw Error('Plise seçeneklerinden her biri 1-20 değer içermelidir.');const numeric=id=>{const raw=$(id).value;if(raw.trim()==='')return null;const n=Number(raw);if(!Number.isFinite(n)||n<0||n>100000)throw Error('Plise montaj ücretini kontrol edin.');return n};const minarea=Number($('ps-plise-minarea').value);if(!Number.isFinite(minarea)||minarea<0||minarea>5)throw Error('Minimum fiyatlandırma alanı 0–5 m² olmalıdır.');return {fabrics:arrays[0],profiles:arrays[1],surfaces:arrays[2],mountings:arrays[3],minimum_area:minarea,adhesive_fee:numeric('ps-plise-adhesive'),combined_fee:numeric('ps-plise-combined'),updated_at:new Date().toISOString()}}
 
+
+const woodDefaults={colors:['Beyaz','Açık Meşe','Meşe','Ceviz','Kestane','Siyah'],systems:['İpli Sistem','Kurdelalı Sistem'],surfaces:['Pencere','Duvar','Tavan'],min_area_sqm:1,ribbon_fee_sqm:0,slat_mm:50};
+function isWood(){return $('ps-category').value==='ahsap-jaluzi'}
+function applyWoodConfig(v=woodDefaults){
+ for(const [id,k] of [['ps-wood-colors','colors'],['ps-wood-systems','systems'],['ps-wood-surfaces','surfaces']])$(id).value=(v[k]||woodDefaults[k]).join(', ');
+ $('ps-wood-minarea').value=v.min_area_sqm??1;
+ $('ps-wood-ribbon-fee').value=v.ribbon_fee_sqm??0;
+ $('ps-wood-slat').value=v.slat_mm??50;
+}
+function woodConfig(){
+ const arr=id=>[...new Set($(id).value.split(',').map(v=>v.trim()).filter(Boolean))];
+ const colors=arr('ps-wood-colors'),systems=arr('ps-wood-systems'),surfaces=arr('ps-wood-surfaces');
+ if([colors,systems,surfaces].some(a=>!a.length||a.length>20))throw Error('Ahşap jaluzi seçeneğinde 1–20 değer olmalıdır.');
+ if(systems.some(x=>!['İpli Sistem','Kurdelalı Sistem'].includes(x)))throw Error('Sistem seçenekleri İpli Sistem ve Kurdelalı Sistem olabilir.');
+ const min_area_sqm=Number($('ps-wood-minarea').value),ribbon_fee_sqm=Number($('ps-wood-ribbon-fee').value),slat_mm=Number($('ps-wood-slat').value);
+ if(!Number.isFinite(min_area_sqm)||min_area_sqm<0||min_area_sqm>5||!Number.isFinite(ribbon_fee_sqm)||ribbon_fee_sqm<0||ribbon_fee_sqm>100000)throw Error('Ahşap jaluzi alan ve ek fiyatlarını kontrol edin.');
+ return {colors,systems,surfaces,min_area_sqm,ribbon_fee_sqm,slat_mm,updated_at:new Date().toISOString()};
+}
+function syncCategory(){
+ const wood=isWood();$('ps-wood-config').hidden=!wood;
+ syncPlise();$('ps-variants').hidden=wood||isPlise();
+ for(const id of ['ps-minw','ps-maxw','ps-minh','ps-maxh']){
+  $(id).step=wood?'0.5':isPlise()?'0.1':'1';
+  $(id).min=wood?'30':isPlise()?'20':'50';
+  $(id).max=wood?'300':isPlise()?'200':'280';
+ }
+ refreshSummary();
+}
+
 const slugify=text=>text.toLocaleLowerCase('tr-TR').replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,90);
 const cleanText=s=>String(s??'').trim();
 function feedback(s){$('ps-feedback').textContent=s||''}
@@ -83,11 +112,11 @@ function variants(){
   if(label&&values.length)result.push({label,values:[...new Set(values)]})
  });return result;
 }
-function measurements(){return {min_width:Number($('ps-minw').value),max_width:Number($('ps-maxw').value),min_height:Number($('ps-minh').value),max_height:Number($('ps-maxh').value),minimum_billable_width:100}}
+function measurements(){return {min_width:Number($('ps-minw').value),max_width:Number($('ps-maxw').value),min_height:Number($('ps-minh').value),max_height:Number($('ps-maxh').value),minimum_billable_width:isWood()?0:100}}
 function refreshSummary(){
  $('ps-short-count').textContent=$('ps-short').value.length;
  $('ps-summary-name').textContent=$('ps-name').value.trim()||'Yeni Ürün';
- $('ps-summary-category').textContent=isPlise()?'Plise Perde':$('ps-category').value==='zebra'?'Zebra Perde':'Stor Perde';
+ $('ps-summary-category').textContent=isWood()?'Ahşap Jaluzi Perde':isPlise()?'Plise Perde':$('ps-category').value==='zebra'?'Zebra Perde':'Stor Perde';
  $('ps-summary-price').textContent=money($('ps-price').value);
  $('ps-summary-stock').textContent=$('ps-stock').value===''?'∞ (Sınırsız)':$('ps-stock').value+' adet';
  $('ps-summary-variants').textContent=variants().reduce((n,v)=>n+v.values.length,0)+' seçenek';
@@ -96,14 +125,14 @@ function refreshSummary(){
 function reset(){
  clearImages();current=null;
  for(const id of ['ps-name','ps-price','ps-short','ps-desc','ps-seo-title','ps-seo-desc','ps-stock']){const field=$(id);if(field)field[field.isContentEditable?'innerHTML':'value']=''}
- $('ps-category').value='zebra';$('ps-variant-rows').replaceChildren();applyPliseConfig();
+ $('ps-category').value='zebra';$('ps-variant-rows').replaceChildren();applyPliseConfig();applyWoodConfig();
  for(const [id,value] of [['ps-minw',50],['ps-maxw',280],['ps-minh',50],['ps-maxh',280]])$(id).value=value;
  $('ps-sale-enabled').checked=true;$('ps-summary-date').textContent='—';$('ps-page-title').textContent='Yeni Ürün Ekle';$('ps-crumb').textContent='Yeni Ürün Ekle';
  $('ps-name').readOnly=false;$('ps-category').disabled=false;
  $('ps-mode-banner').textContent='YENİ ÜRÜN OLUŞTURUYORSUNUZ — Bu kayıt diğer ürünleri değiştirmez.';
  $('ps-mode-banner').className='ps-mode-banner new';
  $('ps-copy-new').hidden=true;
- setStatus('draft');syncPlise();renderImages();feedback('');
+ setStatus('draft');syncCategory();renderImages();feedback('');
 }
 async function open(slug){
  if(!await checkAccess())return;
@@ -118,7 +147,7 @@ async function open(slug){
   $('ps-mode-banner').textContent='MEVCUT ÜRÜNÜ DÜZENLİYORSUNUZ: '+p.title+' — Ayrı bir ürün oluşturmak için aşağıdaki butonu kullanın.';
   $('ps-mode-banner').className='ps-mode-banner editing';
   $('ps-copy-new').hidden=false;
-  $('ps-name').value=p.title;$('ps-price').value=p.price_per_sqm;$('ps-category').value=p.collection;if(p.collection==='plise'){const {data:pc,error:pcError}=await sb.from('plise_product_config').select('*').eq('slug',slug).maybeSingle();if(pcError)feedback('Plise ayarları okunamadı: '+pcError.message);applyPliseConfig(pc||pliseDefaults)}syncPlise();
+  $('ps-name').value=p.title;$('ps-price').value=p.price_per_sqm;$('ps-category').value=p.collection;if(p.collection==='plise'){const {data:pc,error:pcError}=await sb.from('plise_product_config').select('*').eq('slug',slug).maybeSingle();if(pcError)feedback('Plise ayarları okunamadı: '+pcError.message);applyPliseConfig(pc||pliseDefaults)}if(p.collection==='ahsap-jaluzi'){const {data:wc,error:wcError}=await sb.from('wood_blind_product_config').select('*').eq('slug',slug).maybeSingle();if(wcError)feedback('Ahşap jaluzi ayarları yüklenemedi: '+wcError.message);applyWoodConfig(wc||woodDefaults)}syncCategory();
   $('ps-short').value=d?.short_description||'';$('ps-desc').innerHTML=window.PKDescriptionFormat.normalize(d?.description_html||'');
   $('ps-seo-title').value=d?.seo_title||'';$('ps-seo-desc').value=d?.seo_description||'';
   $('ps-stock').value=d?.stock_qty??'';$('ps-sale-enabled').checked=Boolean(p.is_active);
@@ -136,7 +165,7 @@ async function open(slug){
 function copyAsNew(){
  if(!current){feedback('Zaten yeni ürün oluşturma ekranındasınız.');return}
  const oldTitle=current.title;
- current=null;originalPaths=[];
+ current=null;originalPaths=[];$('ps-category').disabled=false;
  $('ps-name').readOnly=false;
  $('ps-name').value='';
  $('ps-name').placeholder='Eski üründen farklı bir ürün adı yazınız';
@@ -162,11 +191,11 @@ function validate(){
  const title=cleanText($('ps-name').value),price=Number($('ps-price').value),m=measurements(),stock=$('ps-stock').value;
  if(title.length<5||title.length>160)throw Error('Ürün adı 5–160 karakter arasında olmalıdır.');
  if(!Number.isFinite(price)||price<1||price>100000)throw Error('Geçerli bir m² fiyatı girin.');
- if(!['zebra','mat-stor','plise'].includes($('ps-category').value))throw Error('Kategori seçin.');
- if(!Object.values(m).every(Number.isFinite)||m.min_width<(isPlise()?20:50)||m.max_width>(isPlise()?200:280)||m.min_height<(isPlise()?20:50)||m.max_height>(isPlise()?200:280)||m.min_width>m.max_width||m.min_height>m.max_height)throw Error(isPlise()?'Plise en 20–200 cm, boy 20–200 cm arasında olmalıdır.':'Ölçü sınırları 50–280 cm aralığında olmalıdır.');if(isPlise())pliseConfig();
+ if(!['zebra','mat-stor','plise','ahsap-jaluzi'].includes($('ps-category').value))throw Error('Kategori seçin.');
+ if(!Object.values(m).every(Number.isFinite)||m.min_width<(isWood()?30:isPlise()?20:50)||m.max_width>(isWood()?300:isPlise()?200:280)||m.min_height<(isWood()?30:isPlise()?20:50)||m.max_height>(isWood()?300:isPlise()?200:280)||m.min_width>m.max_width||m.min_height>m.max_height)throw Error(isWood()?'Ahşap jaluzi en ve boy 30–300 cm arasında olmalıdır.':isPlise()?'Plise en 20–200 cm, boy 20–200 cm arasında olmalıdır.':'Ölçü sınırları 50–280 cm aralığında olmalıdır.');if(isWood()){woodConfig();if([m.min_width,m.max_width,m.min_height,m.max_height].some(v=>!Number.isInteger(v*2)))throw Error('Ahşap jaluzi ölçü sınırları 0,5 cm adımlarla olmalıdır.')}if(isPlise())pliseConfig();
  if(stock!==''&&(!Number.isInteger(Number(stock))||Number(stock)<0))throw Error('Stok sıfır veya pozitif bir tam sayı olmalıdır.');
  if(variants().length>8)throw Error('En fazla 8 varyant grubu ekleyebilirsiniz.');
- return {title,price,m,stock:stock===''?null:Number(stock),plise:isPlise()?pliseConfig():null};
+ return {title,price,m,stock:stock===''?null:Number(stock),plise:isPlise()?pliseConfig():null,wood:isWood()?woodConfig():null};
 }
 async function save(force){
  if(busy)return;
@@ -198,6 +227,7 @@ async function save(force){
    const {error}=await sb.storage.from(bucket).upload(path,image.file,{contentType:image.file.type,cacheControl:'3600',upsert:false});
    if(error)throw error;image.path=path;stored.push(path);
   }
+  if(data.wood){const {error:woodError}=await sb.from('wood_blind_product_config').upsert({slug,...data.wood},{onConflict:'slug'});if(woodError)throw woodError;}
   if(data.plise){const {error:pliseError}=await sb.from('plise_product_config').upsert({slug,...data.plise},{onConflict:'slug'});if(pliseError)throw pliseError;}
   const record={slug,short_description:cleanText($('ps-short').value),description_html:window.PKDescriptionFormat.normalize($('ps-desc').innerHTML),image_paths:stored,variant_options:variants(),measurement_options:data.m,seo_title:cleanText($('ps-seo-title').value),seo_description:cleanText($('ps-seo-desc').value),stock_qty:data.stock,display_status:status,updated_at:new Date().toISOString()};
   const {error:detailsError}=await sb.from('shop_product_details').upsert(record,{onConflict:'slug'});if(detailsError)throw detailsError;
@@ -211,10 +241,10 @@ async function save(force){
   $('ps-mode-banner').className='ps-mode-banner editing';
   images.forEach(i=>{if(i.objectURL){URL.revokeObjectURL(i.objectURL);i.objectURL=null;i.file=null}});
   renderImages();$('ps-summary-date').textContent=new Date().toLocaleDateString('tr-TR');
-  feedback('✓ Ürün başarıyla '+(status==='published'?'yayınlandı.':'kaydedildi.')+' Mağaza bağlantısı: '+(product.collection==='plise'?'plise-perde.html?slug=':'urun.html?slug=')+slug);
+  feedback('✓ Ürün başarıyla '+(status==='published'?'yayınlandı.':'kaydedildi.')+' Mağaza bağlantısı: '+(product.collection==='ahsap-jaluzi'?'ahsap-jaluzi.html?slug=':product.collection==='plise'?'plise-perde.html?slug=':'urun.html?slug=')+slug);
   // Keep the admin view visible to allow further photo/description changes.
   $('ps-crumb').textContent=data.title;$('ps-page-title').textContent='Ürünü Düzenle';setStatus(status);
-  const link=document.createElement('a');link.href=(product.collection==='plise'?'plise-perde.html?slug=':'urun.html?slug=')+encodeURIComponent(slug);link.target='_blank';link.rel='noopener';link.textContent='Ürünü Mağazada Aç →';link.style.cssText='display:block;color:#865326;font-weight:700;margin-top:8px';$('ps-feedback').append(link);
+  const link=document.createElement('a');link.href=(product.collection==='ahsap-jaluzi'?'ahsap-jaluzi.html?slug=':product.collection==='plise'?'plise-perde.html?slug=':'urun.html?slug=')+encodeURIComponent(slug);link.target='_blank';link.rel='noopener';link.textContent='Ürünü Mağazada Aç →';link.style.cssText='display:block;color:#865326;font-weight:700;margin-top:8px';$('ps-feedback').append(link);
  }catch(e){feedback('Kaydedilemedi: '+(e?.message||'Beklenmeyen hata')+(justCreated?' Yeni ürün taslak kaydı oluşturulmuş olabilir; aynı ürünü listeden açıp işlemi yeniden deneyin.':''))}
  finally{busy=false;['ps-publish','ps-save-draft'].forEach(id=>$(id).disabled=false)}
 }
@@ -231,7 +261,7 @@ drop.addEventListener('dragleave',()=>drop.classList.remove('dragging'));
 drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('dragging');addFiles(e.dataTransfer.files)});
 document.querySelectorAll('input[name="ps-publish"]').forEach(r=>r.addEventListener('change',()=>{$('ps-active').value=r.value;authorStatus()}));
 $('ps-active').addEventListener('change',()=>setStatus($('ps-active').value));$('ps-sale-enabled').addEventListener('change',refreshSummary);
-['ps-name','ps-price','ps-stock','ps-short'].forEach(id=>$(id).addEventListener('input',refreshSummary));$('ps-category').addEventListener('change',()=>{if(isPlise()&&!current){for(const [id,value] of [['ps-minw',20],['ps-maxw',200],['ps-minh',20],['ps-maxh',200]])$(id).value=value}else if(!current){for(const [id,value] of [['ps-minw',50],['ps-maxw',280],['ps-minh',50],['ps-maxh',280]])$(id).value=value}syncPlise()});
+['ps-name','ps-price','ps-stock','ps-short'].forEach(id=>$(id).addEventListener('input',refreshSummary));$('ps-category').addEventListener('change',()=>{if(isWood()&&!current){for(const [id,value] of [['ps-minw',30],['ps-maxw',300],['ps-minh',30],['ps-maxh',300]])$(id).value=value}else if(isPlise()&&!current){for(const [id,value] of [['ps-minw',20],['ps-maxw',200],['ps-minh',20],['ps-maxh',200]])$(id).value=value}else if(!current){for(const [id,value] of [['ps-minw',50],['ps-maxw',280],['ps-minh',50],['ps-maxh',280]])$(id).value=value}syncCategory()});
 $('ps-save-draft').addEventListener('click',()=>save());
 $('ps-publish').addEventListener('click',()=>{setStatus('published');save('published')});
 document.querySelectorAll('[data-ps-scroll]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-ps-scroll]').forEach(b=>b.classList.toggle('selected',b===button));$(button.dataset.psScroll)?.scrollIntoView({behavior:'smooth',block:'start'})}));
