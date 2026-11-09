@@ -41,6 +41,7 @@ async function init(){
   if(!products.length){$('pp-product-message').textContent='Henüz yayında plise perde ürünü bulunmuyor. Yeni bir ürünü yönetim panelinden ekleyebilirsiniz.';note('Plise modelleri henüz satışa açılmadı.');return}
   if(!slug){$('pp-product-message').textContent='Özelleştirmek istediğiniz plise modeline tıklayın.';note('Önce yukarıdan bir plise perde modeli seçin.');return}
   currentProduct=products.find(p=>p.slug===slug);
+  if(currentProduct)$('pp-list-box').hidden=true;
   if(!currentProduct){note('Bu plise ürününe şu anda ulaşılamıyor. Lütfen başka bir model seçin.');return}
   const [dr,cr]=await Promise.all([
    sb.from('shop_product_details').select('image_paths,measurement_options,short_description,description_html,display_status,stock_qty').eq('slug',slug).eq('display_status','published').single(),
