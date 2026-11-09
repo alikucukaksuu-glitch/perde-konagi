@@ -97,3 +97,11 @@ textarea.ps-input{resize:vertical;line-height:1.5}
 .ps-editor ul,.ps-editor ol{margin:8px 0 14px;padding-left:24px}
 .ps-editor li{margin:5px 0;line-height:1.6}
 .ps-editor p{margin:0 0 12px}
+
+/* Product deletion, only visible while editing an existing record. */
+#ps-delete-product.ps-danger-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 16px;margin:0 0 16px 12px;border:1px solid #c99085;border-radius:8px;background:#fff8f7;color:#a12c27;font-weight:700;font-size:13px;cursor:pointer}
+#ps-delete-product.ps-danger-button:hover{background:#ffeae7;border-color:#ba4d41}
+#ps-delete-product.ps-danger-button:focus-visible{outline:3px solid #d78c83;outline-offset:2px}
+#ps-delete-product.ps-danger-button:disabled{opacity:.5;cursor:wait}
+#ps-delete-product[hidden]{display:none!important}
+@media(max-width:720px){#ps-delete-product.ps-danger-button{margin-left:0}}
