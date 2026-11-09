@@ -7,6 +7,7 @@ let surfaces=['Pimapen','Cam Balkon','Sürgülü Kapı/Pencere','Cam Balkon Isı
 let mountings=['Vidalı','Yapışkanlı','Vida + Yapışkanlı'];
 const slug=new URLSearchParams(location.search).get('slug')||'';
 let currentProduct=null,detail=null,products=[];
+function makeGallery(paths){const strip=$('pp-gallery-strip');strip.replaceChildren();const photos=(paths||[]).filter(Boolean);if(!photos.length)return;const main=$('pp-main-image');main.style.display='block';document.querySelector('.pp-curtain').style.display='none';document.querySelector('.pp-window-ledger').style.display='none';const pick=(path,button)=>{main.src=photo(path);main.alt=currentProduct.title+' ürün fotoğrafı';for(const b of strip.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b===button))};for(let i=0;i<photos.length;i++){const b=document.createElement('button');b.type='button';b.className='pp-gallery-thumb';b.setAttribute('aria-label',(i+1)+'. ürün fotoğrafını göster');b.setAttribute('aria-pressed',String(i===0));const image=document.createElement('img');image.src=photo(photos[i]);image.alt=currentProduct.title+' '+(i+1)+'. fotoğraf';image.loading='lazy';b.append(image);b.onclick=()=>pick(photos[i],b);strip.append(b)}main.src=photo(photos[0]);main.alt=currentProduct.title+' ürün fotoğrafı'}
 let selected={fabric:'Beyaz',profile:'Beyaz',surface:'Pimapen',mounting:'Vidalı'},config=null,price=null,version=0,priceTimer=null,busy=false;
 const palette=Object.fromEntries([...colors,...profiles]);
 const photo=path=>path?.startsWith('https://')?path:'https://rwylhxrtggsicieuyjrm.supabase.co/storage/v1/object/public/product-images/'+String(path).split('/').map(encodeURIComponent).join('/');
@@ -42,7 +43,7 @@ async function init(){
   currentProduct=products.find(p=>p.slug===slug);
   if(!currentProduct){note('Bu plise ürününe şu anda ulaşılamıyor. Lütfen başka bir model seçin.');return}
   const [dr,cr]=await Promise.all([
-   sb.from('shop_product_details').select('image_paths,measurement_options,short_description,display_status,stock_qty').eq('slug',slug).eq('display_status','published').single(),
+   sb.from('shop_product_details').select('image_paths,measurement_options,short_description,description_html,display_status,stock_qty').eq('slug',slug).eq('display_status','published').single(),
    sb.from('plise_product_config').select('*').eq('slug',slug).single()
   ]);
   if(dr.error||cr.error||!dr.data||!cr.data)throw Error(dr.error?.message||cr.error?.message||'Ürün seçenekleri bulunamadı');
@@ -52,11 +53,11 @@ async function init(){
   profiles=config.profiles.map(n=>[n,palette[n]||'#a0a0a0']);
   surfaces=config.surfaces;mountings=config.mountings;
   selected={fabric:colors[0][0],profile:profiles[0][0],surface:surfaces[0],mounting:mountings[0]};
-  $('pp-title').textContent=currentProduct.title;document.title=currentProduct.title+' | Perde Konağı';
+  $('pp-title').textContent=currentProduct.title;$('pp-breadcrumb-title').textContent=currentProduct.title;$('pp-sqm-price').textContent=money(currentProduct.price_per_sqm);document.title=currentProduct.title+' | Perde Konağı';
   document.querySelector('.pp-sub').textContent=detail.short_description||'Modern, şık ve fonksiyonel çözümler';
   const m=detail.measurement_options||{};
   $('pp-limits').textContent='En '+(m.min_width??20)+'–'+(m.max_width??200)+' cm, Boy '+(m.min_height??20)+'–'+(m.max_height??200)+' cm.';
-  if(detail.image_paths?.[0]){const img=$('pp-main-image');img.src=photo(detail.image_paths[0]);img.style.display='block';document.querySelector('.pp-curtain').style.display='none';document.querySelector('.pp-window-ledger').style.display='none'}
+  makeGallery(detail.image_paths);const desc=$('pp-description');if(detail.description_html&&window.PKDescriptionFormat?.sanitize){desc.innerHTML=window.PKDescriptionFormat.sanitize(detail.description_html)}else desc.textContent='Bu ürüne henüz açıklama eklenmemiş.';
   render();update();
  }catch(e){note('Ürün yüklenemedi: '+e.message);$('pp-add').disabled=true}
 }
