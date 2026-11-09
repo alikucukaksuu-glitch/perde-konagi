@@ -3,7 +3,7 @@
 <meta name="robots" content="noindex,nofollow"><meta name="description" content="Perde Konağı yetkili yönetim ekranı">
 <title>Yönetim Paneli | Perde Konağı</title>
 <link rel="stylesheet" href="admin.css">
-<link rel="stylesheet" href="product-studio.css?v=20261108-markdown-fix-1"><link rel="stylesheet" href="campaign-manager.css?v=20261108-final-4"><link rel="stylesheet" href="admin-orders.css?v=20261108-two-page-2"><link rel="stylesheet" href="admin-reports.css?v=20261108-r1"><link rel="stylesheet" href="admin-messages.css?v=20261108-contact-1"><style>.admin-password-row{display:flex;align-items:center;position:relative}.admin-password-row input{padding-right:80px}.admin-password-row button{position:absolute;right:8px;top:7px;min-width:60px;height:35px;border:0;background:#f1e6db;color:#674b34;border-radius:7px;font-size:12px;font-weight:700}.login-card .admin-forgot-link{display:block;margin-top:12px;color:#86613e;text-decoration:underline;font-size:12px}.login-card .admin-password-row+button{margin-top:18px}</style></head>
+<link rel="stylesheet" href="product-studio.css?v=20261108-markdown-fix-1"><link rel="stylesheet" href="campaign-manager.css?v=20261108-final-4"><link rel="stylesheet" href="admin-orders.css?v=20261108-two-page-2"><link rel="stylesheet" href="admin-reports.css?v=20261108-r1"><link rel="stylesheet" href="admin-messages.css?v=20261108-contact-1"><style>.admin-password-row{display:flex;align-items:center;position:relative}.admin-password-row input{padding-right:80px}.admin-password-row button{position:absolute;right:8px;top:7px;min-width:60px;height:35px;border:0;background:#f1e6db;color:#674b34;border-radius:7px;font-size:12px;font-weight:700}.login-card .admin-forgot-link{display:block;margin-top:12px;color:#86613e;text-decoration:underline;font-size:12px}.login-card .admin-password-row+button{margin-top:18px}</style><link rel="stylesheet" href="admin-settings.css?v=maintenance-20261109-1"></head>
 <body>
 <section class="login-screen" id="login-screen">
 <div class="login-card">
@@ -226,7 +226,26 @@
 <div id="rp-legacy" hidden><div class="stats compact" id="report-stats"></div><div id="reports-chart" class="chart-area"></div></div>
 </section>
 <section class="view" id="view-messages" hidden><div class="section-heading"><h2>İletişim Mesajları</h2><p>Perde Konağı iletişim formundan gelen talepler.</p></div><div class="panel section-pad"><div class="cm-toolbar"><label><span class="sr-only">Mesaj durumu</span><select id="cm-status"><option value="all">Tüm Mesajlar</option><option value="new">Yeni</option><option value="read">Okundu</option><option value="closed">Kapandı</option></select></label><button id="cm-refresh" type="button">↻ Yenile</button></div><p id="cm-feedback" role="status"></p><div id="cm-list" class="cm-list"></div></div></section>
-<section class="view" id="view-settings" hidden><div class="section-heading"><h2>Ayarlar</h2><p>Yönetici oturumu ve mağaza yapılandırması.</p></div><div class="panel section-pad"><h3>Yetkili yönetici</h3><p id="admin-email"></p><p>Ödeme entegrasyonu henüz aktif değildir. Yönetici erişimleri Supabase tarafından kontrol edilir.</p><button id="settings-signout" class="quick-primary" type="button">Oturumu Kapat</button></div></section>
+<section class="view" id="view-settings" hidden>
+<div class="section-heading"><h2>Ayarlar</h2><p>Mağaza görünürlüğü, bakım çalışmaları ve yönetici hesabını buradan yönetin.</p></div>
+<div class="pk-settings-grid">
+<section class="pk-settings-card">
+<div class="pk-settings-heading"><div><h3>Site Bakım Modu</h3><p>Geliştirme yaparken ziyaretçilere özel bir bakım ekranı gösterin.</p></div><span class="pk-settings-tag" id="pk-maint-state">Durum kontrol ediliyor</span></div>
+<div class="pk-settings-preview"><span aria-hidden="true">⚙</span><b>PERDE KONAĞI</b><p>Sitemizde şu anda bakım çalışması yapılıyor. Çok yakında yeniden hizmetinizdeyiz.</p></div>
+<div class="pk-settings-switch"><div><strong>Bakım Modu</strong><small>Açık: Ziyaretçiler bakım ekranını görür.<br>Kapalı: Mağaza normal olarak görüntülenir.</small></div><button type="button" class="pk-settings-toggle" id="pk-maint-toggle" role="switch" aria-checked="false" aria-label="Bakım modu" disabled></button></div>
+<div class="pk-settings-actions"><button class="pk-settings-btn" type="button" id="pk-maint-save" disabled>Kaydet</button><button class="pk-settings-outline" id="pk-maint-refresh" type="button">↻ Durumu Yenile</button><a class="pk-settings-outline" href="bakim.html" target="_blank" rel="noopener noreferrer">Bakım Sayfasını Gör</a></div>
+<p class="pk-settings-feedback" id="pk-maint-feedback" role="status" aria-live="polite"></p><p class="pk-settings-note">Yönetim paneli bakım sırasında açık kalır. Bu özellik statik web sitesinin ziyaretçi ekranını gizler; barındırma sunucusundaki dosyalara erişimi teknik olarak tamamen engellemez.</p>
+</section>
+<div class="pk-settings-info">
+<section class="pk-settings-card"><div class="pk-settings-heading"><div><h3>Yönetici Hesabı</h3><p>Yetkilendirilmiş yönetici bilgileri</p></div></div>
+<div class="pk-settings-info-item"><i>♙</i><div><strong>Yetkili E-posta</strong><small id="admin-email"></small></div></div>
+<div class="pk-settings-info-item"><i>🔒</i><div><strong>Güvenli Yönetim</strong><small>Yönetim paneli erişimleri Supabase yetkileriyle korunur.</small></div></div>
+<button id="settings-signout" class="quick-primary pk-settings-signout" type="button">Oturumu Kapat</button></section>
+<section class="pk-settings-card"><div class="pk-settings-heading"><div><h3>Mağaza Bilgileri</h3><p>Perde Konağı sistem durumu</p></div></div>
+<div class="pk-settings-info-item"><i>🌐</i><div><strong>www.perdekonagi.com</strong><small>Canlı internet sitesi</small></div></div>
+<div class="pk-settings-info-item"><i>🛒</i><div><strong>Ödeme Altyapısı</strong><small>Online ödeme entegrasyonu henüz aktif değil.</small></div></div></section>
+</div>
+</div></section>
 </main></div></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="admin.js?v=admin-password-login-20261108-1"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=20261108-markdown-fix-1"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script><script defer src="admin-orders.js?v=20261108-two-page-1"></script><script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script defer src="admin-reports.js?v=20261108-r1"></script><script defer src="admin-messages.js?v=20261108-contact-1"></script></body></html>
+<script defer src="admin.js?v=admin-password-login-20261108-1"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=20261108-markdown-fix-1"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script><script defer src="admin-orders.js?v=20261108-two-page-1"></script><script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script defer src="admin-reports.js?v=20261108-r1"></script><script defer src="admin-messages.js?v=20261108-contact-1"></script><script defer src="admin-settings.js?v=maintenance-20261109-1"></script></body></html>
