@@ -157,7 +157,7 @@ function updateListings(products,details){
  adjustStatic(cards,bySlug,byDetails);
  if(slug==='index'){const grid=document.querySelector('.product-grid');if(grid){addProducts(products,byDetails,grid,'zebra');addProducts(products,byDetails,grid,'mat-stor')}}
  if(slug==='zebra-perde'||slug==='stor-perde'){const grid=document.querySelector('.cards');if(grid)addProducts(products,byDetails,grid,slug==='zebra-perde'?'zebra':'mat-stor')}
- window.pkCatalogSearchProducts=products.map(p=>[p.title,staticSlugs.has(p.slug)?p.slug+'.html':'urun.html?slug='+encodeURIComponent(p.slug)]);
+ window.pkCatalogSearchProducts=products.map(p=>[p.title,p.collection==='plise'?'plise-perde.html?slug='+encodeURIComponent(p.slug):staticSlugs.has(p.slug)?p.slug+'.html':'urun.html?slug='+encodeURIComponent(p.slug)]);
 }
 Promise.all([request('shop_products?select=slug,title,collection,price_per_sqm,is_active'),request('shop_product_details?select=slug,short_description,description_html,image_paths,variant_options,measurement_options,seo_title,seo_description,display_status,stock_qty'),request('shop_campaigns?select=product_slug,discount_type,discount_value').catch(()=>[])]).then(([products,details,campaigns])=>{
  if(productPage){const p=products.find(p=>p.slug===slug);if(p)showProduct(p,details.find(d=>d.slug===slug),campaigns);else blockPurchase('Bu ürün şu anda satın alınamaz.')}
