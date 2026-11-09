@@ -85,7 +85,7 @@ function renderProducts(){
   const tr=document.createElement('tr'),td=document.createElement('td'),a=document.createElement('a');
   a.href=p.collection==='plise'?'plise-perde.html?slug='+encodeURIComponent(p.slug):(['bambu-bej-zebra-perde','bambu-beyaz-zebra-perde','bambu-gri-zebra-perde','bambu-kahve-zebra-perde','bambu-siyah-zebra-perde','bambu-siyah-gecisli-zebra-perde','mat-stor-krem','mat-stor-kirik-beyaz','mat-stor-gri','mat-stor-antrasit','mat-stor-kahve','mat-stor-mavi','mat-stor-siyah','mat-stor-turuncu'].includes(p.slug)?p.slug+'.html':'urun.html?slug='+encodeURIComponent(p.slug));a.target='_blank';a.rel='noopener';a.className='order-link';a.textContent=p.title;td.append(a);tr.append(td,node('td',p.collection==='plise'?'Plise Perde':p.collection==='zebra'?'Zebra Perde':'Mat Stor'),node('td',money(p.price_per_sqm)));
   const state=document.createElement('td'),status=node('span',p.visibility==='draft'?'Taslak':(p.is_active?'Satışta':'Satışa Kapalı'),'catalog-status '+(p.is_active?'yes':'no'));state.append(status);tr.append(state);
-  const actions=document.createElement('td'),edit=node('button','Düzenle','catalog-edit');edit.type='button';edit.disabled=!['owner','admin'].includes(role);edit.addEventListener('click',()=>openProductEditor(p));actions.append(edit);tr.append(actions);
+  const actions=document.createElement('td'),edit=node('button','Düzenle','catalog-edit');edit.type='button';edit.disabled=!['owner','admin'].includes(role);edit.addEventListener('click',()=>{if(p.collection==='plise'&&window.pkStudio?.open)window.pkStudio.open(p.slug);else openProductEditor(p)});actions.append(edit);tr.append(actions);
   return tr;
  });
  fill(el('product-list'),rows.length?rows:[emptyTr(5,'Eşleşen ürün bulunamadı.')]);
