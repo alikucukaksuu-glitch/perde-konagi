@@ -99,7 +99,7 @@ function reset(){
  $('ps-category').value='zebra';$('ps-variant-rows').replaceChildren();applyPliseConfig();
  for(const [id,value] of [['ps-minw',50],['ps-maxw',280],['ps-minh',50],['ps-maxh',280]])$(id).value=value;
  $('ps-sale-enabled').checked=true;$('ps-summary-date').textContent='—';$('ps-page-title').textContent='Yeni Ürün Ekle';$('ps-crumb').textContent='Yeni Ürün Ekle';
- $('ps-name').readOnly=false;
+ $('ps-name').readOnly=false;$('ps-category').disabled=false;
  $('ps-mode-banner').textContent='YENİ ÜRÜN OLUŞTURUYORSUNUZ — Bu kayıt diğer ürünleri değiştirmez.';
  $('ps-mode-banner').className='ps-mode-banner new';
  $('ps-copy-new').hidden=true;
@@ -114,7 +114,7 @@ async function open(slug){
   const [{data:p,error:e},{data:d,error:f}]=await Promise.all([sb.from('shop_products').select('slug,title,collection,price_per_sqm,is_active,visibility,updated_at').eq('slug',slug).single(),sb.from('shop_product_details').select('*').eq('slug',slug).maybeSingle()]);
   if(e||f||!p){feedback('Ürün bilgileri yüklenemedi: '+(e?.message||f?.message||'Kayıt bulunamadı'));return}
   current=p;
-  $('ps-name').readOnly=true;
+  $('ps-name').readOnly=true;$('ps-category').disabled=true;
   $('ps-mode-banner').textContent='MEVCUT ÜRÜNÜ DÜZENLİYORSUNUZ: '+p.title+' — Ayrı bir ürün oluşturmak için aşağıdaki butonu kullanın.';
   $('ps-mode-banner').className='ps-mode-banner editing';
   $('ps-copy-new').hidden=false;
@@ -173,6 +173,7 @@ async function save(force){
  if(!await checkAccess())return;
  let data;try{data=validate()}catch(e){feedback(e.message);return}
  if(current&&data.title!==current.title){feedback('Mevcut ürünün adını değiştirerek yeni ürün oluşturamazsınız. “Bu Bilgilerle Ayrı Yeni Ürün Oluştur” butonunu kullanın.');return}
+ if(current&&$('ps-category').value!==current.collection){feedback('Mevcut ürünün kategorisi değiştirilemez. Farklı kategori için ayrı yeni ürün oluşturun.');return}
  let status=force||$('ps-active').value;
  if(status==='published'&&!current&&!images.length){feedback('Yeni ürünü yayınlamak için en az bir fotoğraf yükleyin.');return}
  if(status==='published'&&data.stock===0&&$('ps-sale-enabled').checked){feedback('Stok sıfırsa önce Satışa açık seçeneğini kapatın veya Taslak kaydedin.');return}
