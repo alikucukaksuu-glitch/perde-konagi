@@ -5,6 +5,13 @@ const bucket='product-images',money=v=>new Intl.NumberFormat('tr-TR',{style:'cur
 const defaults={min_width:50,max_width:280,min_height:50,max_height:280};
 const photoUrl=path=>path?.startsWith('https://')?path:sb.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 let current=null,images=[],originalPaths=[],busy=false,authorized=false;
+const pliseDefaults={fabrics:['Beyaz','Krem','Antrasit','Gri','Bej'],profiles:['Beyaz','Krem','Gri','Bronz','Antrasit'],surfaces:['Pimapen','Cam Balkon','Sürgülü Kapı/Pencere','Cam Balkon Isıcam'],mountings:['Vidalı','Yapışkanlı','Vida + Yapışkanlı'],minimum_area:1,adhesive_fee:null,combined_fee:null};
+const pliseIds=['ps-plise-fabrics','ps-plise-profiles','ps-plise-surfaces','ps-plise-mountings'];
+function applyPliseConfig(v=pliseDefaults){for(const [i,k] of ['fabrics','profiles','surfaces','mountings'].entries())$(pliseIds[i]).value=(v[k]||pliseDefaults[k]).join(', ');$('ps-plise-minarea').value=v.minimum_area??1;$('ps-plise-adhesive').value=v.adhesive_fee??'';$('ps-plise-combined').value=v.combined_fee??''}
+function isPlise(){return $('ps-category').value==='plise'}
+function syncPlise(){const active=isPlise();$('ps-plise-config').hidden=!active;$('ps-variants').hidden=active;for(const id of ['ps-minw','ps-maxw','ps-minh','ps-maxh']){$(id).step=active?'0.1':'1';$(id).min=active?'20':'50';$(id).max=active?(id.includes('maxh')||id.includes('minh')?'250':'120'):'280'}refreshSummary()}
+function pliseConfig(){const arrays=pliseIds.map(id=>[...new Set($(id).value.split(',').map(v=>v.trim()).filter(Boolean))]);if(arrays.some(a=>a.length<1||a.length>20))throw Error('Plise seçeneklerinden her biri 1-20 değer içermelidir.');const numeric=id=>{const raw=$(id).value;if(raw.trim()==='')return null;const n=Number(raw);if(!Number.isFinite(n)||n<0||n>100000)throw Error('Plise montaj ücretini kontrol edin.');return n};const minarea=Number($('ps-plise-minarea').value);if(!Number.isFinite(minarea)||minarea<0||minarea>5)throw Error('Minimum fiyatlandırma alanı 0–5 m² olmalıdır.');return {fabrics:arrays[0],profiles:arrays[1],surfaces:arrays[2],mountings:arrays[3],minimum_area:minarea,adhesive_fee:numeric('ps-plise-adhesive'),combined_fee:numeric('ps-plise-combined'),updated_at:new Date().toISOString()}}
+
 const slugify=text=>text.toLocaleLowerCase('tr-TR').replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,90);
 const cleanText=s=>String(s??'').trim();
 function feedback(s){$('ps-feedback').textContent=s||''}
@@ -80,7 +87,7 @@ function measurements(){return {min_width:Number($('ps-minw').value),max_width:N
 function refreshSummary(){
  $('ps-short-count').textContent=$('ps-short').value.length;
  $('ps-summary-name').textContent=$('ps-name').value.trim()||'Yeni Ürün';
- $('ps-summary-category').textContent=$('ps-category').value==='zebra'?'Zebra Perde':'Stor Perde';
+ $('ps-summary-category').textContent=isPlise()?'Plise Perde':$('ps-category').value==='zebra'?'Zebra Perde':'Stor Perde';
  $('ps-summary-price').textContent=money($('ps-price').value);
  $('ps-summary-stock').textContent=$('ps-stock').value===''?'∞ (Sınırsız)':$('ps-stock').value+' adet';
  $('ps-summary-variants').textContent=variants().reduce((n,v)=>n+v.values.length,0)+' seçenek';
@@ -89,14 +96,14 @@ function refreshSummary(){
 function reset(){
  clearImages();current=null;
  for(const id of ['ps-name','ps-price','ps-short','ps-desc','ps-seo-title','ps-seo-desc','ps-stock']){const field=$(id);if(field)field[field.isContentEditable?'innerHTML':'value']=''}
- $('ps-category').value='zebra';$('ps-variant-rows').replaceChildren();
+ $('ps-category').value='zebra';$('ps-variant-rows').replaceChildren();applyPliseConfig();
  for(const [id,value] of [['ps-minw',50],['ps-maxw',280],['ps-minh',50],['ps-maxh',280]])$(id).value=value;
  $('ps-sale-enabled').checked=true;$('ps-summary-date').textContent='—';$('ps-page-title').textContent='Yeni Ürün Ekle';$('ps-crumb').textContent='Yeni Ürün Ekle';
  $('ps-name').readOnly=false;
  $('ps-mode-banner').textContent='YENİ ÜRÜN OLUŞTURUYORSUNUZ — Bu kayıt diğer ürünleri değiştirmez.';
  $('ps-mode-banner').className='ps-mode-banner new';
  $('ps-copy-new').hidden=true;
- setStatus('draft');renderImages();feedback('');
+ setStatus('draft');syncPlise();renderImages();feedback('');
 }
 async function open(slug){
  if(!await checkAccess())return;
@@ -111,7 +118,7 @@ async function open(slug){
   $('ps-mode-banner').textContent='MEVCUT ÜRÜNÜ DÜZENLİYORSUNUZ: '+p.title+' — Ayrı bir ürün oluşturmak için aşağıdaki butonu kullanın.';
   $('ps-mode-banner').className='ps-mode-banner editing';
   $('ps-copy-new').hidden=false;
-  $('ps-name').value=p.title;$('ps-price').value=p.price_per_sqm;$('ps-category').value=p.collection;
+  $('ps-name').value=p.title;$('ps-price').value=p.price_per_sqm;$('ps-category').value=p.collection;if(p.collection==='plise'){const {data:pc,error:pcError}=await sb.from('plise_product_config').select('*').eq('slug',slug).maybeSingle();if(pcError)feedback('Plise ayarları okunamadı: '+pcError.message);applyPliseConfig(pc||pliseDefaults)}syncPlise();
   $('ps-short').value=d?.short_description||'';$('ps-desc').innerHTML=window.PKDescriptionFormat.normalize(d?.description_html||'');
   $('ps-seo-title').value=d?.seo_title||'';$('ps-seo-desc').value=d?.seo_description||'';
   $('ps-stock').value=d?.stock_qty??'';$('ps-sale-enabled').checked=Boolean(p.is_active);
@@ -155,11 +162,11 @@ function validate(){
  const title=cleanText($('ps-name').value),price=Number($('ps-price').value),m=measurements(),stock=$('ps-stock').value;
  if(title.length<5||title.length>160)throw Error('Ürün adı 5–160 karakter arasında olmalıdır.');
  if(!Number.isFinite(price)||price<1||price>100000)throw Error('Geçerli bir m² fiyatı girin.');
- if(!['zebra','mat-stor'].includes($('ps-category').value))throw Error('Kategori seçin.');
- if(!Object.values(m).every(Number.isFinite)||m.min_width<50||m.max_width>280||m.min_height<50||m.max_height>280||m.min_width>m.max_width||m.min_height>m.max_height)throw Error('Ölçü sınırları 50 ile 280 cm arasında ve tutarlı olmalıdır.');
+ if(!['zebra','mat-stor','plise'].includes($('ps-category').value))throw Error('Kategori seçin.');
+ if(!Object.values(m).every(Number.isFinite)||m.min_width<(isPlise()?20:50)||m.max_width>(isPlise()?120:280)||m.min_height<(isPlise()?20:50)||m.max_height>(isPlise()?250:280)||m.min_width>m.max_width||m.min_height>m.max_height)throw Error(isPlise()?'Plise en 20–120 cm, boy 20–250 cm arasında olmalıdır.':'Ölçü sınırları 50–280 cm aralığında olmalıdır.');if(isPlise())pliseConfig();
  if(stock!==''&&(!Number.isInteger(Number(stock))||Number(stock)<0))throw Error('Stok sıfır veya pozitif bir tam sayı olmalıdır.');
  if(variants().length>8)throw Error('En fazla 8 varyant grubu ekleyebilirsiniz.');
- return {title,price,m,stock:stock===''?null:Number(stock)};
+ return {title,price,m,stock:stock===''?null:Number(stock),plise:isPlise()?pliseConfig():null};
 }
 async function save(force){
  if(busy)return;
@@ -190,6 +197,7 @@ async function save(force){
    const {error}=await sb.storage.from(bucket).upload(path,image.file,{contentType:image.file.type,cacheControl:'3600',upsert:false});
    if(error)throw error;image.path=path;stored.push(path);
   }
+  if(data.plise){const {error:pliseError}=await sb.from('plise_product_config').upsert({slug,...data.plise},{onConflict:'slug'});if(pliseError)throw pliseError;}
   const record={slug,short_description:cleanText($('ps-short').value),description_html:window.PKDescriptionFormat.normalize($('ps-desc').innerHTML),image_paths:stored,variant_options:variants(),measurement_options:data.m,seo_title:cleanText($('ps-seo-title').value),seo_description:cleanText($('ps-seo-desc').value),stock_qty:data.stock,display_status:status,updated_at:new Date().toISOString()};
   const {error:detailsError}=await sb.from('shop_product_details').upsert(record,{onConflict:'slug'});if(detailsError)throw detailsError;
   const {error:publishError}=await sb.from('shop_products').update({is_active:product.is_active,visibility:status}).eq('slug',slug);if(publishError)throw publishError;
@@ -202,10 +210,10 @@ async function save(force){
   $('ps-mode-banner').className='ps-mode-banner editing';
   images.forEach(i=>{if(i.objectURL){URL.revokeObjectURL(i.objectURL);i.objectURL=null;i.file=null}});
   renderImages();$('ps-summary-date').textContent=new Date().toLocaleDateString('tr-TR');
-  feedback('✓ Ürün başarıyla '+(status==='published'?'yayınlandı.':'kaydedildi.')+' Mağaza bağlantısı: urun.html?slug='+slug);
+  feedback('✓ Ürün başarıyla '+(status==='published'?'yayınlandı.':'kaydedildi.')+' Mağaza bağlantısı: '+(product.collection==='plise'?'plise-perde.html?slug=':'urun.html?slug=')+slug);
   // Keep the admin view visible to allow further photo/description changes.
   $('ps-crumb').textContent=data.title;$('ps-page-title').textContent='Ürünü Düzenle';setStatus(status);
-  const link=document.createElement('a');link.href='urun.html?slug='+encodeURIComponent(slug);link.target='_blank';link.rel='noopener';link.textContent='Ürünü Mağazada Aç →';link.style.cssText='display:block;color:#865326;font-weight:700;margin-top:8px';$('ps-feedback').append(link);
+  const link=document.createElement('a');link.href=(product.collection==='plise'?'plise-perde.html?slug=':'urun.html?slug=')+encodeURIComponent(slug);link.target='_blank';link.rel='noopener';link.textContent='Ürünü Mağazada Aç →';link.style.cssText='display:block;color:#865326;font-weight:700;margin-top:8px';$('ps-feedback').append(link);
  }catch(e){feedback('Kaydedilemedi: '+(e?.message||'Beklenmeyen hata')+(justCreated?' Yeni ürün taslak kaydı oluşturulmuş olabilir; aynı ürünü listeden açıp işlemi yeniden deneyin.':''))}
  finally{busy=false;['ps-publish','ps-save-draft'].forEach(id=>$(id).disabled=false)}
 }
@@ -222,7 +230,7 @@ drop.addEventListener('dragleave',()=>drop.classList.remove('dragging'));
 drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('dragging');addFiles(e.dataTransfer.files)});
 document.querySelectorAll('input[name="ps-publish"]').forEach(r=>r.addEventListener('change',()=>{$('ps-active').value=r.value;authorStatus()}));
 $('ps-active').addEventListener('change',()=>setStatus($('ps-active').value));$('ps-sale-enabled').addEventListener('change',refreshSummary);
-['ps-name','ps-price','ps-category','ps-stock','ps-short'].forEach(id=>$(id).addEventListener('input',refreshSummary));
+['ps-name','ps-price','ps-stock','ps-short'].forEach(id=>$(id).addEventListener('input',refreshSummary));$('ps-category').addEventListener('change',()=>{if(isPlise()&&!current){for(const [id,value] of [['ps-minw',20],['ps-maxw',120],['ps-minh',20],['ps-maxh',250]])$(id).value=value}else if(!current){for(const [id,value] of [['ps-minw',50],['ps-maxw',280],['ps-minh',50],['ps-maxh',280]])$(id).value=value}syncPlise()});
 $('ps-save-draft').addEventListener('click',()=>save());
 $('ps-publish').addEventListener('click',()=>{setStatus('published');save('published')});
 document.querySelectorAll('[data-ps-scroll]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-ps-scroll]').forEach(b=>b.classList.toggle('selected',b===button));$(button.dataset.psScroll)?.scrollIntoView({behavior:'smooth',block:'start'})}));
