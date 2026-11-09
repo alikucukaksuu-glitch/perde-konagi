@@ -27,7 +27,7 @@ function show(){
  for(const line of cart){const q=line.quote;if(!q)continue;const unit=Number(q.unit_total),lineTotal=unit*line.quantity;sum+=lineTotal;qty+=line.quantity;
  const o=q.options||{};const card=document.createElement('article');card.className='item';
  const top=document.createElement('div');top.className='item-main';
- const img=document.createElement('img');img.className='item-image';img.src=line.productImage||(q.slug==='plise-perde'?'zebra-koleksiyon.png':(q.slug.startsWith('mat-stor-')?q.slug+'-1.webp':q.slug.replace('-zebra-perde','')+'-1.'+(q.slug.includes('siyah')?'png':'webp')));img.alt=q.title;img.loading='lazy';img.onerror=()=>img.style.visibility='hidden';
+ const img=document.createElement('img');img.className='item-image';img.src=line.productImage||(q.slug==='plise-perde'?'plise-product.svg':(q.slug.startsWith('mat-stor-')?q.slug+'-1.webp':q.slug.replace('-zebra-perde','')+'-1.'+(q.slug.includes('siyah')?'png':'webp')));img.alt=q.title;img.loading='lazy';img.onerror=()=>img.style.visibility='hidden';
  const block=document.createElement('div');block.className='item-info';
  const productLink=document.createElement('a');productLink.href=q.slug==='plise-perde'?'plise-perde.html':(q.slug.startsWith('mat-stor-')||q.slug.startsWith('bambu-'))?q.slug+'.html':'urun.html?slug='+encodeURIComponent(q.slug);productLink.append(text('h2',q.title));
  const sub=text('p',q.slug==='plise-perde'?q.width_cm+' × '+q.height_cm+' cm · '+o.fabric+' Kumaş · '+o.profile+' Profil · '+o.surface+' · '+o.mounting:q.width_cm+' × '+q.height_cm+' cm · '+kasaName(o.kasaTip)+(o.kasaRenk?' ('+o.kasaRenk+')':'')+' · '+tr(o.zincir)+' Zincir · '+tr(o.boru)+' Boru · '+tr(o.yon)+' Yön','item-subtitle');
