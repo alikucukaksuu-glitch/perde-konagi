@@ -1,0 +1,47 @@
+(()=>{'use strict';
+const $=id=>document.getElementById(id),slug=new URLSearchParams(location.search).get('slug')||'';
+const sb=window.supabase?.createClient('https://rwylhxrtggsicieuyjrm.supabase.co','sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA');
+const money=v=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(v));
+const photo=p=>p?.startsWith('https://')?p:sb.storage.from('product-images').getPublicUrl(p).data.publicUrl;
+let product=null,detail=null,config=null,choice={color:null,system:null,surface:null},quote=null,busy=false,requestVersion=0,timer;
+const palettes={'Beyaz':'#eee9dc','Royal Beyaz':'#eee9dc','Açık Meşe':'#d6ae7b','Meşe':'#af7b4c','Ceviz':'#775033','Kestane':'#905e40','Siyah':'#2e2a28','Antrasit':'#484544','Krem':'#e5d1b2','Doğal':'#bb8b5a'};
+function message(t){$('wb-status').textContent=t||''}
+function value(s){const n=String(s??'').trim().replace(',','.');return /^\d+(?:\.\d+)?$/.test(n)?Number(n):null}
+function check(){if(!product||!config||!detail)return 'Ürün bilgileri hazırlanıyor.';const w=value($('wb-width').value),h=value($('wb-height').value);
+ if(w===null||h===null)return 'En ve boy ölçülerini giriniz.';
+ const m=detail.measurement_options||{},minW=Number(m.min_width??30),maxW=Number(m.max_width??300),minH=Number(m.min_height??30),maxH=Number(m.max_height??300);
+ if(w<minW||w>maxW||h<minH||h>maxH)return 'Ölçü sınırları: En '+minW+'–'+maxW+', Boy '+minH+'–'+maxH+' cm.';
+ if(!Number.isInteger(w*2)||!Number.isInteger(h*2))return 'Yalnızca yarım santimetre kabul edilir: 30 / 30,5 / 31 cm. 30,2 geçersiz.';
+ return '';}
+function params(){return {p_slug:product.slug,p_width_cm:value($('wb-width').value),p_height_cm:value($('wb-height').value),p_color:choice.color,p_system:choice.system,p_surface:choice.surface}}
+function update(){clearTimeout(timer);quote=null;$('wb-add').disabled=true;$('wb-add').textContent='🛒 Sepete Ekle';$('wb-total').textContent='—';let reason=check();if(reason){$('wb-summary').textContent=reason;return}
+ $('wb-summary').textContent='Fiyat hesaplanıyor…';const seq=++requestVersion;
+ timer=setTimeout(async()=>{try{const {data,error}=await sb.rpc('wood_blind_quote_product',params());if(seq!==requestVersion)return;if(error||!data)throw error||Error('Fiyat alınamadı');quote=data;$('wb-total').textContent=money(data.unit_total);$('wb-add').textContent='🛒 Sepete Ekle · '+money(data.unit_total);$('wb-add').disabled=false;$('wb-summary').textContent='Ölçü: '+data.width_cm+' × '+data.height_cm+' cm · '+new Intl.NumberFormat('tr-TR',{maximumFractionDigits:3}).format(data.billed_sqm)+' m² üzerinden hesaplandı.';message('')}catch(e){if(seq!==requestVersion)return;$('wb-summary').textContent='Fiyat alınamadı. Tekrar deneyin.';message(e.message)}},250);
+}
+function card(label,kind,index){const b=document.createElement('button');b.type='button';b.className='pp-choice';b.setAttribute('aria-pressed',String(choice[kind]===label));const icon=document.createElement('span');icon.className='wb-swatch';if(kind==='color')icon.style.setProperty('--wood',palettes[label]||'#b58b64');else icon.textContent=kind==='system'?(label==='İpli Sistem'?'▤':'▥'):['▣','▤','⌂'][index%3];const tick=document.createElement('span');tick.className='pp-check';tick.textContent='✓';const name=document.createElement('strong');name.textContent=label;b.append(icon,tick,name);b.addEventListener('click',()=>{choice[kind]=label;renderChoices();update()});return b;}
+function renderChoices(){for(const [id,field,kind] of [['wb-colors','colors','color'],['wb-systems','systems','system'],['wb-surfaces','surfaces','surface']]){const parent=$(id);parent.replaceChildren(...(config[field]||[]).map((v,i)=>card(v,kind,i)))}}
+function gallery(paths){const strip=$('wb-gallery');strip.replaceChildren();const main=$('wb-main-image');const pictures=(paths||[]).filter(Boolean);main.src=pictures.length?photo(pictures[0]):'wood-jaluzi-product.svg';main.alt=product.title;
+ pictures.forEach((p,i)=>{const btn=document.createElement('button');btn.type='button';btn.className='pp-gallery-thumb';btn.setAttribute('aria-pressed',String(i===0));btn.setAttribute('aria-label',(i+1)+'. fotoğraf');const im=document.createElement('img');im.src=photo(p);im.loading='lazy';im.alt=product.title+' '+(i+1)+'. fotoğraf';btn.append(im);btn.onclick=()=>{main.src=photo(p);strip.querySelectorAll('button').forEach(el=>el.setAttribute('aria-pressed',String(el===btn)))};strip.append(btn)});
+}
+async function showDetail(){try{const [a,b,c]=await Promise.all([
+sb.from('shop_products').select('slug,title,price_per_sqm,is_active,visibility').eq('slug',slug).eq('collection','ahsap-jaluzi').eq('visibility','published').eq('is_active',true).single(),
+sb.from('shop_product_details').select('image_paths,short_description,description_html,measurement_options,stock_qty,display_status').eq('slug',slug).eq('display_status','published').single(),
+sb.from('wood_blind_product_config').select('*').eq('slug',slug).single()]);
+if(a.error||b.error||c.error)throw a.error||b.error||c.error;
+product=a.data;detail=b.data;config=c.data;
+if(detail.stock_qty===0)throw Error('Ürün stokta bulunmuyor');
+choice={color:config.colors?.[0],system:config.systems?.[0],surface:config.surfaces?.[0]};
+$('wb-title').textContent=product.title;$('wb-crumb-title').textContent=product.title;document.title=product.title+' | Perde Konağı';$('wb-subtitle').textContent=detail.short_description||'Özel ölçü ahşap jaluzi perde';$('wb-sqm-price').textContent=money(product.price_per_sqm);
+const m=detail.measurement_options||{};$('wb-limits').textContent='En '+(m.min_width??30)+'–'+(m.max_width??300)+' cm · Boy '+(m.min_height??30)+'–'+(m.max_height??300)+' cm';
+const desc=$('wb-description');if(detail.description_html&&window.PKDescriptionFormat?.sanitize)desc.innerHTML=window.PKDescriptionFormat.sanitize(detail.description_html);else desc.textContent='Bu ürüne henüz açıklama eklenmemiş.';
+gallery(detail.image_paths);renderChoices();update();
+}catch(e){message('Ürün yüklenemedi: '+e.message);$('wb-add').disabled=true}}
+async function listProducts(){try{const {data:products,error}=await sb.from('shop_products').select('slug,title,price_per_sqm').eq('collection','ahsap-jaluzi').eq('visibility','published').eq('is_active',true).order('title');if(error)throw error;const holder=$('wb-product-list');holder.replaceChildren();if(!products.length){$('wb-product-list-status').textContent='Bu koleksiyonda henüz yayında ürün yok. Yönetim panelinden ahşap jaluzi ürünleri ekleyebilirsiniz.';return}
+const {data:details,error:dError}=await sb.from('shop_product_details').select('slug,image_paths,short_description').in('slug',products.map(p=>p.slug)).eq('display_status','published');if(dError)throw dError;const map=new Map((details||[]).map(d=>[d.slug,d]));
+products.forEach(p=>{const d=map.get(p.slug);if(!d)return;const a=document.createElement('a');a.className='pp-collection-card';a.href='ahsap-jaluzi.html?slug='+encodeURIComponent(p.slug);const img=document.createElement('img');img.src=d.image_paths?.[0]?photo(d.image_paths[0]):'wood-jaluzi-product.svg';img.loading='lazy';img.alt=p.title;img.onerror=()=>{img.onerror=null;img.src='wood-jaluzi-product.svg'};const body=document.createElement('div');body.className='pp-card-body';const tag=document.createElement('div');tag.className='pp-card-eyebrow';tag.textContent='AHŞAP JALUZİ';const title=document.createElement('h3');title.textContent=p.title;const desc=document.createElement('p');desc.textContent=d.short_description||'Özel ölçü ahşap jaluzi perde';const link=document.createElement('strong');link.textContent='Ürünü İncele →';body.append(tag,title,desc,link);a.append(img,body);holder.append(a)});
+$('wb-product-list-status').textContent=holder.children.length?'':'Henüz yayında ahşap jaluzi ürünü bulunmuyor.';}catch(e){$('wb-product-list-status').textContent='Ürünler yüklenemedi: '+e.message}}
+async function addCart(){if(busy||!product||check())return;busy=true;$('wb-add').disabled=true;try{const {data,error}=await sb.rpc('wood_blind_quote_product',params());if(error||!data)throw error||Error('Fiyat doğrulanamadı');const key='perdeKonagiCartV1',items=JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(items)||items.length>=50)throw Error('Sepet dolu');items.push({id:crypto.randomUUID(),type:'wood-blind',options:params(),quote:data,quantity:1,productImage:detail.image_paths?.[0]?photo(detail.image_paths[0]):'wood-jaluzi-product.svg',orderNote:$('wb-note').value.trim(),added_at:new Date().toISOString()});localStorage.setItem(key,JSON.stringify(items));$('wb-cart-badge').textContent=String(items.reduce((n,x)=>n+Number(x.quantity||0),0));message('✓ Ahşap jaluzi sepetinize eklendi.');}catch(e){message('Sepete eklenemedi: '+e.message)}finally{busy=false;update()}}
+$('wb-form').addEventListener('submit',e=>e.preventDefault());['wb-width','wb-height'].forEach(id=>$(id).addEventListener('input',update));$('wb-note').addEventListener('input',e=>$('wb-note-count').textContent=e.target.value.length+' / 250');$('wb-add').addEventListener('click',addCart);
+try{const items=JSON.parse(localStorage.getItem('perdeKonagiCartV1')||'[]');$('wb-cart-badge').textContent=String(items.reduce((n,i)=>n+Number(i.quantity||0),0))}catch(_){}
+if(slug)showDetail();else listProducts();
+})();
