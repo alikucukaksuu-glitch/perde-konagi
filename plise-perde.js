@@ -76,7 +76,15 @@ async function init(){
   $('pp-limits').textContent='En '+(m.min_width??20)+'–'+(m.max_width??200)+' cm, Boy '+(m.min_height??20)+'–'+(m.max_height??200)+' cm.';
   makeGallery(detail.image_paths);const desc=$('pp-description');if(detail.description_html&&window.PKDescriptionFormat?.sanitize){desc.innerHTML=window.PKDescriptionFormat.sanitize(detail.description_html)}else desc.textContent='Bu ürüne henüz açıklama eklenmemiş.';
   render();update();
- }catch(e){note('Ürün yüklenemedi: '+e.message);$('pp-add').disabled=true}
+  const mainImage=$('pp-main-image');
+  if(mainImage && mainImage.style.display==='block' && !mainImage.complete){
+   await Promise.race([new Promise(resolve=>{mainImage.addEventListener('load',resolve,{once:true});mainImage.addEventListener('error',resolve,{once:true})}),new Promise(resolve=>setTimeout(resolve,1800))]);
+  }
+  document.documentElement.dataset.pliseReady='true';
+ }catch(e){
+  note('Ürün yüklenemedi: '+e.message);$('pp-add').disabled=true;
+  if(slug){const loading=$('pp-product-loading');if(loading){loading.replaceChildren();const message=document.createElement('p');message.textContent='Ürün bilgileri yüklenemedi: '+e.message;const a=document.createElement('a');a.href='plise-perde.html';a.textContent='Plise perde modellerine dön →';loading.append(message,a)}}
+ }
 }
 ['pp-width','pp-height'].forEach(id=>$(id).addEventListener('input',update));
 $('pp-search').addEventListener('input',render);
