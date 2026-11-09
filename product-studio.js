@@ -31,7 +31,7 @@ function woodConfig(){
  return {colors,systems,surfaces,min_area_sqm,ribbon_fee_sqm,slat_mm,updated_at:new Date().toISOString()};
 }
 function syncCategory(){
- const wood=isWood(),tul=isTul();$('ps-wood-config').hidden=!wood;$('ps-tul-config').hidden=!tul;
+ const wood=isWood(),tul=isTul();$('ps-wood-config').hidden=!wood;$('ps-tul-config').hidden=!tul;$('ps-price-label').textContent=tul?'Kumaş Metre Fiyatı (TL/metre)':'m² Fiyat (TL)';
  syncPlise();$('ps-variants').hidden=wood||isPlise()||tul;
  for(const id of ['ps-minw','ps-maxw','ps-minh','ps-maxh']){
   $(id).step=wood?'0.5':isPlise()?'0.1':'1';
