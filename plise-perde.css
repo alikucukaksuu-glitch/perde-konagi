@@ -33,3 +33,17 @@ html[data-plise-view="collection"] .pp-wrapper{max-width:1160px;margin:auto;padd
 html[data-plise-view="collection"] .pp-crumb{margin:0 0 27px;color:#797a72}
 @media(max-width:750px){.pp-collection-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.pp-collection h1{font-size:31px}.pp-card-body{padding:13px}.pp-card-body h3{font-size:19px}}
 @media(max-width:460px){.pp-collection-cards{grid-template-columns:1fr}.pp-collection-card>img{aspect-ratio:4/4.4}}
+
+/* Plise product hydration: do not show generic placeholder data before Supabase responds. */
+html[data-plise-view="product"]:not([data-plise-ready="true"]) .pp-product-only{display:none!important}
+html[data-plise-view="product"][data-plise-ready="true"] #pp-product-loading{display:none!important}
+html[data-plise-view="collection"] #pp-product-loading{display:none!important}
+.pp-product-loading{display:grid;grid-template-columns:minmax(0,1.22fr) minmax(0,.82fr) minmax(350px,.87fr);align-items:start;gap:26px;margin:6px auto 35px;min-height:480px}
+.pp-loading-photo,.pp-loading-detail>div,.pp-loading-options>div{background:linear-gradient(100deg,#ede4d9 20%,#f7f1ea 45%,#ede4d9 70%);background-size:220% 100%;animation:pp-loading-shimmer 1.6s ease-in-out infinite;border-radius:11px}
+.pp-loading-photo{aspect-ratio:1/1.05;min-height:340px}
+.pp-loading-detail{padding:25px 0}.pp-loading-detail>div{height:20px;margin-bottom:18px}.pp-loading-detail>div:first-child{width:45%;height:12px}.pp-loading-detail>div:nth-child(2){height:50px;width:93%}.pp-loading-detail>div:nth-child(3){width:65%;height:25px}.pp-loading-detail p{color:#8b735f;font-size:13px;margin-top:24px}
+.pp-loading-options{border:1px solid #e9dace;background:#fffdfb;padding:20px;border-radius:15px}.pp-loading-options>div{height:65px;margin:0 0 24px}.pp-loading-options>div:first-child{height:110px}
+@keyframes pp-loading-shimmer{0%{background-position:100% 0}100%{background-position:-120% 0}}
+@media(max-width:1200px){.pp-product-loading{grid-template-columns:1fr 1fr}.pp-loading-options{grid-column:1/-1}}
+@media(max-width:760px){.pp-product-loading{grid-template-columns:1fr;gap:15px}.pp-loading-photo{min-height:260px;aspect-ratio:1.12}.pp-loading-options{grid-column:auto}}
+@media(prefers-reduced-motion:reduce){.pp-loading-photo,.pp-loading-detail>div,.pp-loading-options>div{animation:none}}
