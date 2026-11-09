@@ -98,7 +98,7 @@
 <label class="ps-label" for="ps-name">Ürün Adı <b>*</b></label>
 <input class="ps-input" id="ps-name" maxlength="160" placeholder="Örn. Zebra Perde (Krem)">
 <div class="ps-fields-three">
-<div><label class="ps-label" for="ps-category">Kategori <b>*</b></label><select class="ps-input" id="ps-category"><option value="zebra">Zebra Perde</option><option value="mat-stor">Stor Perde</option><option value="plise">Plise Perde</option></select></div>
+<div><label class="ps-label" for="ps-category">Kategori <b>*</b></label><select class="ps-input" id="ps-category"><option value="zebra">Zebra Perde</option><option value="mat-stor">Stor Perde</option><option value="plise">Plise Perde</option><option value="ahsap-jaluzi">Ahşap Jaluzi Perde</option></select></div>
 <div><label class="ps-label" for="ps-price">m² Fiyat (TL) <b>*</b></label><input class="ps-input" id="ps-price" type="number" min="1" max="100000" step="0.01" placeholder="450,00"></div>
 <div><label class="ps-label" for="ps-active">Durum</label><select class="ps-input" id="ps-active"><option value="published">Yayında</option><option value="draft">Taslak</option></select></div>
 </div>
@@ -141,6 +141,22 @@
 <div class="ps-fields-three"><div><label class="ps-label" for="ps-plise-mountings">Montaj Yöntemleri</label><input class="ps-input" id="ps-plise-mountings" placeholder="Vidalı, Yapışkanlı"></div><div><label class="ps-label" for="ps-plise-minarea">Minimum Fiyatlandırma Alanı (m²)</label><input class="ps-input" id="ps-plise-minarea" type="number" min="0" max="5" step="0.01" value="1"></div></div>
 <div class="ps-fields-three"><div><label class="ps-label" for="ps-plise-adhesive">Yapışkanlı Ek Ücret (TL/m²)</label><input class="ps-input" id="ps-plise-adhesive" type="number" min="0" step="0.01" placeholder="Belirlenmedi"></div><div><label class="ps-label" for="ps-plise-combined">Vida + Yapışkanlı Ek Ücret (TL/m²)</label><input class="ps-input" id="ps-plise-combined" type="number" min="0" step="0.01" placeholder="Belirlenmedi"></div></div>
 <p class="ps-hint">En-boy kutuları plise ürünlerinde ondalıklı ölçü destekler: 20,1 / 20,3 / 40,5 cm. Montaj ek ücreti tanımlanmazsa ilgili seçenek sepetten satın alınamaz.</p>
+</div></section>
+<section class="ps-box" id="ps-wood-config" hidden><h3>▤ &nbsp;Ahşap Jaluzi Perde Özelleştirmeleri</h3>
+<div class="ps-box-inner">
+<p class="ps-hint">Bu ayarlar yalnızca oluşturduğunuz ahşap jaluzi ürününe uygulanır. Ahşap renklerini, sistem seçeneklerini, montaj yerini ve fiyatlarını ürün bazında düzenleyebilirsiniz.</p>
+<div class="ps-fields-three">
+<div><label class="ps-label" for="ps-wood-colors">Ahşap Renkleri / Tonları</label><input class="ps-input" id="ps-wood-colors" placeholder="Beyaz, Açık Meşe, Meşe, Ceviz, Kestane, Siyah"></div>
+<div><label class="ps-label" for="ps-wood-systems">Sistem Seçenekleri</label><input class="ps-input" id="ps-wood-systems" placeholder="İpli Sistem, Kurdelalı Sistem"></div>
+<div><label class="ps-label" for="ps-wood-surfaces">Montaj Yeri Seçenekleri</label><input class="ps-input" id="ps-wood-surfaces" placeholder="Pencere, Duvar, Tavan"></div>
+</div>
+<div class="ps-fields-three">
+<div><label class="ps-label" for="ps-wood-minarea">Minimum Fiyatlandırma Alanı (m²)</label><input class="ps-input" id="ps-wood-minarea" type="number" min="0" max="5" step="0.01" value="1"></div>
+<div><label class="ps-label" for="ps-wood-ribbon-fee">Kurdelalı Sistem Ek Ücreti (TL/m²)</label><input class="ps-input" id="ps-wood-ribbon-fee" type="number" min="0" step="0.01" value="0"></div>
+<div><label class="ps-label" for="ps-wood-slat">Ahşap Lamel Genişliği</label><select class="ps-input" id="ps-wood-slat"><option value="50">50 mm</option><option value="25">25 mm</option><option value="35">35 mm</option><option value="63">63 mm</option></select></div>
+</div>
+<p class="ps-hint"><b>Ölçü kuralı:</b> En ve boy yalnızca 0,5 cm artışlarla kabul edilir: 30 / 30,5 / 31 / 31,5 … <b>30,2 reddedilir.</b> Minimum ve maksimum ölçüleri alttaki Ölçü Seçenekleri kısmından belirleyin.</p>
+<p class="ps-hint"><b>Ürün Açıklaması:</b> Ürün Bilgileri sekmesindeki açıklama editörü bu kategoride de çalışır; müşterinin ürün sayfasının altında görüntülenir.</p>
 </div></section>
 <section class="ps-box" id="ps-measures"><h3>♧ &nbsp;Ölçü Seçenekleri</h3>
 <div class="ps-box-inner"><p class="ps-hint">Kabul edilen en ve boy sınırları. Zebra/stor ürünlerinde mevcut minimum 100 cm en fiyatlandırması korunur. Plise ürününde minimum alan kendi özelleştirme bölümünden belirlenir.</p><div class="ps-fields-three">
