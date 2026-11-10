@@ -1,65 +1,47 @@
-/* Perde Konağı: public maintenance notice with authenticated owner preview.
-   Static hosting note: the gate is a UI redirect, not access control for public files. */
+/* Perde Konağı: visitor maintenance routing with authenticated admin preview.
+   GitHub Pages is static; this is a visitor UX redirect, not protection for public files. */
 (()=>{'use strict';
 if(/(?:^|\/)admin(?:\.html)?$|(?:^|\/)bakim(?:\.html)?$/.test(location.pathname))return;
+if(/\b(?:type=recovery|access_token=|refresh_token=|token_hash=)\b/.test(location.hash+location.search))return;
 const origin='https://rwylhxrtggsicieuyjrm.supabase.co';
 const key='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
-const sessionKey='sb-rwylhxrtggsicieuyjrm-auth-token';
-const recovery=/\b(?:type=recovery|access_token=|refresh_token=|token_hash=)\b/.test(location.hash+location.search);
-if(recovery)return;
-const style=document.createElement('style');
-style.id='pk-maintenance-preload';
-style.textContent='html{visibility:hidden!important}';
-document.head.append(style);
-const controller=new AbortController();
-let finished=false;
-const finish=()=>{if(!finished){finished=true;style.remove()}};
-const timeout=setTimeout(()=>{controller.abort();finish()},6500);
-const headers={apikey:key,accept:'application/json'};
-async function responseJson(url,options={}){
- const response=await fetch(url,{...options,cache:'no-store',signal:controller.signal});
- if(!response.ok)throw new Error('HTTP '+response.status);
- return response.json();
+const style=document.createElement('style');style.id='pk-maintenance-preload';style.textContent='html{visibility:hidden!important}';document.head.append(style);
+const ctrl=new AbortController();
+const maxWait=setTimeout(()=>{ctrl.abort();style.remove()},10500);
+let finish=false;
+function release(){if(!finish){finish=true;clearTimeout(maxWait);style.remove()}}
+async function maintenanceEnabled(){
+ const response=await fetch(origin+'/rest/v1/site_maintenance?id=eq.1&select=enabled',{headers:{apikey:key,accept:'application/json'},cache:'no-store',signal:ctrl.signal});
+ if(!response.ok)throw Error('Maintenance status could not be read');
+ const data=await response.json();return Array.isArray(data)&&data[0]?.enabled===true;
 }
-async function currentAdmin(){
- let record;
- try{record=JSON.parse(localStorage.getItem(sessionKey)||'null')}catch(_){return false}
- if(!record?.access_token)return false;
- let token=record.access_token;
- let user;
- try{
-  user=await responseJson(origin+'/auth/v1/user',{headers:{...headers,Authorization:'Bearer '+token}});
- }catch(e){
-  if(!record.refresh_token)return false;
-  try{
-   const renewed=await responseJson(origin+'/auth/v1/token?grant_type=refresh_token',{
-    method:'POST',headers:{...headers,'Content-Type':'application/json'},
-    body:JSON.stringify({refresh_token:record.refresh_token})
-   });
-   if(!renewed?.access_token||!renewed.user?.id)return false;
-   token=renewed.access_token;
-   const fresh={...record,...renewed,expires_at:Math.floor(Date.now()/1000)+(renewed.expires_in||3600)};
-   if(localStorage.getItem(sessionKey)===JSON.stringify(record))localStorage.setItem(sessionKey,JSON.stringify(fresh));
-   user=renewed.user;
-  }catch(_){return false}
- }
- if(!user?.id)return false;
- try{
-  const u=origin+'/rest/v1/admin_access?user_id=eq.'+encodeURIComponent(user.id)+'&select=role&limit=1';
-  const rows=await responseJson(u,{headers:{...headers,Authorization:'Bearer '+token}});
-  return Array.isArray(rows)&&['owner','admin'].includes(rows[0]?.role);
- }catch(_){return false}
+function supabaseReady(){
+ if(window.supabase?.createClient)return Promise.resolve(window.supabase);
+ return new Promise((resolve,reject)=>{
+  const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js';
+  script.onload=()=>window.supabase?.createClient?resolve(window.supabase):reject(Error('Auth SDK missing'));
+  script.onerror=()=>reject(Error('Auth SDK failed to load'));
+  document.head.append(script);
+ });
 }
-async function gate(){
+async function verifiedAdmin(){
+ // Keep this check identical to the administrator panel's own authentication.
+ // This client also refreshes expired sessions using the official Auth flow.
+ const lib=await supabaseReady();
+ const sb=lib.createClient(origin,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+ const {data,error}=await sb.auth.getUser();
+ if(error||!data?.user)return false;
+ const role=await sb.from('admin_access').select('role').eq('user_id',data.user.id).maybeSingle();
+ return !role.error&&['owner','admin'].includes(role.data?.role);
+}
+async function run(){
  try{
-  const rows=await responseJson(origin+'/rest/v1/site_maintenance?id=eq.1&select=enabled',{headers});
-  if(!Array.isArray(rows)||rows[0]?.enabled!==true)return;
-  if(await currentAdmin())return;
-  const dest=new URL('bakim.html',location.href);
-  location.replace(dest.href);
+  if(!await maintenanceEnabled())return;
+  if(await verifiedAdmin())return;
+  location.replace(new URL('bakim.html',location.href).href);
  }catch(_){
-  // Existing behavior: a network outage must not permanently blank the storefront.
- }finally{clearTimeout(timeout);finish()}
+  // If remote service is down, do not trap everyone on a blank page.
+ }finally{release()}
 }
-gate();
+run();
 })();
