@@ -34,13 +34,28 @@ async function verifiedAdmin(){
  const role=await sb.from('admin_access').select('role').eq('user_id',data.user.id).maybeSingle();
  return !role.error&&['owner','admin'].includes(role.data?.role);
 }
+function redirectToMaintenance(){location.replace(new URL('bakim.html',location.href).href)}
+function markAdminPreview(){
+ const create=()=>{
+  if(document.getElementById('pk-admin-maintenance-preview'))return;
+  const banner=document.createElement('div');banner.id='pk-admin-maintenance-preview';
+  banner.setAttribute('role','status');
+  banner.textContent='YÖNETİCİ ÖNİZLEMESİ · Bakım modu açık — müşteriler bakım sayfasını görüyor';
+  Object.assign(banner.style,{position:'fixed',top:'0',left:'0',right:'0',zIndex:'2147483647',padding:'7px 14px',background:'#3d2b21',color:'#fff',textAlign:'center',font:'bold 12px Arial,sans-serif',pointerEvents:'none'});
+  document.body.prepend(banner);
+ };
+ if(document.body)create();else document.addEventListener('DOMContentLoaded',create,{once:true});
+}
 async function run(){
  try{
-  if(!await maintenanceEnabled())return;
-  if(await verifiedAdmin())return;
-  location.replace(new URL('bakim.html',location.href).href);
+  const enabled=await maintenanceEnabled();
+  if(!enabled)return;
+  if(await verifiedAdmin()){markAdminPreview();return}
+  redirectToMaintenance();
  }catch(_){
-  // If remote service is down, do not trap everyone on a blank page.
+  // When maintenance status or role cannot be verified, prefer maintenance
+  // to accidentally exposing the storefront during an outage.
+  redirectToMaintenance();
  }finally{release()}
 }
 run();
