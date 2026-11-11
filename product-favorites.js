@@ -17,6 +17,7 @@ function render(){
  button.title=stored?'Favorilerimden çıkar':'Favorilerime ekle';
 }
 async function refresh(){
+ if(busy)return;
  const token=++serial;
  try{
   const response=await sb.auth.getUser();
@@ -68,11 +69,25 @@ function mount(){
     clearTimeout(notice.pkTimeout);notice.pkTimeout=setTimeout(()=>notice.remove(),6500);
     return;
    }
-   const response=stored
-    ?await sb.from('customer_favorites').delete().eq('user_id',user.id).eq('product_slug',slug)
-    :await sb.from('customer_favorites').insert({user_id:user.id,product_slug:slug});
-   if(response.error)throw response.error;
-   stored=!stored;render();
+   // Read the actual database state before toggling: local state can be stale.
+   const existing=await sb.from('customer_favorites')
+    .select('product_slug').eq('user_id',user.id).eq('product_slug',slug).maybeSingle();
+   if(existing.error)throw existing.error;
+   const alreadySaved=!!existing.data;
+   if(alreadySaved){
+    const removed=await sb.from('customer_favorites').delete()
+     .eq('user_id',user.id).eq('product_slug',slug);
+    if(removed.error)throw removed.error;
+    stored=false;
+   }else{
+    // Idempotent add handles another tab or a concurrent click safely.
+    const added=await sb.from('customer_favorites')
+     .upsert({user_id:user.id,product_slug:slug},{onConflict:'user_id,product_slug',ignoreDuplicates:true});
+    if(added.error)throw added.error;
+    stored=true;
+   }
+   ++serial;
+   render();
   }catch(e){alert('Favori değiştirilemedi: '+(e?.message||'Bağlantıyı kontrol edin.'))}
   finally{busy=false;button.disabled=false}
  });
