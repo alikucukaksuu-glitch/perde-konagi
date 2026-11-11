@@ -11,6 +11,81 @@ const pileFactors={'1.0x':1,'2.0x':2,'3.0x':3,'3.5x':3.5,'4.5x':4.5,'Özel':1,''
 const pileFactor=(pile)=>pileFactors[pile]??1;
 const rounded=(n)=>Math.round((Number(n)+Number.EPSILON)*100)/100;
 const priceFromBase=(base,pile)=>rounded(Number(base)*pileFactor(pile));
+const storCaseColors={open:[],classic:['Beyaz','Krem'],colored:['Gri','Antrasit','Kahve']};
+let catalogCache=[],catalogOrg=null,catalogRequest=null,manualPrice=false;
+function isStor(){return $('product-category').value==='STOR PERDE'}
+function storSettings(){
+ return {caseType:$('stor-case').value,color:$('stor-color').value,chain:$('stor-chain').value,side:$('stor-side').value,tube:$('stor-tube').value,foot:$('stor-foot').value}
+}
+function storUnitPrice(base,w,h,opts){
+ const calcWidth=Math.max(100,Number(w)||0),calcHeight=Math.max(200,Number(h)||0);
+ const meter=calcWidth/100,area=calcWidth*calcHeight/10000;
+ const caseCost=(opts.caseType==='classic'?140:opts.caseType==='colored'?170:0)*meter;
+ const chainCost=opts.chain==='metal'?105:0;
+ const tubeCost=opts.tube==='38'?200*meter:0;
+ return rounded(area*base+caseCost+chainCost+tubeCost)
+}
+function storSpecs(opts,w,h){
+ const cases={open:'Açık Kasa',classic:'Kapalı Kasa Klasik',colored:'Kapalı Kasa Renkli'};
+ return ['Kasa: '+cases[opts.caseType],opts.caseType!=='open'&&'Kasa Rengi: '+opts.color,
+ 'Zincir: '+(opts.chain==='metal'?'Metal':'Plastik'),'Zincir Yönü: '+(opts.side==='right'?'Sağ':'Sol'),
+ 'Boru: '+(opts.tube==='38'?'38 Jumbo':'32 Standart'),'Yan Ayak: '+(opts.foot==='metal'?'Metal':'Plastik'),
+ 'Hesap En: '+Math.max(100,Number(w)||0)+' cm','Hesap Boy: '+Math.max(200,Number(h)||0)+' cm'].filter(Boolean).join('; ')
+}
+function parseStorSpecs(spec){
+ const get=key=>(String(spec||'').match(new RegExp('(?:^|;\\\\s*)'+key+':\\\\s*([^;]+)'))?.[1]||'').trim();
+ const kase=get('Kasa');
+ return {caseType:kase==='Kapalı Kasa Klasik'?'classic':kase==='Kapalı Kasa Renkli'?'colored':'open',
+ color:get('Kasa Rengi'),chain:get('Zincir')==='Metal'?'metal':'plastic',
+ side:get('Zincir Yönü')==='Sağ'?'right':'left',tube:get('Boru').startsWith('38')?'38':'32',
+ foot:get('Yan Ayak')==='Metal'?'metal':'plastic'}
+}
+function syncStorColor(value){
+ const colors=storCaseColors[value]||[];
+ $('stor-color-row').hidden=!colors.length;
+ $('stor-color').replaceChildren(...colors.map(c=>new Option(c,c)));
+ if(!colors.includes($('stor-color').value))$('stor-color').value=colors[0]||'';
+}
+function syncCategoryUI(){
+ const stor=isStor();
+ $('stor-options').hidden=!stor;
+ $('product-pile').closest('label').hidden=stor;
+ $('product-price').closest('label').firstChild.textContent=stor?'m² Birim Fiyatı (₺) *':'Temel Birim Fiyat (₺) *';
+ $('product-width').required=stor;$('product-height').required=stor;
+ if(stor)syncStorColor($('stor-case').value);
+}
+async function fetchCatalog(){
+ if(!org?.id)return;
+ if(catalogOrg===org.id)return;
+ catalogCache=[];catalogOrg=org.id;
+ const requested=org.id;
+ const promise=sb.from('erp_catalog_products').select('id,name,category,unit_price').eq('organization_id',requested).eq('active',true).order('name').limit(1000);
+ catalogRequest=promise;
+ const {data,error}=await promise;
+ if(catalogOrg!==requested)return;
+ if(error){$('catalog-hint').textContent='Katalog yüklenemedi: '+error.message;return}
+ catalogCache=data||[];
+ $('catalog-hint').textContent='Ürün seçilince fiyat otomatik gelir. Tek harften itibaren arama yapabilirsiniz.';
+}
+function showCatalog(){
+ const category=$('product-category').value;
+ const search=$('catalog-search').value.trim().toLocaleUpperCase('tr-TR');
+ const matches=catalogCache.filter(p=>p.category===category&&(!search||p.name.toLocaleUpperCase('tr-TR').startsWith(search)));
+ const list=$('catalog-results');list.replaceChildren();
+ for(const p of matches.slice(0,150)){
+  const button=newElement('button','catalog-choice');button.type='button';button.setAttribute('role','option');
+  button.append(newElement('span','',p.name),newElement('strong','',fmt(p.unit_price)+(category==='STOR PERDE'?' / m²':'')));
+  button.onclick=()=>{
+   $('product-name').value=p.name;$('catalog-search').value=p.name;
+   $('product-price').value=p.unit_price;manualPrice=false;list.hidden=true;calculateItemTotal();
+  };
+  list.append(button);
+ }
+ if(matches.length>150)list.append(newElement('p','catalog-hint','İlk 150 ürün gösteriliyor. Aramanızı daraltın.'));
+ if(!matches.length)list.append(newElement('p','catalog-hint','Bu harfle başlayan ürün bulunamadı.'));
+ list.hidden=false;
+}
+
 function alertText(text){$('order-alert').textContent=text;$('order-alert').hidden=!text;window.scrollTo({top:0,behavior:'smooth'})}
 function setDate(days){
  const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+days);
@@ -114,6 +189,10 @@ function openItem(category,index){
  $('product-dialog-title').textContent=value?'Satırı Düzenle':'Yeni Satır Ekle';
  $('product-form').reset();
  $('product-category').value=category;
+ $('catalog-search').value='';
+ $('catalog-results').hidden=true;
+ $('stor-case').value='open';$('stor-chain').value='plastic';$('stor-side').value='left';$('stor-tube').value='32';$('stor-foot').value='plastic';
+ syncCategoryUI();
  $('product-name').value=value?.name||'';
  $('product-width').value=value?.width??'';
  $('product-height').value=value?.height??'';
@@ -121,6 +200,14 @@ function openItem(category,index){
  $('product-quantity').value=value?.qty??1;
  $('product-pile').value=value?.pile||'';
  $('product-spec').value=value?.spec||'';
+ if(category==='STOR PERDE'){
+  const cfg=value?.stor||parseStorSpecs(value?.spec||'');
+  $('stor-case').value=cfg.caseType;syncStorColor(cfg.caseType);
+  if(cfg.color&&[...$('stor-color').options].some(x=>x.value===cfg.color))$('stor-color').value=cfg.color;
+  $('stor-chain').value=cfg.chain;$('stor-side').value=cfg.side;$('stor-tube').value=cfg.tube;$('stor-foot').value=cfg.foot;
+ }
+ manualPrice=false;
+ fetchCatalog().then(()=>{if(active?.category===category)showCatalog()});
  $('product-note').value=value?.note||'';
  $('product-status').value=value?.status||'processing';
  $('product-status').disabled=!value?.id||['ready','delivered'].includes(value.status)||['waiting','delivered','cancelled'].includes(editing?.status);
@@ -135,13 +222,28 @@ function openItem(category,index){
  $('product-name').focus();
 }
 function closeItem(){$('product-overlay').hidden=true;active=null}
-function calculateItemTotal(){const p=$('product-pile').value,factor=pileFactor(p),base=asNum($('product-price').value),qty=asNum($('product-quantity').value);$('product-total').textContent=fmt(priceFromBase(base,p)*qty);$('pile-price-hint').textContent='Hesap: '+fmt(base)+' × '+String(factor).replace('.',',')+' (pile) × '+qty+' adet = '+fmt(priceFromBase(base,p)*qty)+(p==='Özel'?' · Özel pile için temel fiyat doğrudan kullanılır.':'');}
+function calculateItemTotal(){
+ const base=asNum($('product-price').value),qty=asNum($('product-quantity').value);
+ if(isStor()){
+  const width=asNum($('product-width').value),height=asNum($('product-height').value);
+  const effectiveWidth=Math.max(100,width),effectiveHeight=Math.max(200,height);
+  const unit=storUnitPrice(base,width,height,storSettings());
+  $('product-total').textContent=fmt(unit*qty);
+  $('pile-price-hint').textContent='Fiyat: '+fmt(unit)+' × '+qty+' adet = '+fmt(unit*qty);
+  $('stor-calculation').textContent='Gerçek ölçü: '+(width||'—')+' × '+(height||'—')+' cm · Fiyat hesabı: '+effectiveWidth+' × '+effectiveHeight+' cm ('+(effectiveWidth*effectiveHeight/10000).toLocaleString('tr-TR')+' m²) · Kasa / mekanizma farkları dahil: '+fmt(unit)+' / adet';
+ }else{
+  const p=$('product-pile').value,factor=pileFactor(p);
+  $('product-total').textContent=fmt(priceFromBase(base,p)*qty);
+  $('pile-price-hint').textContent='Hesap: '+fmt(base)+' × '+String(factor).replace('.',',')+' (pile) × '+qty+' adet = '+fmt(priceFromBase(base,p)*qty)+(p==='Özel'?' · Özel pile için temel fiyat doğrudan kullanılır.':'');
+ }
+}
 function storeItem(e){
  e.preventDefault();
- const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=$('product-pile').value,price=priceFromBase(basePrice,pile);
+ const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=isStor()?'':$('product-pile').value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):priceFromBase(basePrice,pile);
  const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value;
  if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(basePrice)||basePrice<0||!Number.isFinite(price)||price<0||price>99999999){$('product-status-message').textContent='Ürün adı, fiyatı veya adedi geçersiz.';return}
  if((width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))||(height!==''&&(!Number.isFinite(Number(height))||Number(height)<0))){$('product-status-message').textContent='En ve boy negatif olamaz.';return}
+ if(category==='STOR PERDE'&&(!Number.isFinite(Number(width))||Number(width)<=0||!Number.isFinite(Number(height))||Number(height)<=0)){$('product-status-message').textContent='Stor perdede gerçek en ve boy ölçüsü sıfırdan büyük olmalı.';return}
  const oldKey=key(active.category,active.index),old=products.get(oldKey);
  if(old&&['ready','delivered'].includes(old.status)){ $('product-status-message').textContent='Teslim alınmış ürün üretim bilgilerinde değişiklik yapılamaz.';return }
  const group=categories.find(c=>c.name===category);
@@ -153,7 +255,9 @@ function storeItem(e){
  }
  const totalBefore=[...products.values()].reduce((n,p)=>n+p.qty,0)-(old?.qty||0);
  if(totalBefore+qty>60){$('product-status-message').textContent='Bir siparişte en fazla 60 fiziksel parça eklenebilir.';return}
- const record={name,qty,price,basePrice,width,height,pile,spec:$('product-spec').value.trim(),note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||'processing'};
+ const cfg=category==='STOR PERDE'?storSettings():null;
+ const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
+ const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||'processing'};
  products.delete(oldKey);products.set(key(category,index),record);
  closeItem();drawSlots();
 }
@@ -374,6 +478,12 @@ $('product-status').onchange=async()=>{
 $('delete-product').onclick=()=>{if(!active)return;removeItem(active.category,active.index)};
 $('product-shade').onclick=$('close-product').onclick=closeItem;
 ['product-price','product-quantity'].forEach(id=>$(id).oninput=calculateItemTotal);
+ ['product-width','product-height'].forEach(id=>$(id).oninput=calculateItemTotal);
+ ['stor-chain','stor-side','stor-tube','stor-foot','stor-color'].forEach(id=>$(id).onchange=calculateItemTotal);
+ $('stor-case').onchange=()=>{syncStorColor($('stor-case').value);calculateItemTotal()};
+ $('product-category').onchange=()=>{syncCategoryUI();$('catalog-search').value='';$('catalog-results').hidden=true;showCatalog();calculateItemTotal()};
+ $('catalog-search').oninput=()=>{showCatalog()};
+ $('catalog-search').onfocus=showCatalog;
 $('product-pile').onchange=calculateItemTotal;
 ['discount-percent','discount-amount','paid-value'].forEach(id=>$(id).oninput=updateMoney);
 $('submit-order').onclick=submit;
