@@ -38,6 +38,14 @@ async function initialize(){
   $('organization-select').value=org;
   show('erp-panel');
   await load();
+  const params=new URLSearchParams(location.search);
+  if(params.get('scan')==='1'){
+   const requestedOrg=params.get('org');
+   if(requestedOrg&&organizations.some(o=>o.id===requestedOrg)&&org!==requestedOrg){org=requestedOrg;memberRole=window.__erpMembers.find(m=>m.organization_id===org)?.role||'staff';$('organization-select').value=org;await load()}
+   history.replaceState(null,'',location.pathname);
+   await openQr();
+   if(params.get('received')==='1')qrMessage('Önceki ürün mağazaya kabul edildi. Sıradaki QR kodunu okutun.');
+  }
  }catch(e){show('auth-panel');msg('login-message','İşletme bilgileri yüklenemedi: '+e.message)}
 }
 async function load(){
@@ -305,7 +313,7 @@ async function onQrRead(raw){
 async function openQr(){
  if(!user||!org){msg('orders-message','Önce işletme hesabıyla giriş yapın.');return}
  if(!$('qr-scan-modal').hidden)return;
- qrNavigating=false;$('qr-paste').value='';qrMessage('Kamera başlatılıyor...');
+ qrNavigating=false;$('qr-paste').value='';$('qr-retry').hidden=true;qrMessage('Kamera başlatılıyor...');
  $('qr-scan-modal').hidden=false;
  if(!window.Html5Qrcode){qrMessage('Kamera okuyucusu yüklenemedi. QR bağlantısını aşağıya yapıştırabilirsiniz.');return}
  qrStarting=true;
@@ -315,7 +323,7 @@ async function openQr(){
   await scanner.start({facingMode:'environment'},{fps:10,qrbox:(w,h)=>({width:Math.min(260,w-24),height:Math.min(260,h-24)}),aspectRatio:1},onQrRead,()=>{});
   if($('qr-scan-modal').hidden||qrScanner!==scanner){await stopQr();return}
   qrMessage('Kamerayı ürün etiketindeki QR koduna tutun.');
- }catch(e){qrMessage('Kameraya erişilemedi. Kamera iznini kontrol edin veya QR bağlantısını yapıştırın.');await stopQr()}
+ }catch(e){qrMessage('Kameraya erişilemedi. Kamerayı Tekrar Aç butonuna basın veya bağlantıyı yapıştırın.');$('qr-retry').hidden=false;await stopQr()}
  finally{qrStarting=false}
 }
 function handlers(){
@@ -325,6 +333,7 @@ function handlers(){
  $('organization-select').onchange=async e=>{org=e.target.value;memberRole=window.__erpMembers?.find(m=>m.organization_id===org)?.role||'staff';await load()};
  $('refresh').onclick=load;
  $('scan-qr').onclick=openQr;
+ $('qr-retry').onclick=async()=>{await stopQr();$('qr-scan-modal').hidden=true;await openQr()};
  $('qr-scan-close').onclick=$('qr-scan-stop').onclick=closeQr;
  $('qr-scan-modal').addEventListener('click',e=>{if(e.target===$('qr-scan-modal'))closeQr()});
  $('qr-paste-open').onclick=()=>onQrRead($('qr-paste').value);
