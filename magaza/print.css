@@ -66,3 +66,52 @@
  .label-mode .qr-label{width:80mm!important;height:50mm!important;max-height:50mm!important;page-break-after:always!important;break-after:page!important;overflow:hidden!important}
  .label-mode .qr-label:last-child{page-break-after:auto!important;break-after:auto!important}
 }
+
+/* Approved Perde Konağı A4 customer order form — scoped, QR label unaffected */
+.a4-mode .page{padding:12mm 12mm 10mm;width:210mm;min-height:297mm;background:#fff;color:#183026}
+.a4-new-head{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:7mm;min-height:35mm;align-items:start;padding-bottom:3mm;border-bottom:1px solid #b8c2b8}
+.a4-new-brand{display:grid;grid-template-columns:auto 1fr;column-gap:2.5mm;align-content:start}
+.a4-new-logo{width:15mm;height:15mm;object-fit:contain;grid-row:span 2}
+.a4-brand-copy h1{font-family:Georgia,serif;font-size:21px;font-weight:700;margin:0;line-height:1.1;color:#173d2d}
+.a4-brand-copy strong{font-size:9px;letter-spacing:1px;color:#806432}
+.a4-new-contact{grid-column:1/-1;padding-top:2mm;font-size:8px;color:#515b50;white-space:pre-line;overflow-wrap:anywhere;line-height:1.3}
+.a4-new-contact p{margin:.6mm 0}
+.a4-new-customer{align-self:start;border:1px solid #ccd3cd;border-radius:3mm;background:#f9faf8;padding:3mm}
+.a4-new-customer dl{display:grid;grid-template-columns:24mm minmax(0,1fr);gap:1.2mm 2mm;font-size:9px;margin:0;line-height:1.2}
+.a4-new-customer dt{font-weight:700;color:#3f5549}
+.a4-new-customer dd{margin:0;font-weight:600;overflow-wrap:anywhere;color:#15271d}
+.a4-category{margin-top:3.5mm;break-inside:avoid}
+.a4-category-heading{height:7mm;background:#eef2ed;border-left:3.5mm solid #1c4432;border-bottom:1px solid #c6cec7;border-radius:2mm 2mm 0 0;padding:1mm 2.2mm;display:flex;align-items:center;justify-content:space-between;gap:2mm}
+.a4-category-heading h2{font-size:11px;color:#173d2d;letter-spacing:.5px;margin:0}
+.a4-category-heading span{font-size:8px;color:#526756;font-weight:700}
+.a4-product-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1.5mm;margin-top:1.8mm}
+.a4-product{min-width:0;min-height:22mm;border:1px solid #d4dcd4;border-radius:1.8mm;background:#fff;padding:1.2mm;display:flex;flex-direction:column;gap:.7mm;break-inside:avoid}
+.a4-product.is-empty{border:1px dashed #ccd4cc;background:#fcfdfb}
+.a4-product-name{display:block;font-size:8px;min-height:6mm;max-height:8mm;line-height:1.13;overflow:hidden;overflow-wrap:anywhere;color:#20392b}
+.a4-product-detail{display:flex;justify-content:space-between;gap:1mm;align-items:baseline;border-top:1px solid #edf0ec;padding-top:.5mm;font-size:7px;line-height:1.05}
+.a4-product-detail span{color:#69736a;flex:0 0 auto}
+.a4-product-detail b{text-align:right;overflow-wrap:anywhere;color:#182e21}
+.a4-product-detail:last-child{margin-top:auto;border-top:1px solid #b7c4b7;font-size:7.5px}
+.a4-entry-lines{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.1mm 5mm;padding-top:1.5mm}
+.a4-entry-line{display:grid;grid-template-columns:5mm minmax(0,1fr);gap:1mm;border-bottom:1px solid #d5ded6;font-size:8px;min-height:4.7mm;align-items:center;color:#334838}
+.a4-entry-line span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a4-new-note{display:grid;grid-template-columns:25mm minmax(0,1fr);gap:2mm;align-items:start;border:1px solid #cbd5cc;border-radius:2mm;padding:2mm 3mm;margin-top:4mm;min-height:11mm}
+.a4-new-note strong{font-size:9px;color:#1c4632}
+.a4-new-note p{font-size:9px;line-height:1.3;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.a4-new-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2mm;margin-top:2.5mm}
+.a4-new-total{border:1px solid #cbd6cb;border-radius:2mm;padding:2mm 2.5mm;display:flex;justify-content:space-between;align-items:center;gap:2mm}
+.a4-new-total span{font-weight:700;font-size:9px}
+.a4-new-total strong{font-size:11px;color:#173d2d;white-space:nowrap}
+.a4-new-total:last-child{background:#e7eee7}
+.a4-new-footer{margin-top:3mm;border-top:1px solid #c6d1c6;padding-top:2mm;font-size:7px;text-align:center;color:#596559;line-height:1.3}
+@media print{
+ @page{size:A4;margin:0}
+ .a4-mode{width:210mm;background:#fff!important}
+ .a4-mode .label-workspace{padding:0!important;margin:0!important;border:0!important}
+ .a4-mode .page{width:210mm!important;min-height:297mm!important;margin:0!important;padding:12mm 12mm 10mm!important;box-shadow:none!important;max-width:none!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ .a4-mode .a4-category{break-inside:avoid}
+}
+@media screen and (max-width:850px){
+ .a4-mode .page{width:210mm;max-width:none;padding:12mm 12mm 10mm;min-height:297mm;margin:15px auto}
+ .a4-mode .label-workspace{overflow-x:auto}
+}
