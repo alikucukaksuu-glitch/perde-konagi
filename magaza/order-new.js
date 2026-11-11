@@ -383,6 +383,7 @@ function stage(next){
   $('editor-print-label').hidden=!editing;
   $('editor-print-label').disabled=!editing||!['processing','new'].includes(editing.status)||Boolean(editing.barcode_printed_at);
   $('editor-print-label').title=editing?.barcode_printed_at?'Bu siparişin barkodu daha önce basılmış':'';
+  $('editor-whatsapp').hidden=!editing||![...products.keys()].some(k=>['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ'].some(c=>k.startsWith(c+'|')));
   syncOrderStatusOptions();
   $('summary-customer').textContent=$('customer-name').value.trim();
   $('summary-phone').textContent=$('customer-phone').value.trim()||'—';
@@ -586,6 +587,105 @@ function openEditorPrint(type){
  const win=window.open(url,'_blank','noopener');
  if(!win)location.href=url;
 }
+
+const whatsappCategories=new Set(['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ']);
+let whatsappInvite=null;
+function whatsappClose(){
+ $('whatsapp-overlay').hidden=true;
+}
+function whatsappCleanNote(text){
+ return String(text||'').replace(/(?:^|;\s*)Baz Fiyat:\s*[^;\n]*/gi,'').replace(/(?:^|;\s*)Hesap (?:En|Boy):\s*[^;\n]*/gi,'').replace(/^Özellikler:\s*/i,'').replace(/^[\s;]+|[\s;]+$/g,'').trim();
+}
+async function openWhatsAppProduction(){
+ if(!editing?.id||!org?.id)return;
+ const notice=$('whatsapp-result');notice.textContent='Kayıtlı sipariş hazırlanıyor...';
+ $('whatsapp-overlay').hidden=false;
+ $('whatsapp-message').value='';
+ $('whatsapp-confirm').disabled=true;
+ $('whatsapp-group').disabled=true;
+ try{
+  const [{data:o,error:oe},{data:lines,error:le},{data:config,error:ce},{data:dispatch,error:de}]=await Promise.all([
+   sb.from('erp_orders').select('id,order_number,customer_name,customer_phone,delivery_date,customer_note,branch_id,status').eq('organization_id',org.id).eq('id',editing.id).single(),
+   sb.from('erp_order_items').select('category,product_name,width_cm,height_cm,quantity,production_note,status').eq('organization_id',org.id).eq('order_id',editing.id).order('created_at'),
+   sb.from('erp_whatsapp_groups').select('invite_url').eq('organization_id',org.id).maybeSingle(),
+   sb.from('erp_whatsapp_dispatches').select('confirmed_at').eq('organization_id',org.id).eq('order_id',editing.id).maybeSingle()
+  ]);
+  if(oe||le||ce||de)throw oe||le||ce||de;
+  if(o.status==='cancelled')throw Error('İptal edilen sipariş gönderilemez.');
+  const filtered=(lines||[]).filter(x=>whatsappCategories.has(x.category)&&x.status!=='cancelled');
+  if(!filtered.length)throw Error('Stor, Plise veya Ahşap Jaluzi ürünü bulunamadı.');
+  const branch=branches.find(b=>b.id===o.branch_id);
+  const when=o.delivery_date?new Date(o.delivery_date+'T12:00:00').toLocaleDateString('tr-TR'):'—';
+  const message=[
+    '🏭 '+org.name.toLocaleUpperCase('tr-TR')+' · ÜRETİM SİPARİŞİ',
+    'Sipariş: #'+o.order_number,
+    'Şube: '+(branch?.name||'—'),
+    'Müşteri: '+o.customer_name,
+    ...(o.customer_phone?['Telefon: '+o.customer_phone]:[]),
+    'Teslim Tarihi: '+when,
+    ''
+  ];
+  filtered.forEach((line,i)=>{
+   message.push('■ '+(i+1)+'. '+line.category);
+   message.push('Ürün: '+line.product_name);
+   message.push('Ölçü: '+(line.width_cm??'—')+' × '+(line.height_cm??'—')+' cm');
+   message.push('Adet: '+(line.quantity||1));
+   if(line.production_note){
+    const details=whatsappCleanNote(line.production_note);
+    if(details)message.push('Üretim Bilgisi: '+details);
+   }
+   message.push('');
+  });
+  if(o.customer_note)message.push('GENEL SİPARİŞ NOTU: '+o.customer_note);
+  message.push('KONAK ERP · Üretim için iletilmiştir.');
+  $('whatsapp-message').value=message.join('\n');
+  whatsappInvite=config?.invite_url||null;
+  $('whatsapp-group').disabled=!whatsappInvite;
+  $('whatsapp-confirm').disabled=false;
+  notice.textContent=dispatch?.confirmed_at
+    ?'Daha önce gönderildi olarak işaretlendi: '+new Date(dispatch.confirmed_at).toLocaleString('tr-TR')+'. Tekrar paylaşabilirsiniz.'
+    :'Mesaj hazır. WhatsApp grubuna gönderdikten sonra onay verin.';
+ }catch(e){
+  notice.textContent='Mesaj hazırlanamadı: '+e.message;
+  whatsappInvite=null;
+ }
+}
+$('editor-whatsapp').onclick=openWhatsAppProduction;
+$('whatsapp-close').onclick=whatsappClose;
+$('whatsapp-overlay').addEventListener('click',e=>{if(e.target===$('whatsapp-overlay'))whatsappClose()});
+$('whatsapp-copy').onclick=async()=>{
+ const text=$('whatsapp-message').value;if(!text)return;
+ try{await navigator.clipboard.writeText(text);$('whatsapp-result').textContent='Mesaj kopyalandı. Grup sohbetine yapıştırabilirsiniz.'}
+ catch(e){$('whatsapp-message').focus();$('whatsapp-message').select();$('whatsapp-result').textContent='Metni seçtim. Ctrl+C ile kopyalayın.'}
+};
+$('whatsapp-group').onclick=()=>{
+ if(whatsappInvite)window.open(whatsappInvite,'_blank','noopener,noreferrer');
+};
+$('whatsapp-share').onclick=async()=>{
+ const message=$('whatsapp-message').value.trim();if(!message)return;
+ try{
+  if(navigator.share){
+   await navigator.share({text:message,title:'KONAK ERP · Üretim Siparişi'});
+   $('whatsapp-result').textContent='Paylaşım açıldı. Mesajın gruba gönderildiğini kontrol edip ardından onaylayın.';
+  }else{
+   window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(message),'_blank','noopener,noreferrer');
+   $('whatsapp-result').textContent='WhatsApp açıldı. Hedef grubu seçip mesajı gönderin. Davet bağlantısı otomatik mesaj göndermez.';
+  }
+ }catch(e){
+  if(e.name!=='AbortError')$('whatsapp-result').textContent='Paylaşım açılamadı. Mesajı Kopyala ve Grubu Aç seçeneklerini kullanabilirsiniz.';
+ }
+};
+$('whatsapp-confirm').onclick=async()=>{
+ if(!$('whatsapp-message').value.trim()||!editing?.id)return;
+ if(!confirm('WhatsApp sipariş hattı grubuna mesajı gerçekten gönderdiniz mi? Bu işlem kullanıcı hesabınıza kaydedilecek.'))return;
+ $('whatsapp-confirm').disabled=true;
+ const {error}=await sb.rpc('erp_confirm_whatsapp_dispatch',{p_org:org.id,p_order:editing.id});
+ if(error){$('whatsapp-result').textContent='Gönderim onayı kaydedilemedi: '+error.message;$('whatsapp-confirm').disabled=false;return}
+ $('whatsapp-result').textContent='Gönderim onayı kaydedildi. Sipariş durumu değiştirilmedi.';
+ whatsappClose();
+ alertText('Üretim siparişinin WhatsApp grubuna gönderildiği personel onayıyla kaydedildi. Sipariş durumu değişmedi.');
+};
+
 $('editor-print-a4').onclick=()=>openEditorPrint('a4');
 $('editor-print-label').onclick=()=>openEditorPrint('label');
 $('order-logout').onclick=async()=>{await sb.auth.signOut();location.href='./'};
