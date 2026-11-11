@@ -1,4 +1,4 @@
-<!doctype html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Yeni Sipariş | KONAK ERP</title><link rel="stylesheet" href="./style.css?v=account-2"><link rel="stylesheet" href="./order-new.css?v=plise-options-20261111"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="./order-new.js?v=plise-options-20261111"></script></head>
+<!doctype html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Yeni Sipariş | KONAK ERP</title><link rel="stylesheet" href="./style.css?v=account-2"><link rel="stylesheet" href="./order-new.css?v=wood-half-cm-1"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="./order-new.js?v=wood-half-cm-1"></script></head>
 <body>
 <header class="topbar"><div class="shell navline"><a href="./" class="brand"><b>KONAK<span> ERP</span></b><small>Perde Mağazası Yönetimi</small></a><nav class="navigation"><a href="./">Siparişler</a><a href="./missing.html" class="secondary" style="padding:9px 12px;border-radius:9px;font-size:12px">Eksik Ürünler</a><a href="./hub.html?tab=products">Ürünler</a><a href="./hub.html?tab=workshop">Atölye</a><a href="./hub.html?tab=customers">Müşteriler</a></nav><div class="user-panel"><details class="account-menu"><summary>☻ &nbsp; Hesabım ▾</summary><div class="account-dropdown"><div id="order-user-email" class="account-identity">Hesabım</div><a href="./company.html#account">Hesap Bilgileri</a><a href="./missing.html">Eksik Ürünler</a><a href="./company.html#company-profile">Şirket Ayarları</a><a href="./company.html#branches">Şubeler</a><button type="button" id="order-logout">Çıkış Yap</button></div></details></div></div></header>
 <main class="order-shell">
@@ -46,6 +46,12 @@
    <option>Beyaz</option><option>Krem</option><option>Siyah</option><option>Antrasit</option><option>Vizon</option><option>Gri</option>
   </select>
  </label>
+</section>
+<section id="wood-options" class="stor-options" hidden>
+<div class="stor-head"><strong>Ahşap Jaluzi Özelleştirmeleri</strong><span>0,5 cm hassasiyet · Fiyatta üst tam santimetre · Minimum 1 m²</span></div>
+<label class="wood-ribbon-check"><input id="wood-ribbon" type="checkbox"> Kurdela İstiyorum</label>
+<label>Mekanizma Seçeneği<select id="wood-mechanism"><option value="İpli">İpli Mekanizma</option><option value="Redüktörlü">Redüktörlü Mekanizma</option></select></label>
+<div id="wood-calculation" class="stor-calculation">En ve boy ölçülerini girin.</div>
 </section>
 <p id="pile-price-hint" class="pile-price-hint">Pile seçildiğinde fiyat otomatik hesaplanır.</p><label>Ek Dikim / Mekanizma Bilgisi<input id="product-spec" maxlength="500" placeholder="Örn. Korniş düğmeli veya mekanizma rengi"></label>
 <label id="product-status-wrapper">Satır Durumu<select id="product-status"><option value="processing">İşlemde</option><option value="workshop">Atölyede</option><option value="ready" disabled>Mağazada – Teslime Hazır (barkodla)</option><option value="delivered" disabled>Teslim Edildi</option><option value="cancelled">İptal</option></select></label>
