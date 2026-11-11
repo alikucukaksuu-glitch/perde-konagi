@@ -75,6 +75,22 @@ function tulConfig(){
  return {pleats,sewings,pleat_factors,min_billable_fabric_m,rustic_fee_try,fabric_only_enabled,fabric_only_discount_pct,fabric_only_min_m,fabric_only_max_m,lining_enabled,lining_price_per_m,updated_at:new Date().toISOString()};
 }
 
+
+const guideKeys=[['measure','ps-guide-measure','ps-guide-measure-image'],['install','ps-guide-install','ps-guide-install-image'],['care','ps-guide-care','ps-guide-care-image']];
+function applyGuideSettings(data){
+ for(const [key,textId,imageId] of guideKeys){$(textId).value=data?.[key+'_text']||'';$(imageId).value=data?.[key+'_image']||''}
+}
+function getGuideSettings(){
+ const guide={updated_at:new Date().toISOString()};
+ for(const [key,textId,imageId] of guideKeys){
+  guide[key+'_text']=$ (textId).value.trim();
+  const img=$(imageId).value.trim();
+  if(img&&(img.startsWith('//')||/^(?:javascript:|data:)/i.test(img)||(!/^https:\/\//i.test(img)&&(!/^[a-z0-9_./-]+$/i.test(img)||img.includes('..')))))throw Error('Rehber görseli için geçerli GitHub dosya adı veya HTTPS adresi giriniz.');
+  guide[key+'_image']=img;
+ }
+ return guide;
+}
+
 const slugify=text=>text.toLocaleLowerCase('tr-TR').replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,90);
 const cleanText=s=>String(s??'').trim();
 function feedback(s){$('ps-feedback').textContent=s||''}
@@ -159,7 +175,7 @@ function refreshSummary(){
 function reset(){
  clearImages();current=null;
  for(const id of ['ps-name','ps-price','ps-short','ps-desc','ps-seo-title','ps-seo-desc','ps-stock']){const field=$(id);if(field)field[field.isContentEditable?'innerHTML':'value']=''}
- $('ps-category').value='zebra';$('ps-variant-rows').replaceChildren();applyPliseConfig();applyWoodConfig();applyTulConfig();
+ $('ps-category').value='zebra';$('ps-variant-rows').replaceChildren();applyPliseConfig();applyWoodConfig();applyTulConfig();applyGuideSettings();
  for(const [id,value] of [['ps-minw',50],['ps-maxw',280],['ps-minh',50],['ps-maxh',280]])$(id).value=value;
  $('ps-sale-enabled').checked=true;$('ps-summary-date').textContent='—';$('ps-page-title').textContent='Yeni Ürün Ekle';$('ps-crumb').textContent='Yeni Ürün Ekle';
  $('ps-name').readOnly=false;$('ps-category').disabled=false;
@@ -182,6 +198,7 @@ async function open(slug){
   $('ps-mode-banner').className='ps-mode-banner editing';
   $('ps-copy-new').hidden=false;$('ps-delete-product').hidden=false;
   $('ps-name').value=p.title;$('ps-price').value=p.price_per_sqm;$('ps-category').value=p.collection;if(p.collection==='plise'){const {data:pc,error:pcError}=await sb.from('plise_product_config').select('*').eq('slug',slug).maybeSingle();if(pcError)feedback('Plise ayarları okunamadı: '+pcError.message);applyPliseConfig(pc||pliseDefaults)}if(p.collection==='ahsap-jaluzi'){const {data:wc,error:wcError}=await sb.from('wood_blind_product_config').select('*').eq('slug',slug).maybeSingle();if(wcError)feedback('Ahşap jaluzi ayarları yüklenemedi: '+wcError.message);applyWoodConfig(wc||woodDefaults)}if(p.collection==='tul'){const {data:tc,error:te}=await sb.from('tul_product_config').select('*').eq('slug',slug).maybeSingle();if(te)feedback('Tül ayarları okunamadı: '+te.message);applyTulConfig(tc||tulDefaults)}syncCategory();
+  const {data:guides,error:guidesError}=await sb.from('shop_product_guides').select('*').eq('slug',slug).maybeSingle();if(guidesError)feedback('Rehber kayıtları okunamadı: '+guidesError.message);applyGuideSettings(guides);
   $('ps-short').value=d?.short_description||'';$('ps-desc').innerHTML=window.PKDescriptionFormat.normalize(d?.description_html||'');
   $('ps-seo-title').value=d?.seo_title||'';$('ps-seo-desc').value=d?.seo_description||'';
   $('ps-stock').value=d?.stock_qty??'';$('ps-sale-enabled').checked=Boolean(p.is_active);
@@ -261,6 +278,7 @@ async function save(force){
    const {error}=await sb.storage.from(bucket).upload(path,image.file,{contentType:image.file.type,cacheControl:'3600',upsert:false});
    if(error)throw error;image.path=path;stored.push(path);
   }
+  const {error:guideError}=await sb.from('shop_product_guides').upsert({slug,...getGuideSettings()},{onConflict:'slug'});if(guideError)throw guideError;
   if(data.tul){const {error:tulError}=await sb.from('tul_product_config').upsert({slug,...data.tul},{onConflict:'slug'});if(tulError)throw tulError;}
   if(data.wood){const {error:woodError}=await sb.from('wood_blind_product_config').upsert({slug,...data.wood},{onConflict:'slug'});if(woodError)throw woodError;}
   if(data.plise){const {error:pliseError}=await sb.from('plise_product_config').upsert({slug,...data.plise},{onConflict:'slug'});if(pliseError)throw pliseError;}
