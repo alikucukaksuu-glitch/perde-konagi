@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY),$=id=>document.getElementById(id);
-const categories=[{name:'TÜL PERDE',count:10},{name:'FON PERDE',count:5},{name:'GÜNEŞLİK',count:5},{name:'STOR PERDE',count:6,kind:'list'},{name:'AKSESUAR',count:6,kind:'list'}];
+const categories=[{name:'TÜL PERDE',count:10},{name:'FON PERDE',count:5},{name:'GÜNEŞLİK',count:5},{name:'STOR PERDE',count:6,kind:'list'},{name:'PLİSE PERDE',count:6,kind:'list'},{name:'AHŞAP JALUZİ',count:6,kind:'list'},{name:'AKSESUAR',count:6,kind:'list'}];
 const fmt=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const asNum=v=>Number(v)||0;
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
