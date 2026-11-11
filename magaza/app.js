@@ -267,12 +267,66 @@ function exportCSV(){
  const csv='\uFEFF'+[header,...rows].map(r=>r.map(escapeCSV).join(';')).join('\r\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='konak-erp-siparisler.csv';a.click();URL.revokeObjectURL(url);
 }
+let qrScanner=null,qrNavigating=false,qrStarting=false;
+function qrMessage(value){$('qr-scan-message').textContent=value||''}
+function validateQrText(raw){
+ let url;
+ try{url=new URL(String(raw||'').trim())}catch(e){throw Error('QR içeriği geçerli bir bağlantı değil.')}
+ if(url.origin!==location.origin||!/^\/magaza\/receive\.html$/.test(url.pathname))throw Error('Bu QR KONAK ERP ürün kabul kodu değil.');
+ const qrOrg=url.searchParams.get('org'),item=url.searchParams.get('item'),code=url.searchParams.get('code');
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+ if(!uuid.test(qrOrg||'')||!uuid.test(item||'')||!code||code.length>128)throw Error('QR kodunun ürün bilgileri eksik.');
+ if(qrOrg!==org)throw Error('QR başka bir işletmeye ait. İşletmeyi değiştirip yeniden deneyin.');
+ return './receive.html?org='+encodeURIComponent(qrOrg)+'&item='+encodeURIComponent(item)+'&code='+encodeURIComponent(code);
+}
+async function stopQr(){
+ const current=qrScanner;qrScanner=null;
+ if(current){
+  try{await current.stop()}catch(e){}
+  try{current.clear()}catch(e){}
+ }
+}
+async function closeQr(){
+ $('qr-scan-modal').hidden=true;
+ qrStarting=false;
+ await stopQr();
+}
+async function onQrRead(raw){
+ if(qrNavigating)return;
+ let destination;
+ try{destination=validateQrText(raw)}
+ catch(e){qrMessage(e.message);return}
+ qrNavigating=true;qrMessage('Kod okundu, ürün kabul ekranına geçiliyor...');
+ await stopQr();
+ location.href=destination;
+}
+async function openQr(){
+ if(!user||!org){msg('orders-message','Önce işletme hesabıyla giriş yapın.');return}
+ if(!$('qr-scan-modal').hidden)return;
+ qrNavigating=false;$('qr-paste').value='';qrMessage('Kamera başlatılıyor...');
+ $('qr-scan-modal').hidden=false;
+ if(!window.Html5Qrcode){qrMessage('Kamera okuyucusu yüklenemedi. QR bağlantısını aşağıya yapıştırabilirsiniz.');return}
+ qrStarting=true;
+ try{
+  const scanner=new window.Html5Qrcode('qr-camera',{formatsToSupport:[window.Html5QrcodeSupportedFormats.QR_CODE],verbose:false});
+  qrScanner=scanner;
+  await scanner.start({facingMode:'environment'},{fps:10,qrbox:(w,h)=>({width:Math.min(260,w-24),height:Math.min(260,h-24)}),aspectRatio:1},onQrRead,()=>{});
+  if($('qr-scan-modal').hidden||qrScanner!==scanner){await stopQr();return}
+  qrMessage('Kamerayı ürün etiketindeki QR koduna tutun.');
+ }catch(e){qrMessage('Kameraya erişilemedi. Kamera iznini kontrol edin veya QR bağlantısını yapıştırın.');await stopQr()}
+ finally{qrStarting=false}
+}
 function handlers(){
  $('login-form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget);msg('login-message','Giriş yapılıyor...');const {error}=await sb.auth.signInWithPassword({email:f.get('email'),password:f.get('password')});if(error)msg('login-message',error.message);else{msg('login-message','');await initialize()}};
  $('logout').onclick=async()=>{await sb.auth.signOut();user=null;org='';$('logout').hidden=true;$('session-user').textContent='';show('auth-panel')};
  $('setup-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,f=new FormData(form);msg('setup-message','İşletme oluşturuluyor...');const {error}=await sb.rpc('erp_create_organization',{p_name:f.get('organization'),p_branch:f.get('branch')});if(error)msg('setup-message','Oluşturulamadı: '+error.message);else{msg('setup-message','');await initialize()}};
  $('organization-select').onchange=async e=>{org=e.target.value;memberRole=window.__erpMembers?.find(m=>m.organization_id===org)?.role||'staff';await load()};
  $('refresh').onclick=load;
+ $('scan-qr').onclick=openQr;
+ $('qr-scan-close').onclick=$('qr-scan-stop').onclick=closeQr;
+ $('qr-scan-modal').addEventListener('click',e=>{if(e.target===$('qr-scan-modal'))closeQr()});
+ $('qr-paste-open').onclick=()=>onQrRead($('qr-paste').value);
+
  $('filter-search').oninput=render;$('filter-branch').onchange=render;$('filter-payment').onchange=render;
  $('status-filters').onclick=e=>{const b=e.target.closest('button[data-status]');if(!b)return;filterStatus=b.dataset.status;document.querySelectorAll('#status-filters button').forEach(x=>x.classList.toggle('active',x===b));render()};
  $('new-order').onclick=()=>{location.href='./order-new.html?org='+encodeURIComponent(org)};$('close-editor').onclick=$('cancel-editor').onclick=()=>$('order-editor').hidden=true;
@@ -314,7 +368,7 @@ $('orders-list').onclick=e=>{
  $('payment-close').onclick=$('payment-cancel').onclick=closePayment;
  $('payment-modal').addEventListener('click',e=>{if(e.target===$('payment-modal'))closePayment()});
  $('export-csv').onclick=exportCSV;
- document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('order-editor').hidden=true;$('order-detail').hidden=true;closePayment()}});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('order-editor').hidden=true;$('order-detail').hidden=true;closePayment();if(!$('qr-scan-modal').hidden)closeQr()}});
 }
 if(!sb){show('auth-panel');msg('login-message','Supabase bağlantı kütüphanesi yüklenemedi.');return}
 handlers();initialize();
