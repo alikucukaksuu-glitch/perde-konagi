@@ -8,7 +8,7 @@ let slug=query.get('slug')||path.replace(/\.html$/,'');
 if(!slug||slug==='index')return;
 const section=document.querySelector('#tc-description-section,#pp-description-section,#wb-description-section,main section.article,main .article');
 if(!section)return;
-const cat=path.includes('tul')?'tul':path.includes('plise')?'plise':path.includes('jaluzi')?'wood':path.includes('mat-stor')?'stor':'zebra';
+const cat=path.includes('tul')||slug.includes('tul')?'tul':path.includes('plise')||slug.includes('plise')?'plise':path.includes('jaluzi')||slug.includes('jaluzi')?'wood':path.includes('mat-stor')||slug.includes('stor')?'stor':'zebra';
 const fallbacks={
  tul:{measure:'Perdenin bitmiş enini ve boyunu santimetre olarak ölçün.\nEn: Perdenin kaplayacağı alanı soldan sağa ölçün.\nBoy: Kornişten istediğiniz bitiş noktasına kadar ölçün.\nÖlçüleri tam santimetre olarak girin.',install:'Pile sıklığını seçin ve korniş düğmeli ya da rustik/halkalı dikim tercihinizi belirleyin.\nSipariş öncesi ölçüleri ve dikim seçiminizi kontrol edin.',care:'Ürünün kumaş bakım etiketini kontrol edin.\nHassas yıkama ve uygun sıcaklık talimatlarına uyun.\nAğartıcı kullanmayın.'},
  plise:{measure:'Uygulanacak camın enini ve boyunu ölçün.\nMontaj şekline göre gerekli payları kontrol edin.\nÖlçüleri ürün sayfasındaki hassasiyette girin.',install:'Montaj yüzeyine uygun vidalı veya askılı sistemi seçin.\nCam balkon ve PVC uygulamalarında doğru bağlantı aparatını kullanın.',care:'Tozu yumuşak fırça veya kuru mikrofiber bezle alın.\nKumaşı zorlamadan ve ıslatmadan temizleyin.'},
@@ -25,7 +25,7 @@ if(cat==='wood')wrapper.classList.add('wb-product-only');
 wrapper.innerHTML='<div class="pk-tabs-nav" role="tablist" aria-label="Ürün bilgileri"></div><div class="pk-tabs-panels"></div>';
 section.parentNode.insertBefore(wrapper,section);
 const nav=wrapper.querySelector('.pk-tabs-nav'),panels=wrapper.querySelector('.pk-tabs-panels');
-const originalGuide=section.parentNode.querySelector('#pk-guide');
+const originalGuide=document.querySelector('#pk-guide');
 if(originalGuide)originalGuide.hidden=true;
 if(cat==='tul'){const old=document.querySelector('#tc-below .tc-help');if(old)old.hidden=true}
 if(cat==='wood'){for(const selector of ['#wb-below .wb-quick-guides','#wb-below .wb-guides']){const old=document.querySelector(selector);if(old)old.hidden=true}}
