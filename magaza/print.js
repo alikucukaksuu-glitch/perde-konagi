@@ -184,20 +184,47 @@ function customerPdfFileName(){
 let pdfBusy=false;
 async function createCustomerPdf(){
  if(mode!=='a4'||!order||!company||!branch)throw Error('Müşteri formu yüklenmedi.');
- if(!window.html2pdf)throw Error('PDF oluşturma bileşeni yüklenemedi. İnternet bağlantınızı kontrol edin.');
+ if(!window.html2canvas||!window.jspdf?.jsPDF)throw Error('PDF oluşturma bileşenleri yüklenemedi. İnternet bağlantınızı kontrol edin.');
  const page=$('page');
  await document.fonts?.ready;
- const images=[...page.querySelectorAll('img')];
- await Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true})})));
- const options={
-  margin:0,
-  filename:customerPdfFileName(),
-  image:{type:'jpeg',quality:0.97},
-  html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0,windowWidth:1000},
-  jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-  pagebreak:{mode:['css','legacy'],avoid:['.a4-product','.a4-category-heading','.a4-new-customer']}
- };
- return await window.html2pdf().set(options).from(page).outputPdf('blob');
+ // Capture a standalone, desktop-sized A4 form. Never snapshot a horizontally scrolled mobile viewport.
+ const wrap=document.createElement('div');
+ wrap.className='pdf-capture-wrapper';
+ const clone=page.cloneNode(true);
+ clone.id='pdf-capture-page';
+ clone.classList.add('pdf-capture-page');
+ wrap.append(clone);
+ document.body.append(wrap);
+ try{
+  const images=[...clone.querySelectorAll('img')];
+  await Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true})})));
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  const canvas=await window.html2canvas(clone,{
+   scale:2,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0,
+   windowWidth:1100,windowHeight:1400,
+   width:clone.scrollWidth,height:clone.scrollHeight,
+   logging:false
+  });
+  if(canvas.width<100||canvas.height<100)throw Error('A4 sayfası boş oluşturuldu.');
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+  const printableWidth=210,printableHeight=297;
+  // Slice exactly at A4 boundaries to prevent a blank overflow page.
+  const pixelsPerPage=Math.floor(canvas.width*printableHeight/printableWidth);
+  const pageCount=Math.max(1,Math.ceil(canvas.height/pixelsPerPage));
+  for(let i=0;i<pageCount;i++){
+   if(i>0)pdf.addPage();
+   const start=i*pixelsPerPage;
+   const sliceHeight=Math.min(pixelsPerPage,canvas.height-start);
+   const cut=document.createElement('canvas');
+   cut.width=canvas.width;cut.height=sliceHeight;
+   const ctx=cut.getContext('2d');
+   ctx.fillStyle='#fff';ctx.fillRect(0,0,cut.width,cut.height);
+   ctx.drawImage(canvas,0,start,canvas.width,sliceHeight,0,0,canvas.width,sliceHeight);
+   pdf.addImage(cut.toDataURL('image/jpeg',0.96),'JPEG',0,0,210,sliceHeight/canvas.width*210,undefined,'FAST');
+  }
+  return pdf.output('blob');
+ }finally{wrap.remove()}
 }
 function downloadPdfBlob(blob){
  const url=URL.createObjectURL(blob);
