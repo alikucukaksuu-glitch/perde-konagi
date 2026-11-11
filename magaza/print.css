@@ -43,3 +43,26 @@
 .qr-notes strong{font-size:8px}
 .qr-notes p{margin:.5mm 0 0!important;font-size:8px!important;line-height:1.16;white-space:pre-wrap;overflow-wrap:anywhere;max-height:7mm;overflow:hidden}
 @media print{.label-mode .qr-label{border:0!important;break-after:page;page-break-after:always}.label-mode .qr-label:last-child{break-after:auto;page-break-after:auto}}
+
+/* v3 - thermal readability correction. Keep A4 styling unchanged. */
+.label-mode .qr-label{padding:1.6mm 2mm!important;gap:.7mm!important;box-sizing:border-box!important}
+.label-mode .qr-label-head{min-height:6.5mm;padding-bottom:.6mm}
+.label-mode .qr-customer{font-size:9px;line-height:1.15}
+.label-mode .qr-label h3{font-size:9px;max-height:5.5mm;line-height:1.16}
+.label-mode .qr-label-mid{grid-template-columns:minmax(0,1fr) 28mm;gap:1mm;min-height:27.5mm;max-height:27.5mm}
+.label-mode .qr-label-info{align-items:center}
+.label-mode .qr-label-info .label-specs{font-size:9px;line-height:1.15;gap:1.3mm}
+.label-mode .qr-label-code{padding-left:0;border-left:0;gap:.4mm;align-content:start}
+.label-mode .qr-code-heading{font-size:7.5px;white-space:nowrap;font-weight:800}
+.label-mode .qr-image{width:25mm!important;height:25mm!important;background:#fff;padding:1mm!important;box-sizing:border-box;display:grid;place-items:center;overflow:visible!important}
+.label-mode .qr-image img,.label-mode .qr-image canvas{width:23mm!important;height:23mm!important;max-width:none!important;max-height:none!important;image-rendering:pixelated}
+.label-mode .qr-notes{margin-top:auto;min-height:7mm;max-height:8mm;padding-top:.5mm}
+.label-mode .qr-notes strong{font-size:7px}
+.label-mode .qr-notes p{font-size:7px!important;line-height:1.08;max-height:6mm}
+@media print{
+ @page{size:80mm 50mm;margin:0}
+ html,body{width:80mm!important;margin:0!important;padding:0!important;background:#fff!important}
+ .label-mode .label-workspace,.label-mode .label-workspace .page{padding:0!important;margin:0!important;width:80mm!important;max-width:80mm!important;display:block!important}
+ .label-mode .qr-label{width:80mm!important;height:50mm!important;max-height:50mm!important;page-break-after:always!important;break-after:page!important;overflow:hidden!important}
+ .label-mode .qr-label:last-child{page-break-after:auto!important;break-after:auto!important}
+}
