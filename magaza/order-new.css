@@ -34,3 +34,23 @@
 @media(max-width:420px){.three-inputs{grid-template-columns:1fr 1fr}.three-inputs label:first-child{grid-column:1/-1}}
 
 .pile-price-hint{grid-column:1/-1;margin:-10px 0 1px;color:#4a7258;font-size:11px;font-weight:600;line-height:1.45}.status-helper{display:block;font-size:11px;color:#886a3d;margin-top:6px;line-height:1.4}.product-sheet select:not(:disabled){cursor:pointer}
+
+/* Stor Perde m² pricing and catalogue selection */
+.catalog-search-block{display:grid;gap:7px;margin:10px 0 16px;padding:12px;border:1px solid #e0e8e1;border-radius:12px;background:#f8fbf8}
+.catalog-search-block label{display:grid;gap:5px}
+.catalog-results{border:1px solid #dbe5dd;border-radius:9px;background:white;max-height:220px;overflow:auto;display:grid;gap:0}
+.catalog-results[hidden],.stor-options[hidden],#stor-color-row[hidden]{display:none!important}
+.catalog-choice{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px;text-align:left;border:0;border-bottom:1px solid #e9eee9;background:#fff;color:#1d3729;cursor:pointer;font-size:12px}
+.catalog-choice:hover,.catalog-choice:focus{background:#ecf5ed}
+.catalog-choice span{flex:1;overflow-wrap:anywhere}
+.catalog-choice strong{white-space:nowrap;font-size:11px;color:#3d704e}
+.catalog-hint{font-size:11px!important;color:#5d7867;margin:0!important}
+.stor-options{border:1px solid #d2ded2;border-radius:12px;padding:15px;display:grid;gap:13px;background:#fbfcfa}
+.stor-head{display:grid;gap:5px}
+.stor-head strong{font-size:14px;color:#1b3b2b}
+.stor-head span{font-size:11px;color:#6e806f}
+.stor-option-title{display:grid;gap:6px}
+.stor-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.stor-two label{display:grid;gap:6px;min-width:0}
+.stor-calculation{font-size:11px;color:#22563b;font-weight:600;line-height:1.6;padding:10px;background:#ecf5ed;border:1px solid #d7e8db;border-radius:9px}
+@media(max-width:520px){.stor-two{grid-template-columns:1fr}.catalog-choice{flex-wrap:wrap}}
