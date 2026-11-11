@@ -42,13 +42,17 @@ function syncCategory(){
 }
 
 
-const tulDefaults={pleats:['Düz Dikim','1/2 Normal Pile','1/3 Sık Pile'],sewings:['Kornişe Uygun Düğmeli Dikim','Rustik / Halkalı Dikim'],pleat_factors:[1,2,3],min_billable_fabric_m:1,rustic_fee_try:0};
+const tulDefaults={pleats:['Düz Dikim','1/2 Normal Pile','1/3 Sık Pile'],sewings:['Kornişe Uygun Düğmeli Dikim','Rustik / Halkalı Dikim'],pleat_factors:[1,2,3],min_billable_fabric_m:1,rustic_fee_try:0,fabric_only_enabled:true,fabric_only_discount_pct:10,fabric_only_min_m:1,fabric_only_max_m:20};
 const isTul=()=>$('ps-category').value==='tul';
 function applyTulConfig(v=tulDefaults){
  $('ps-tul-pleats').value=(v.pleats||tulDefaults.pleats).join(', ');
  $('ps-tul-sewings').value=(v.sewings||tulDefaults.sewings).join(', ');
  $('ps-tul-factors').value=(v.pleat_factors||tulDefaults.pleat_factors).join(', ');
  $('ps-tul-minfabric').value=v.min_billable_fabric_m??1;$('ps-tul-rustic-fee').value=v.rustic_fee_try??0;
+ $('ps-tul-fabric-enabled').checked=v.fabric_only_enabled??true;
+ $('ps-tul-fabric-discount').value=v.fabric_only_discount_pct??10;
+ $('ps-tul-fabric-min').value=v.fabric_only_min_m??1;
+ $('ps-tul-fabric-max').value=v.fabric_only_max_m??20;
 }
 function tulConfig(){
  const arr=id=>[...new Set($(id).value.split(',').map(x=>x.trim()).filter(Boolean))];
@@ -59,7 +63,12 @@ function tulConfig(){
  if(sewings.some(x=>!['Kornişe Uygun Düğmeli Dikim','Rustik / Halkalı Dikim'].includes(x)))throw Error('Dikim seçeneklerini kontrol edin.');
  const min_billable_fabric_m=Number($('ps-tul-minfabric').value),rustic_fee_try=Number($('ps-tul-rustic-fee').value);
  if(!Number.isFinite(min_billable_fabric_m)||min_billable_fabric_m<0||min_billable_fabric_m>10||!Number.isFinite(rustic_fee_try)||rustic_fee_try<0||rustic_fee_try>100000)throw Error('Minimum kumaş veya rustik dikim fiyatı geçersiz.');
- return {pleats,sewings,pleat_factors,min_billable_fabric_m,rustic_fee_try,updated_at:new Date().toISOString()};
+ const fabric_only_enabled=$('ps-tul-fabric-enabled').checked;
+ const fabric_only_discount_pct=Number($('ps-tul-fabric-discount').value);
+ const fabric_only_min_m=Number($('ps-tul-fabric-min').value),fabric_only_max_m=Number($('ps-tul-fabric-max').value);
+ if(!Number.isFinite(fabric_only_discount_pct)||fabric_only_discount_pct<0||fabric_only_discount_pct>100)throw Error('Metre ile satış indirimi %0–100 arasında olmalı.');
+ if(!Number.isInteger(fabric_only_min_m)||!Number.isInteger(fabric_only_max_m)||fabric_only_min_m<1||fabric_only_max_m>100||fabric_only_max_m<fabric_only_min_m)throw Error('Metre sınırları 1–100 aralığında tam sayı olmalı.');
+ return {pleats,sewings,pleat_factors,min_billable_fabric_m,rustic_fee_try,fabric_only_enabled,fabric_only_discount_pct,fabric_only_min_m,fabric_only_max_m,updated_at:new Date().toISOString()};
 }
 
 const slugify=text=>text.toLocaleLowerCase('tr-TR').replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,90);
