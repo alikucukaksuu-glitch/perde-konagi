@@ -174,7 +174,7 @@ function refreshSummary(){
 }
 function reset(){
  clearImages();current=null;
- for(const id of ['ps-name','ps-price','ps-short','ps-desc','ps-seo-title','ps-seo-desc','ps-stock']){const field=$(id);if(field)field[field.isContentEditable?'innerHTML':'value']=''}
+ for(const id of ['ps-name','ps-price','ps-short','ps-desc','ps-seo-title','ps-seo-desc','ps-stock','ps-production-min','ps-production-max']){const field=$(id);if(field)field[field.isContentEditable?'innerHTML':'value']=''}
  $('ps-category').value='zebra';$('ps-variant-rows').replaceChildren();applyPliseConfig();applyWoodConfig();applyTulConfig();applyGuideSettings();
  for(const [id,value] of [['ps-minw',50],['ps-maxw',280],['ps-minh',50],['ps-maxh',280]])$(id).value=value;
  $('ps-sale-enabled').checked=true;$('ps-summary-date').textContent='—';$('ps-page-title').textContent='Yeni Ürün Ekle';$('ps-crumb').textContent='Yeni Ürün Ekle';
@@ -199,6 +199,7 @@ async function open(slug){
   $('ps-copy-new').hidden=false;$('ps-delete-product').hidden=false;
   $('ps-name').value=p.title;$('ps-price').value=p.price_per_sqm;$('ps-category').value=p.collection;if(p.collection==='plise'){const {data:pc,error:pcError}=await sb.from('plise_product_config').select('*').eq('slug',slug).maybeSingle();if(pcError)feedback('Plise ayarları okunamadı: '+pcError.message);applyPliseConfig(pc||pliseDefaults)}if(p.collection==='ahsap-jaluzi'){const {data:wc,error:wcError}=await sb.from('wood_blind_product_config').select('*').eq('slug',slug).maybeSingle();if(wcError)feedback('Ahşap jaluzi ayarları yüklenemedi: '+wcError.message);applyWoodConfig(wc||woodDefaults)}if(p.collection==='tul'){const {data:tc,error:te}=await sb.from('tul_product_config').select('*').eq('slug',slug).maybeSingle();if(te)feedback('Tül ayarları okunamadı: '+te.message);applyTulConfig(tc||tulDefaults)}syncCategory();
   const {data:guides,error:guidesError}=await sb.from('shop_product_guides').select('*').eq('slug',slug).maybeSingle();if(guidesError)feedback('Rehber kayıtları okunamadı: '+guidesError.message);applyGuideSettings(guides);
+  $('ps-production-min').value=d?.production_min_days??'';$('ps-production-max').value=d?.production_max_days??'';
   $('ps-short').value=d?.short_description||'';$('ps-desc').innerHTML=window.PKDescriptionFormat.normalize(d?.description_html||'');
   $('ps-seo-title').value=d?.seo_title||'';$('ps-seo-desc').value=d?.seo_description||'';
   $('ps-stock').value=d?.stock_qty??'';$('ps-sale-enabled').checked=Boolean(p.is_active);
@@ -244,9 +245,11 @@ function validate(){
  if(!Number.isFinite(price)||price<1||price>100000)throw Error('Geçerli bir m² fiyatı girin.');
  if(!['zebra','mat-stor','plise','ahsap-jaluzi','tul'].includes($('ps-category').value))throw Error('Kategori seçin.');
  if(!Object.values(m).every(Number.isFinite)||m.min_width<(isWood()?30:isPlise()?20:50)||m.max_width>(isWood()?300:isPlise()?200:isTul()?500:280)||m.min_height<(isWood()?30:isPlise()?20:50)||m.max_height>(isWood()?300:isPlise()?200:isTul()?300:280)||m.min_width>m.max_width||m.min_height>m.max_height)throw Error(isTul()?'Tül en 50–500 cm, boy 50–300 cm arasında olmalıdır.':isWood()?'Ahşap jaluzi en ve boy 30–300 cm arasında olmalıdır.':isPlise()?'Plise en 20–200 cm, boy 20–200 cm arasında olmalıdır.':'Ölçü sınırları 50–280 cm aralığında olmalıdır.');if(isWood()){woodConfig();if([m.min_width,m.max_width,m.min_height,m.max_height].some(v=>!Number.isInteger(v*2)))throw Error('Ahşap jaluzi ölçü sınırları 0,5 cm adımlarla olmalıdır.')}if(isPlise())pliseConfig();if(isTul()){tulConfig();if([m.min_width,m.max_width,m.min_height,m.max_height].some(x=>!Number.isInteger(x)))throw Error('Tül ölçüleri tam santimetre olmalı.');}
+ const productionMin=$('ps-production-min').value.trim(),productionMax=$('ps-production-max').value.trim();
+ if(Boolean(productionMin)!==Boolean(productionMax)||productionMin&&(!Number.isInteger(Number(productionMin))||!Number.isInteger(Number(productionMax))||Number(productionMin)<1||Number(productionMax)<Number(productionMin)||Number(productionMax)>90))throw Error('Termin süresi için 1–90 arasında geçerli en erken ve en geç iş günü girin veya her ikisini boş bırakın.');
  if(stock!==''&&(!Number.isInteger(Number(stock))||Number(stock)<0))throw Error('Stok sıfır veya pozitif bir tam sayı olmalıdır.');
  if(variants().length>8)throw Error('En fazla 8 varyant grubu ekleyebilirsiniz.');
- return {title,price,m,stock:stock===''?null:Number(stock),plise:isPlise()?pliseConfig():null,wood:isWood()?woodConfig():null,tul:isTul()?tulConfig():null,guides:getGuideSettings()};
+ return {title,price,m,productionMin:productionMin===''?null:Number(productionMin),productionMax:productionMax===''?null:Number(productionMax),stock:stock===''?null:Number(stock),plise:isPlise()?pliseConfig():null,wood:isWood()?woodConfig():null,tul:isTul()?tulConfig():null,guides:getGuideSettings()};
 }
 async function save(force){
  if(busy)return;
@@ -282,7 +285,7 @@ async function save(force){
   if(data.tul){const {error:tulError}=await sb.from('tul_product_config').upsert({slug,...data.tul},{onConflict:'slug'});if(tulError)throw tulError;}
   if(data.wood){const {error:woodError}=await sb.from('wood_blind_product_config').upsert({slug,...data.wood},{onConflict:'slug'});if(woodError)throw woodError;}
   if(data.plise){const {error:pliseError}=await sb.from('plise_product_config').upsert({slug,...data.plise},{onConflict:'slug'});if(pliseError)throw pliseError;}
-  const record={slug,short_description:cleanText($('ps-short').value),description_html:window.PKDescriptionFormat.normalize($('ps-desc').innerHTML),image_paths:stored,variant_options:variants(),measurement_options:data.m,seo_title:cleanText($('ps-seo-title').value),seo_description:cleanText($('ps-seo-desc').value),stock_qty:data.stock,display_status:status,updated_at:new Date().toISOString()};
+  const record={slug,production_min_days:data.productionMin,production_max_days:data.productionMax,short_description:cleanText($('ps-short').value),description_html:window.PKDescriptionFormat.normalize($('ps-desc').innerHTML),image_paths:stored,variant_options:variants(),measurement_options:data.m,seo_title:cleanText($('ps-seo-title').value),seo_description:cleanText($('ps-seo-desc').value),stock_qty:data.stock,display_status:status,updated_at:new Date().toISOString()};
   const {error:detailsError}=await sb.from('shop_product_details').upsert(record,{onConflict:'slug'});if(detailsError)throw detailsError;
   const {error:publishError}=await sb.from('shop_products').update({is_active:product.is_active,visibility:status}).eq('slug',slug);if(publishError)throw publishError;
   // Shared product images must never be deleted when another product is edited.
