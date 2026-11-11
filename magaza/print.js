@@ -63,31 +63,42 @@ function parseProductionInfo(note){
  return {pile,detail:[extra,cleanNote].filter(Boolean).join(' · ')};
 }
 function makeLabel(item){
- const box=el('article','thermal-label');
- const info=parseProductionInfo(item.production_note);
- const head=el('div','label-top');
- txt(head,'strong','','#'+order.order_number+' · '+order.customer_name);
- txt(head,'span','',branch.name);
+ const box=el('article','thermal-label qr-label');
+ const details=parseProductionInfo(item.production_note);
+ const head=el('div','qr-label-head');
+ const heading=el('div','qr-brand');
+ if(company.logo_url&&/^https:\/\//.test(company.logo_url)){
+  const img=el('img','qr-company-logo');img.src=company.logo_url;img.alt=company.name;
+  heading.append(img);
+ }
+ const companyText=el('div','qr-company-text');
+ txt(companyText,'strong','',company.name);
+ txt(companyText,'small','','#'+order.order_number+' · '+branch.name);
+ heading.append(companyText);head.append(heading);
  box.append(head);
+ txt(box,'div','qr-customer',order.customer_name);
  txt(box,'h3','',item.category+' · '+item.product_name);
+ const split=el('div','qr-label-mid'),left=el('div','qr-label-info'),right=el('div','qr-label-code');
  const specs=el('div','label-specs');
- txt(specs,'span','','Adet: 1');
- txt(specs,'span','','En: '+(item.width_cm??'—')+' cm');
- txt(specs,'span','','Boy: '+(item.height_cm??'—')+' cm');
- txt(specs,'span','','Pile: '+(info.pile||'Belirtilmedi'));
- box.append(specs);
- if(info.detail)txt(box,'p','label-note','Üretim Notu: '+info.detail);
- if(order.customer_note)txt(box,'p','label-note','Sipariş Notu: '+order.customer_note);
- const graphic=el('div','label-barcode');
- const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
- svg.classList.add('barcode-graphic');graphic.append(svg);
- txt(graphic,'div','barcode-text',item.barcode);
- box.append(graphic);
+ for(const x of ['Adet: 1','En: '+(item.width_cm??'—')+' cm','Boy: '+(item.height_cm??'—')+' cm','Pile: '+(details.pile||'—')])txt(specs,'span','',x);
+ left.append(specs);
+ txt(right,'strong','qr-code-heading','MAĞAZAYA KABUL QR');
+ const qr=el('div','qr-image');
+ right.append(qr);
+ const qrUrl=new URL('./receive.html',location.href);
+ qrUrl.searchParams.set('org',orgId);
+ qrUrl.searchParams.set('item',item.id);
+ qrUrl.searchParams.set('code',item.barcode);
  try{
-  if(!window.JsBarcode)throw Error('Barkod kütüphanesi yüklenemedi');
-  if(!item.barcode)throw Error('Ürün barkod değeri bulunamadı');
-  window.JsBarcode(svg,item.barcode,{format:'CODE128',displayValue:false,margin:0,height:40,width:1.2});
- }catch(e){fail('Barkod çizimi başarısız: '+e.message)}
+  if(!window.QRCode||!item.barcode)throw Error('QR oluşturulamadı');
+  new window.QRCode(qr,{text:qrUrl.href,width:112,height:112,colorDark:'#000000',colorLight:'#ffffff',correctLevel:window.QRCode.CorrectLevel.M});
+ }catch(e){fail('QR oluşturulamadı: '+e.message)}
+ split.append(left,right);box.append(split);
+ const notes=el('div','qr-notes');
+ txt(notes,'strong','','ÜRÜN / SİPARİŞ NOTU');
+ const noteText=[details.detail&&'Ürün: '+details.detail,order.customer_note&&'Sipariş: '+order.customer_note].filter(Boolean).join('\n');
+ txt(notes,'p','',noteText||'—');
+ box.append(notes);
  return box;
 }
 function addLabels(){
