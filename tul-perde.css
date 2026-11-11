@@ -14,3 +14,24 @@ html[data-tul-view="collection"] .tc-product-only{display:none!important}html[da
 .tc-disabled-option{opacity:.45;pointer-events:none}
 .tc-disabled-option .tc-choice{cursor:not-allowed}
 @media(max-width:480px){.tc-fabric-head{padding:10px;font-size:12px;gap:6px}.tc-discount-badge{font-size:10px;padding:4px 7px}.tc-fabric-body{padding:10px}}
+
+/* Optional satin lining for sewn tulle */
+.tc-lining-panel{border:1px solid #e3cbb7;background:#fffdf9;border-radius:12px;padding:17px;margin:14px 0 17px}
+.tc-lining-panel[hidden],#tc-lining-colors[hidden]{display:none!important}
+.tc-lining-panel h2{font:600 20px Georgia,serif;color:#422d21;margin:0 0 13px}
+.tc-lining-toggle{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.tc-lining-toggle label{border:1px solid #e3d5c8;border-radius:8px;padding:11px 9px;background:#fff;cursor:pointer;display:flex;gap:7px;align-items:center;font-size:13px}
+.tc-lining-toggle label:has(input:checked){border-color:#9e6b45;background:#fff4ea;font-weight:700}
+.tc-lining-toggle input{accent-color:#98643a}
+.tc-lining-explainer{font-size:12px;line-height:1.55;color:#6d594b;margin:13px 0}
+.tc-lining-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.tc-lining-card{min-width:0;position:relative;display:grid;align-content:start;gap:8px;border:1.5px solid #decbbb;background:#fff;border-radius:10px;padding:10px;cursor:pointer;text-align:center;color:#493528}
+.tc-lining-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;border-radius:7px;background:#f5f0eb}
+.tc-lining-card strong{font-size:12px;line-height:1.4}
+.tc-lining-rate{font-size:11px;background:#f4e7d8;border-radius:30px;padding:5px 6px;color:#704c32}
+.tc-lining-check{display:none;position:absolute;top:15px;left:15px;background:#a06e45;border-radius:100%;color:white;width:25px;height:25px;align-items:center;justify-content:center;font-size:14px}
+.tc-lining-card[aria-pressed="true"]{border:2px solid #a46b3e;padding:9px;background:#fff9f3}
+.tc-lining-card[aria-pressed="true"] .tc-lining-check{display:flex}
+.tc-lining-card:focus-visible{outline:3px solid #c18a57;outline-offset:2px}
+.tc-lining-summary{margin:12px 0 0;text-align:center;font-size:12px;color:#856045}
+@media(max-width:400px){.tc-lining-panel{padding:12px}.tc-lining-toggle{grid-template-columns:1fr}.tc-lining-card{padding:6px}.tc-lining-card strong{font-size:11px}}
