@@ -86,12 +86,10 @@ function makeLabel(item){
  const qr=el('div','qr-image');
  right.append(qr);
  const qrUrl=new URL('./receive.html',location.href);
- qrUrl.searchParams.set('org',orgId);
- qrUrl.searchParams.set('item',item.id);
- qrUrl.searchParams.set('code',item.barcode);
+ qrUrl.searchParams.set('t',item.receiveToken);
  try{
-  if(!window.QRCode||!item.barcode)throw Error('QR oluşturulamadı');
-  new window.QRCode(qr,{text:qrUrl.href,width:112,height:112,colorDark:'#000000',colorLight:'#ffffff',correctLevel:window.QRCode.CorrectLevel.M});
+  if(!window.QRCode||!item.receiveToken)throw Error('QR oluşturulamadı');
+  new window.QRCode(qr,{text:qrUrl.href,width:220,height:220,colorDark:'#000000',colorLight:'#ffffff',correctLevel:window.QRCode.CorrectLevel.L});
  }catch(e){fail('QR oluşturulamadı: '+e.message)}
  split.append(left,right);box.append(split);
  const notes=el('div','qr-notes');
@@ -130,6 +128,14 @@ async function start(){
   if(order.barcode_printed_at){fail('Barkod bu sipariş için daha önce basılmış. Tekrar baskı yetkili işlem gerektirir.');return}
   if(!['processing','new'].includes(order.status)){fail('Barkod yalnızca İşlemde durumundaki sipariş için yazdırılır.');return}
   if(items.some(i=>!['processing','cancelled'].includes(i.status))){fail('Siparişte üretim aşaması farklı ürünler var. Barkod basmadan önce kontrol edin.');return}
+  try{
+   const active=items.filter(i=>i.status!=='cancelled');
+   const tokens=await Promise.all(active.map(i=>sb.rpc('erp_get_item_receive_token',{p_org:orgId,p_item:i.id})));
+   for(let index=0;index<tokens.length;index++){
+    if(tokens[index].error||!tokens[index].data)throw tokens[index].error||new Error('QR erişim kodu üretilemedi');
+    active[index].receiveToken=tokens[index].data;
+   }
+  }catch(e){fail('QR kod hazırlanamadı: '+e.message);return}
   addLabels();
   if($('warning').textContent)return;
   $('print-hint').textContent='Baskıyı başlatın. Çıktının gerçekten alındığını kontrol ettikten sonra “Yazdırıldı · Atölyeye Gönder” düğmesine basın. Bu onay barkodu kilitler ve siparişi Atölyede durumuna geçirir.';
