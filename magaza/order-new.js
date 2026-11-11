@@ -52,10 +52,20 @@ function syncStorColor(value){
 function syncCategoryUI(){
  const stor=isStor();
  $('stor-options').hidden=!stor;
- $('pile-selection-row').hidden=stor;
- $('product-pile').disabled=stor;
- if(stor)$('product-pile').value='';
- $('unit-options-row').classList.toggle('stor-price-only',stor);
+ // Remove the pile field from the DOM for stor products, not just visually hide it.
+ // Restore the exact same field when switching back to tulle/fon/other categories.
+ const pileRow=$('pile-selection-row'),unitRow=$('unit-options-row');
+ if(stor){
+  pileRow.hidden=true;
+  pileRow.remove();
+  $('product-pile').disabled=true;
+  $('product-pile').value='';
+ }else{
+  if(!unitRow.contains(pileRow))unitRow.insertBefore(pileRow,unitRow.firstChild);
+  pileRow.hidden=false;
+  $('product-pile').disabled=false;
+ }
+ unitRow.classList.toggle('stor-price-only',stor);
  $('product-price').closest('label').firstChild.textContent=stor?'m² Birim Fiyatı (₺) *':'Temel Birim Fiyat (₺) *';
  $('product-width').required=stor;$('product-height').required=stor;
  if(stor)syncStorColor($('stor-case').value);
