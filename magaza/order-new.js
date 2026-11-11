@@ -5,7 +5,7 @@ const categories=[{name:'TÜL PERDE',count:10},{name:'FON PERDE',count:5},{name:
 const fmt=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const asNum=v=>Number(v)||0;
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let user=null,org=null,branches=[],existingCustomers=[],products=new Map(),active=null,saving=false;
+let user=null,org=null,branches=[],existingCustomers=[],products=new Map(),active=null,saving=false,editing=null;
 const key=(category,index)=>category+'|'+index;
 function alertText(text){$('order-alert').textContent=text;$('order-alert').hidden=!text;window.scrollTo({top:0,behavior:'smooth'})}
 function setDate(days){
@@ -68,6 +68,8 @@ function openItem(category,index){
  $('product-spec').value=value?.spec||'';
  $('product-note').value=value?.note||'';
  $('delete-product').hidden=!value;
+ $('product-quantity').disabled=!!value?.id;
+ if(value?.id)$('product-quantity').value='1';
  $('product-overlay').hidden=false;
  calculateItemTotal();
  $('product-name').focus();
@@ -80,7 +82,8 @@ function storeItem(e){
  const width=$('product-width').value,height=$('product-height').value;
  if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(price)||price<0||price>99999999){alertText('Ürün adı, fiyatı veya adedi geçersiz.');return}
  if((width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))||(height!==''&&(!Number.isFinite(Number(height))||Number(height)<0))){alertText('En ve boy negatif olamaz.');return}
- const record={name,qty,price,width,height,spec:$('product-spec').value.trim(),note:$('product-note').value.trim()};
+ const old=products.get(key(active.category,active.index));
+ const record={name,qty,price,width,height,spec:$('product-spec').value.trim(),note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null};
  const totalBefore=[...products.values()].reduce((a,p)=>a+p.qty,0)-(products.get(key(active.category,active.index))?.qty||0);
  if(totalBefore+qty>60){alertText('Bir siparişte en fazla 60 fiziksel parça ekleyebilirsiniz.');return}
  products.set(key(active.category,active.index),record);closeItem();drawSlots();alertText('');
@@ -149,7 +152,53 @@ async function start(){
   if(branches.length===1)selector.value=branches[0].id;
   if(!branches.length){$('auth-warning').hidden=false;alertText('Şirket Ayarlarından önce şube ekleyin.');return}
   setDate(7);$('stage1').hidden=false;
+  const editId=new URLSearchParams(location.search).get('edit');
+  if(editId)await loadForEdit(editId,selected.organization_id);
  }catch(e){$('auth-warning').hidden=false;alertText('Sipariş ekranı yüklenemedi: '+e.message)}
+}
+async function loadForEdit(orderId,orgId){
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId)){alertText('Geçersiz sipariş bağlantısı.');return}
+ try{
+  const {data:order,error:orderError}=await sb.from('erp_orders').select('id,organization_id,branch_id,customer_name,customer_phone,delivery_date,customer_note,paid_amount,discount_percent,discount_amount,order_type,payment_method,status,updated_at').eq('organization_id',orgId).eq('id',orderId).single();
+  if(orderError)throw orderError;
+  if(['delivered','cancelled'].includes(order.status))throw Error('Teslim edilmiş veya iptal edilmiş sipariş düzenlenemez.');
+  const {data:lines,error:lineError}=await sb.from('erp_order_items').select('id,category,product_name,width_cm,height_cm,unit_price,production_note,barcode,slot_key,status').eq('organization_id',orgId).eq('order_id',orderId).order('created_at',{ascending:true});
+  if(lineError)throw lineError;
+  editing=order;products.clear();
+  const taken=new Set();
+  for(const line of lines||[]){
+   const group=categories.find(x=>x.name===line.category);
+   if(!group)throw Error('Desteklenmeyen ürün kategorisi: '+line.category);
+   let idx=-1;
+   if(line.slot_key){
+    const match=line.slot_key.match(/\|(\d+)(?:-\d+)?$/);
+    if(match&&Number(match[1])<group.count&&!taken.has(key(group.name,Number(match[1]))))idx=Number(match[1]);
+   }
+   if(idx<0)idx=Array.from({length:group.count},(_,i)=>i).find(i=>!taken.has(key(group.name,i)))??-1;
+   if(idx<0)throw Error('Bu sipariş için '+group.name+' kutucuğu yetersiz. Kaydı değiştirmeden destek alın.');
+   const slotKey=key(group.name,idx);taken.add(slotKey);
+   const notes=line.production_note||'';
+   const spec=notes.startsWith('Özellikler: ')?notes.split('\n')[0].replace('Özellikler: ',''):'';
+   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',spec,note:spec?notes.split('\n').slice(1).join('\n'):notes});
+  }
+  $('store-select').value=order.branch_id;
+  $('customer-name').value=order.customer_name;
+  $('customer-phone').value=order.customer_phone||'';
+  $('delivery-date').value=order.delivery_date||'';
+  $('order-type').value=order.order_type||'new';
+  $('order-note').value=order.customer_note||'';
+  $('discount-percent').value=order.discount_percent??0;
+  $('discount-amount').value=order.discount_amount??0;
+  $('paid-value').value=order.paid_amount??0;
+  $('payment-method').value=order.payment_method||'cash';
+  document.querySelector('.order-topline h1').textContent='Siparişi Düzenle';
+  $('submit-order').textContent='Değişiklikleri Kaydet';
+  $('continue-btn').textContent='Siparişe Devam Et →';
+  stage(2);
+ }catch(err){
+  alertText('Sipariş yüklenemedi: '+err.message);
+  $('stage1').hidden=true;$('stage2').hidden=true;
+ }
 }
 async function submit(){
  if(saving)return;
@@ -161,18 +210,18 @@ async function submit(){
  const payload=[];
  for(const [slot,p] of products){
   const category=slot.split('|')[0],spec=p.spec,fullNote=[spec&&'Özellikler: '+spec,p.note].filter(Boolean).join('\n');
-  for(let i=0;i<p.qty;i++)payload.push({category,product_name:p.name,width_cm:p.width||null,height_cm:p.height||null,unit_price:p.price,production_note:fullNote});
+  for(let i=0;i<p.qty;i++)payload.push({id:p.id||null,slot_key:key(category,Number(slot.split('|')[1]))+(p.qty>1?'-'+i:''),category,product_name:p.name,width_cm:p.width||null,height_cm:p.height||null,unit_price:p.price,production_note:fullNote});
  }
  saving=true;$('submit-order').disabled=true;$('save-message').textContent='Kaydediliyor...';
  try{
-  const {data,error}=await sb.rpc('erp_create_order_v2',{
-   p_org:org.id,p_branch:$('store-select').value,p_customer:$('customer-name').value.trim(),
+  const {data,error}=await sb.rpc(editing?'erp_update_order':'erp_create_order_v2',{
+   ...(editing?{p_order:editing.id,p_expected_updated_at:editing.updated_at}:{p_org:org.id}),p_branch:$('store-select').value,p_customer:$('customer-name').value.trim(),
    p_phone:$('customer-phone').value.trim(),p_delivery:$('delivery-copy').value,
    p_note:$('note-copy').value.trim(),p_paid:v.paid,p_items:payload,
    p_order_type:$('type-copy').value,p_discount_percent:v.percent,
    p_discount_amount:v.fixed,p_payment_method:$('payment-method').value});
   if(error)throw error;
-  location.replace('./?created='+encodeURIComponent(data));
+  location.replace('./?'+(editing?'updated':'created')+'='+encodeURIComponent(data));
  }catch(e){$('save-message').textContent='Kaydedilemedi: '+e.message;alertText('Sipariş kaydedilemedi: '+e.message)}
  finally{saving=false;$('submit-order').disabled=false}
 }
