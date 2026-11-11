@@ -42,7 +42,7 @@ async function load(){
  msg('orders-message','Siparişler yükleniyor...');
  try{
   branches=await fetchAll('erp_branches','id,name,organization_id',q=>q.eq('organization_id',org).order('name'));
-  orders=await fetchAll('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method,waiting_reason',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(250));
+  orders=await fetchAll('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method,waiting_reason,barcode_printed_at',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(250));
   items=orders.length?await fetchAll('erp_order_items','id,order_id,category,product_name,width_cm,height_cm,unit_price,production_note,status,barcode',q=>q.eq('organization_id',org).in('order_id',orders.map(x=>x.id))):[];
   const dropdown=$('filter-branch'),old=dropdown.value;
   dropdown.innerHTML='<option value="">Tüm Şubeler</option>';
@@ -62,6 +62,7 @@ function render(){
  const branch=$('filter-branch').value,payment=$('filter-payment').value;
  const subset=orders.filter(o=>{
   if(filterStatus&&o.status!==filterStatus)return false;
+  if(!filterStatus&&o.status==='cancelled')return false;
   if(branch&&o.branch_id!==branch)return false;
   const remaining=Number(o.total_amount)-Number(o.paid_amount);
   if(payment==='paid'&&remaining>0)return false;
@@ -90,10 +91,11 @@ function render(){
    '<div><small>Ödenen</small><strong>'+money(o.paid_amount)+'</strong></div>'+
    '<div><small>Kalan</small><strong class="'+(remaining>0?'debt':'')+'">'+money(remaining)+'</strong></div>'+
   '</div><div class="compact-actions">'+
-   '<button class="secondary" type="button" disabled title="A4 yazdırma sonraki aşamada">▣ Yazdır (yakında)</button>'+
+   '<button class="secondary" type="button" data-print-a4="'+escapeHtml(o.id)+'">▣ A4 Yazdır</button>'+ 
+   '<button class="secondary" type="button" data-print-label="'+escapeHtml(o.id)+'" '+(o.barcode_printed_at||!['processing','new'].includes(o.status)?'disabled title="Barkod yalnızca İşlemde iken bir kez basılabilir"':'')+'>▥ Barkod Yazdır</button>'+
    '<button class="secondary" type="button" data-edit="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
-   '<button class="secondary" type="button" disabled title="Tahsilat ekleme sonraki aşamada">◷ Ödeme Ekle (yakında)</button>'+
-   '<button class="secondary compact-delete" type="button" disabled title="Güvenli silme akışı sonraki aşamada">▤ Sil (yakında)</button>'+
+   '<button class="secondary" type="button" data-payment="'+escapeHtml(o.id)+'" '+(remaining<=0||o.status==='cancelled'?'disabled':'')+'>◷ Ödeme Ekle</button>'+
+   '<button class="secondary compact-delete" type="button" data-delete="'+escapeHtml(o.id)+'" '+(Number(o.paid_amount)>0||['cancelled','ready','partial_ready','delivered'].includes(o.status)?'disabled title="Tahsilatı olan veya teslim aşamasındaki sipariş silinemez"':'')+'>▤ Sil</button>'+
   '</div></div></div>'+
   ((o.status==='processing'||o.status==='new')?
    '<div class="waiting-controls"><button type="button" class="secondary waiting-open" data-wait="'+escapeHtml(o.id)+'">⏸ Beklemeye Al</button><div class="wait-form" id="wait-form-'+escapeHtml(o.id)+'" hidden><label>Bekleme nedeni *<textarea id="wait-reason-'+escapeHtml(o.id)+'" maxlength="1500" rows="2" placeholder="Örn. Müşteriden ölçü bilgisi bekleniyor."></textarea></label><div class="wait-buttons"><button type="button" class="secondary" data-cancel-wait="'+escapeHtml(o.id)+'">Vazgeç</button><button type="button" class="primary" data-confirm-wait="'+escapeHtml(o.id)+'">Beklemeye Al</button></div></div></div>':
@@ -202,9 +204,50 @@ function openDetail(id){
  const o=orders.find(x=>x.id===id);if(!o)return;
  const rows=items.filter(x=>x.order_id===id);
  const list=rows.map((i,index)=>'<div class="item-box"><b>'+(index+1)+'. '+escapeHtml(i.category)+' · '+escapeHtml(i.product_name)+'</b><p>En: '+escapeHtml(i.width_cm??'—')+' cm · Boy: '+escapeHtml(i.height_cm??'—')+' cm · Fiyat: '+money(i.unit_price)+'</p><p><strong>Üretim notu:</strong> '+escapeHtml(i.production_note||'—')+'</p><span class="barcode">Barkod: '+escapeHtml(i.barcode)+'</span><span class="chip '+escapeHtml(i.status)+'">'+escapeHtml(i.status==='ready'?'Mağazada · Teslime Hazır':'Atölyede')+'</span></div>').join('');
- $('detail-body').innerHTML='<div class="detail-body"><div class="detail-row"><span>Sipariş No</span><b>#'+escapeHtml(o.order_number)+'</b></div><div class="detail-row"><span>Müşteri</span><b>'+escapeHtml(o.customer_name)+'</b></div><div class="detail-row"><span>Şube</span><b>'+escapeHtml(branchName(o.branch_id))+'</b></div><div class="detail-row"><span>Teslim Tarihi</span><b>'+escapeHtml(dateTR(o.delivery_date))+'</b></div><div class="detail-row"><span>Genel Sipariş Notu (A4 ve barkodlarda)</span><b>'+escapeHtml(o.customer_note||'—')+'</b></div><div class="item-section"><h3>Ürün Kutucukları</h3>'+list+'</div><div class="money-grid"><div><small>Toplam</small><b>'+money(o.total_amount)+'</b></div><div><small>Ödenen</small><b>'+money(o.paid_amount)+'</b></div><div><small>Kalan</small><b>'+money(Number(o.total_amount)-Number(o.paid_amount))+'</b></div></div><div class="detail-buttons"><button type="button" id="print-a4" class="secondary">A4 Müşteri Çıktısı (yakında)</button><button type="button" id="print-barcode" class="secondary">Barkod Yazdır (yakında)</button></div><p class="fine">A4 formunun onaylanan düzeni korunacak. Barkod okutma ve mağazaya kabul sonraki geliştirme aşamasıdır.</p></div>';
- $('print-a4').disabled=true;$('print-barcode').disabled=true;
+ $('detail-body').innerHTML='<div class="detail-body"><div class="detail-row"><span>Sipariş No</span><b>#'+escapeHtml(o.order_number)+'</b></div><div class="detail-row"><span>Müşteri</span><b>'+escapeHtml(o.customer_name)+'</b></div><div class="detail-row"><span>Şube</span><b>'+escapeHtml(branchName(o.branch_id))+'</b></div><div class="detail-row"><span>Teslim Tarihi</span><b>'+escapeHtml(dateTR(o.delivery_date))+'</b></div><div class="detail-row"><span>Genel Sipariş Notu (A4 ve barkodlarda)</span><b>'+escapeHtml(o.customer_note||'—')+'</b></div><div class="item-section"><h3>Ürün Kutucukları</h3>'+list+'</div><div class="money-grid"><div><small>Toplam</small><b>'+money(o.total_amount)+'</b></div><div><small>Ödenen</small><b>'+money(o.paid_amount)+'</b></div><div><small>Kalan</small><b>'+money(Number(o.total_amount)-Number(o.paid_amount))+'</b></div></div><div class="detail-buttons"><button type="button" id="print-a4" class="secondary">A4 Müşteri Çıktısı</button><button type="button" id="print-barcode" class="secondary">Barkod Yazdır</button></div><p class="fine">Barkod baskısı onaylandığında sipariş Atölyede durumuna alınır. Mağaza barkod okuma modülü ayrı aşamadadır.</p></div>';
+ $('print-a4').onclick=()=>openPrint(id,'a4');$('print-barcode').onclick=()=>openPrint(id,'label');
  $('order-detail').hidden=false;
+}
+function openPrint(id,type){
+ const o=orders.find(x=>x.id===id);
+ if(!o)return;
+ const url='./print.html?type='+encodeURIComponent(type)+'&org='+encodeURIComponent(org)+'&id='+encodeURIComponent(id);
+ const win=window.open(url,'_blank','noopener');
+ if(!win)location.href=url;
+}
+async function addPayment(id){
+ const o=orders.find(x=>x.id===id);
+ if(!o)return;
+ const remaining=Math.round((Number(o.total_amount)-Number(o.paid_amount))*100)/100;
+ if(remaining<=0){msg('orders-message','Bu siparişin kalan borcu yok.');return}
+ const input=prompt('Kalan borç '+money(remaining)+'. Alınan ödeme tutarını TL olarak yazın:',String(remaining).replace('.',','));
+ if(input===null)return;
+ const value=Number(input.trim().replace(',','.'));
+ if(!Number.isFinite(value)||value<=0||value>remaining){msg('orders-message','Ödeme tutarı geçersiz veya kalan borcu aşıyor.');return}
+ const choice=prompt('Ödeme yöntemi yazın: Nakit / Kart / Havale','Nakit');
+ if(choice===null)return;
+ const method={'nakit':'cash','kart':'card','kredi kartı':'card','havale':'transfer','eft':'transfer','havale/eft':'transfer'}[choice.trim().toLocaleLowerCase('tr-TR')];
+ if(!method){msg('orders-message','Yöntem Nakit, Kart veya Havale olmalıdır.');return}
+ const note=prompt('Tahsilat açıklaması (isteğe bağlı, boş bırakabilirsiniz):','');
+ if(note===null)return;
+ if(note.length>500){msg('orders-message','Tahsilat notu 500 karakteri aşamaz.');return}
+ if(!confirm(money(value)+' ödeme '+choice+' olarak kaydedilecek. Onaylıyor musunuz?'))return;
+ msg('orders-message','Ödeme kaydediliyor...');
+ const {error}=await sb.rpc('erp_add_payment',{p_org:org,p_order:id,p_amount:value,p_method:method,p_note:note});
+ if(error){msg('orders-message','Ödeme kaydedilemedi: '+error.message);return}
+ await load();msg('orders-message',money(value)+' tahsilat eklendi.');
+}
+async function archiveOrder(id){
+ const o=orders.find(x=>x.id===id);if(!o)return;
+ if(Number(o.paid_amount)>0){msg('orders-message','Ödeme alınmış sipariş silinemez.');return}
+ const reason=prompt('#'+o.order_number+' siparişi Silinenler bölümüne taşınacak. Silme nedenini yazın:','');
+ if(reason===null)return;
+ if(reason.trim().length<5){msg('orders-message','Silme nedeni en az 5 karakter olmalı.');return}
+ if(!confirm('#'+o.order_number+' siparişini silmek istediğinize emin misiniz? Bu işlem kayda geçer.'))return;
+ msg('orders-message','Sipariş siliniyor...');
+ const {error}=await sb.rpc('erp_cancel_order',{p_org:org,p_order:id,p_reason:reason.trim()});
+ if(error){msg('orders-message','Sipariş silinemedi: '+error.message);return}
+ await load();msg('orders-message','Sipariş Silinenler bölümüne taşındı; değişiklik geçmişi korundu.');
 }
 function exportCSV(){
  const header=['Sipariş','Müşteri','Telefon','Şube','Durum','Teslim','Toplam','Ödenen','Kalan','Not'];
@@ -251,6 +294,10 @@ $('orders-list').onclick=e=>{
  if(confirmWait){setWaiting(confirmWait.dataset.confirmWait,'wait');return;}
  const resume=e.target.closest('[data-resume]');
  if(resume){setWaiting(resume.dataset.resume,'resume');return;}
+ const printA4=e.target.closest('[data-print-a4]');if(printA4){openPrint(printA4.dataset.printA4,'a4');return;}
+ const printLabel=e.target.closest('[data-print-label]');if(printLabel){openPrint(printLabel.dataset.printLabel,'label');return;}
+ const payment=e.target.closest('[data-payment]');if(payment){addPayment(payment.dataset.payment);return;}
+ const deletion=e.target.closest('[data-delete]');if(deletion){archiveOrder(deletion.dataset.delete);return;}
  const expand=e.target.closest('[data-expand]');if(expand){const id=expand.dataset.expand;if(expandedOrders.has(id))expandedOrders.delete(id);else expandedOrders.add(id);render();if(expandedOrders.has(id))loadHistory(id);return}const edit=e.target.closest('[data-edit]');if(edit){location.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(edit.dataset.edit);return}const button=e.target.closest('[data-detail]');if(button)openDetail(button.dataset.detail)};
  $('export-csv').onclick=exportCSV;
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('order-editor').hidden=true;$('order-detail').hidden=true}});
