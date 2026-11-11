@@ -49,21 +49,23 @@ function syncStorColor(value){
  $('stor-color').replaceChildren(...colors.map(c=>new Option(c,c)));
  if(!colors.includes($('stor-color').value))$('stor-color').value=colors[0]||'';
 }
+const pileControlRow=document.getElementById('pile-selection-row');
+const pileControlSelect=document.getElementById('product-pile');
 function syncCategoryUI(){
  const stor=isStor();
  $('stor-options').hidden=!stor;
  // Remove the pile field from the DOM for stor products, not just visually hide it.
  // Restore the exact same field when switching back to tulle/fon/other categories.
- const pileRow=$('pile-selection-row'),unitRow=$('unit-options-row');
+ const pileRow=pileControlRow,unitRow=$('unit-options-row');
  if(stor){
   pileRow.hidden=true;
   pileRow.remove();
-  $('product-pile').disabled=true;
-  $('product-pile').value='';
+  pileControlSelect.disabled=true;
+  pileControlSelect.value='';
  }else{
   if(!unitRow.contains(pileRow))unitRow.insertBefore(pileRow,unitRow.firstChild);
   pileRow.hidden=false;
-  $('product-pile').disabled=false;
+  pileControlSelect.disabled=false;
  }
  unitRow.classList.toggle('stor-price-only',stor);
  $('product-price').closest('label').firstChild.textContent=stor?'m² Birim Fiyatı (₺) *':'Temel Birim Fiyat (₺) *';
@@ -214,7 +216,7 @@ function openItem(category,index){
  $('product-height').value=value?.height??'';
  $('product-price').value=value?(value.basePrice??value.price):'';
  $('product-quantity').value=value?.qty??1;
- $('product-pile').value=value?.pile||'';
+ pileControlSelect.value=value?.pile||'';
  $('product-spec').value=category==='STOR PERDE'?stripStorOptions(value?.spec||''):value?.spec||'';
  if(category==='STOR PERDE'){
   const cfg=value?.stor||parseStorSpecs(value?.spec||'');
@@ -248,14 +250,14 @@ function calculateItemTotal(){
   $('pile-price-hint').textContent='Fiyat: '+fmt(unit)+' × '+qty+' adet = '+fmt(unit*qty);
   $('stor-calculation').textContent='Gerçek ölçü: '+(width||'—')+' × '+(height||'—')+' cm · Fiyat hesabı: '+effectiveWidth+' × '+effectiveHeight+' cm ('+(effectiveWidth*effectiveHeight/10000).toLocaleString('tr-TR')+' m²) · Kasa / mekanizma farkları dahil: '+fmt(unit)+' / adet';
  }else{
-  const p=$('product-pile').value,factor=pileFactor(p);
+  const p=pileControlSelect.value,factor=pileFactor(p);
   $('product-total').textContent=fmt(priceFromBase(base,p)*qty);
   $('pile-price-hint').textContent='Hesap: '+fmt(base)+' × '+String(factor).replace('.',',')+' (pile) × '+qty+' adet = '+fmt(priceFromBase(base,p)*qty)+(p==='Özel'?' · Özel pile için temel fiyat doğrudan kullanılır.':'');
  }
 }
 function storeItem(e){
  e.preventDefault();
- const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=isStor()?'':$('product-pile').value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):priceFromBase(basePrice,pile);
+ const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=isStor()?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):priceFromBase(basePrice,pile);
  const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value;
  if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(basePrice)||basePrice<0||!Number.isFinite(price)||price<0||price>99999999){$('product-status-message').textContent='Ürün adı, fiyatı veya adedi geçersiz.';return}
  if((width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))||(height!==''&&(!Number.isFinite(Number(height))||Number(height)<0))){$('product-status-message').textContent='En ve boy negatif olamaz.';return}
@@ -500,7 +502,7 @@ $('product-shade').onclick=$('close-product').onclick=closeItem;
  $('product-category').onchange=()=>{syncCategoryUI();$('catalog-search').value='';$('catalog-results').hidden=true;showCatalog();calculateItemTotal()};
  $('catalog-search').oninput=()=>{showCatalog()};
  $('catalog-search').onfocus=showCatalog;
-$('product-pile').onchange=calculateItemTotal;
+pileControlSelect.onchange=calculateItemTotal;
 ['discount-percent','discount-amount','paid-value'].forEach(id=>$(id).oninput=updateMoney);
 $('submit-order').onclick=submit;
 function openEditorPrint(type){
