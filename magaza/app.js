@@ -147,7 +147,7 @@ function handlers(){
  $('refresh').onclick=load;
  $('filter-search').oninput=render;$('filter-branch').onchange=render;$('filter-payment').onchange=render;
  $('status-filters').onclick=e=>{const b=e.target.closest('button[data-status]');if(!b)return;filterStatus=b.dataset.status;document.querySelectorAll('#status-filters button').forEach(x=>x.classList.toggle('active',x===b));render()};
- $('new-order').onclick=openEditor;$('close-editor').onclick=$('cancel-editor').onclick=()=>$('order-editor').hidden=true;
+ $('new-order').onclick=()=>{location.href='./order-new.html?org='+encodeURIComponent(org)};$('close-editor').onclick=$('cancel-editor').onclick=()=>$('order-editor').hidden=true;
  $('close-detail').onclick=()=>$('order-detail').hidden=true;
  $('add-item').onclick=addLine;
  $('order-form').onsubmit=saveOrder;
