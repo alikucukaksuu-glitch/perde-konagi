@@ -94,7 +94,7 @@ function render(){
    '<div><small>Kalan</small><strong class="'+(remaining>0?'debt':'')+'">'+money(remaining)+'</strong></div>'+
   '</div><div class="compact-actions">'+
    '<button class="secondary" type="button" data-print-a4="'+escapeHtml(o.id)+'">▣ A4 Yazdır</button>'+ 
-   '<button class="secondary" type="button" data-print-label="'+escapeHtml(o.id)+'" '+(o.barcode_printed_at||!['processing','new'].includes(o.status)?'disabled title="Barkod yalnızca İşlemde iken bir kez basılabilir"':'')+'>▥ Barkod Yazdır</button>'+
+   '<button class="secondary" type="button" data-print-label="'+escapeHtml(o.id)+'" '+(o.barcode_printed_at?!['owner','manager'].includes(memberRole)?'disabled title="Tekrar baskı yalnızca yönetici yetkisiyle yapılabilir"':'':!['processing','new'].includes(o.status)?'disabled title="Barkod ilk kez yalnızca İşlemde durumunda basılabilir"':'')+'>'+(o.barcode_printed_at?'▥ QR Etiketi Tekrar Yazdır':'▥ Barkod Yazdır')+'</button>'+
    '<button class="secondary" type="button" data-edit="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
    '<button class="secondary" type="button" data-payment="'+escapeHtml(o.id)+'" '+(remaining<=0||o.status==='cancelled'?'disabled':'')+'>◷ Ödeme Ekle</button>'+
    '<button class="secondary compact-delete" type="button" data-delete="'+escapeHtml(o.id)+'" '+(!['owner','manager'].includes(memberRole)||['cancelled','ready','partial_ready','delivered'].includes(o.status)?'disabled title="Silme yetkisi yöneticidedir; teslim aşamasındaki siparişler silinemez"':'')+'>▤ Sil</button>'+
@@ -213,7 +213,7 @@ function openDetail(id){
 function openPrint(id,type){
  const o=orders.find(x=>x.id===id);
  if(!o)return;
- const url='./print.html?type='+encodeURIComponent(type)+'&org='+encodeURIComponent(org)+'&id='+encodeURIComponent(id);
+ const url='./print.html?type='+encodeURIComponent(type)+'&org='+encodeURIComponent(org)+'&id='+encodeURIComponent(id)+(type==='label'&&o.barcode_printed_at?'&reprint=1':'');
  const win=window.open(url,'_blank','noopener');
  if(!win)location.href=url;
 }
