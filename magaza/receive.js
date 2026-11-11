@@ -48,6 +48,9 @@ $('accept').onclick=async()=>{
   ready=false;
   $('status').textContent='Mağazada – Teslime Hazır';
   message(data==='ready'?'Ürün teslim alındı. Siparişteki tüm ürünler mağazada hazır.':'Ürün teslim alındı. Diğer ürünler bekleniyor; sipariş Kısmi Hazır.','success');
+  const next=new URL('./',location.href);
+  next.searchParams.set('scan','1');next.searchParams.set('received','1');next.searchParams.set('org',org);
+  location.replace(next.href);
  }catch(e){message('Kabul işlemi başarısız: '+e.message,'error');$('accept').disabled=false}
 };
 init().catch(e=>message('Beklenmeyen hata: '+e.message,'error'));
