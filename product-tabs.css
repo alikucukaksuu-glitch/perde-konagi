@@ -1,0 +1,18 @@
+/* Perde Konağı – product-specific guides as accessible content tabs */
+#pk-product-tab-system{margin:26px auto 22px;max-width:1180px;width:100%;box-sizing:border-box;font-family:inherit;color:#403027}
+#pk-product-tab-system .pk-tabs-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+#pk-product-tab-system .pk-tab{appearance:none;border:1px solid #e5d5c6;border-radius:12px;background:#fffaf6;color:#5b4130;font:600 15px Georgia,serif;padding:16px 9px;text-align:center;cursor:pointer;min-width:0}
+#pk-product-tab-system .pk-tab[aria-selected="true"]{border:2px solid #a87848;background:#f8ebdb;color:#382519;padding:15px 8px}
+#pk-product-tab-system .pk-tab:focus-visible{outline:3px solid #c3945e;outline-offset:2px}
+#pk-product-tab-system .pk-tab-panel{border:1px solid #e5d5c6;background:#fffdfa;border-radius:13px;padding:23px;min-height:140px;box-sizing:border-box}
+#pk-product-tab-system .pk-tab-panel[hidden],#pk-guide[hidden],#tc-below .tc-help[hidden],#wb-below .wb-guides[hidden],#wb-below .wb-quick-guides[hidden]{display:none!important}
+#pk-product-tab-system h2{margin:0 0 17px;font:26px Georgia,serif;color:#493027}
+#pk-product-tab-system .pk-description-inside{display:block!important;width:100%;max-width:none;margin:0;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none}
+#pk-product-tab-system .pk-description-inside h2{margin:0 0 14px}
+#pk-product-tab-system .pk-tab-text{line-height:1.85;font-size:14px;white-space:normal}
+#pk-product-tab-system .pk-tab-text p{margin:0 0 12px}
+#pk-product-tab-system .pk-tab-guide-image{display:block;width:min(100%,620px);max-height:460px;object-fit:contain;background:#f7f2eb;margin:0 auto 18px;border-radius:9px}
+#pk-product-tab-system .pk-tab-guide-image[hidden],#pk-product-tab-system .pk-default-illustration[hidden]{display:none!important}
+#pk-product-tab-system .pk-default-illustration{max-width:400px;margin:0 auto 15px;background:#f9f4ea;border-radius:10px;text-align:center}
+#pk-product-tab-system .pk-default-illustration svg{width:100%;max-height:200px}
+@media(max-width:680px){#pk-product-tab-system{margin:16px auto}#pk-product-tab-system .pk-tabs-nav{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#pk-product-tab-system .pk-tab{font-size:13px;padding:11px 7px}#pk-product-tab-system .pk-tab[aria-selected="true"]{padding:10px 6px}#pk-product-tab-system .pk-tab-panel{padding:15px}#pk-product-tab-system h2{font-size:22px}}
