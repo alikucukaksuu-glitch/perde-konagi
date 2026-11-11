@@ -112,6 +112,7 @@ function stage(next){
  $('stage1').hidden=next!==1;$('stage2').hidden=next!==2;
  $('step-label').textContent=next===1?'1 / 2 · Müşteri Bilgileri':'2 / 2 · Sipariş ve Ürünler';
  if(next===2){
+  $('order-status-display').value=editing?.status==='new'?'processing':editing?.status||'processing';
   $('summary-customer').textContent=$('customer-name').value.trim();
   $('summary-phone').textContent=$('customer-phone').value.trim()||'—';
   $('summary-delivery').textContent=$('delivery-date').value?new Date($('delivery-date').value+'T12:00:00').toLocaleDateString('tr-TR'):'—';
