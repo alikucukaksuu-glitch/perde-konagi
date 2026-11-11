@@ -21,3 +21,25 @@
 .label-flow>div{font-size:12px;border-top:1px solid #dde3dd;padding-top:12px}
 @media(max-width:900px){.label-mode .label-workspace{grid-template-columns:1fr;margin:12px;gap:12px}.label-mode .label-workspace .page{width:100%}}
 @media print{.label-mode .label-workspace{display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;max-width:none!important}.label-mode .label-workspace .page{display:block!important;width:auto!important;max-width:none!important}.label-mode .label-flow{display:none!important}.label-mode .thermal-label{border:0!important;border-radius:0!important;width:80mm!important;height:50mm!important;padding:2mm!important;margin:0!important;break-after:page;page-break-after:always}.label-mode .thermal-label:last-child{break-after:auto;page-break-after:auto}}
+
+/* QR production label only — A4 customer form intentionally unchanged */
+.label-mode .qr-label{display:flex;flex-direction:column;gap:1.1mm;padding:2mm 2.5mm!important;width:80mm!important;height:50mm!important;min-height:50mm!important;border:1px dashed #999;color:#000;background:#fff;overflow:hidden}
+.qr-label-head{border-bottom:1px solid #111;padding-bottom:1mm;display:flex;align-items:center}
+.qr-brand{display:flex;align-items:center;gap:2mm;min-width:0;width:100%}
+.qr-company-logo{height:7mm;max-width:9mm;object-fit:contain;filter:grayscale(1) contrast(1.3)}
+.qr-company-text{display:grid;gap:.3mm;min-width:0}
+.qr-company-text strong{font-size:12px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qr-company-text small{font-size:8px;line-height:1.15}
+.qr-customer{font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.label-mode .qr-label h3{font-size:10px;line-height:1.2;max-height:7mm;margin:0;font-weight:700;overflow:hidden}
+.qr-label-mid{display:grid;grid-template-columns:minmax(0,1fr) 25mm;gap:2mm;min-height:23mm;max-height:23mm}
+.qr-label-info{min-width:0;display:flex;align-items:center}
+.qr-label-info .label-specs{display:grid;gap:1.4mm;font-size:9px;font-weight:700}
+.qr-label-code{display:grid;justify-items:center;align-content:start;gap:1mm;border-left:1px solid #ddd;padding-left:2mm;min-width:0}
+.qr-code-heading{font-size:7.3px;text-align:center;white-space:nowrap;letter-spacing:0}
+.qr-image{width:19mm;height:19mm;display:grid;place-items:center;overflow:hidden}
+.qr-image img,.qr-image canvas{width:19mm!important;height:19mm!important;image-rendering:pixelated;display:block}
+.qr-notes{border-top:1px solid #111;padding-top:1mm;min-height:9mm;overflow:hidden}
+.qr-notes strong{font-size:8px}
+.qr-notes p{margin:.5mm 0 0!important;font-size:8px!important;line-height:1.16;white-space:pre-wrap;overflow-wrap:anywhere;max-height:7mm;overflow:hidden}
+@media print{.label-mode .qr-label{border:0!important;break-after:page;page-break-after:always}.label-mode .qr-label:last-child{break-after:auto;page-break-after:auto}}
