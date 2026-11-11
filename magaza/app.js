@@ -335,6 +335,13 @@ function handlers(){
  $('organization-select').onchange=async e=>{org=e.target.value;memberRole=window.__erpMembers?.find(m=>m.organization_id===org)?.role||'staff';await load()};
  $('refresh').onclick=load;
  $('scan-qr').onclick=openQr;
+ $('bulk-print-labels').onclick=()=>{
+  if(!org||!user){msg('orders-message','Önce işletme hesabıyla giriş yapın.');return}
+  const url='./print.html?type=bulk&org='+encodeURIComponent(org);
+  const win=window.open(url,'_blank');
+  if(win){try{win.opener=null}catch(_){}}
+  else location.href=url;
+ };
  $('qr-retry').onclick=async()=>{await stopQr();$('qr-scan-modal').hidden=true;await openQr()};
  $('qr-scan-close').onclick=$('qr-scan-stop').onclick=closeQr;
  $('qr-scan-modal').addEventListener('click',e=>{if(e.target===$('qr-scan-modal'))closeQr()});
