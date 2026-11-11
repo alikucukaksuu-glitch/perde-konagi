@@ -42,7 +42,7 @@ function syncCategory(){
 }
 
 
-const tulDefaults={pleats:['Düz Dikim','1/2 Normal Pile','1/3 Sık Pile'],sewings:['Kornişe Uygun Düğmeli Dikim','Rustik / Halkalı Dikim'],pleat_factors:[1,2,3],min_billable_fabric_m:1,rustic_fee_try:0,fabric_only_enabled:true,fabric_only_discount_pct:10,fabric_only_min_m:1,fabric_only_max_m:20};
+const tulDefaults={pleats:['Düz Dikim','1/2 Normal Pile','1/3 Sık Pile'],sewings:['Kornişe Uygun Düğmeli Dikim','Rustik / Halkalı Dikim'],pleat_factors:[1,2,3],min_billable_fabric_m:1,rustic_fee_try:0,fabric_only_enabled:true,fabric_only_discount_pct:10,fabric_only_min_m:1,fabric_only_max_m:20,lining_enabled:true,lining_price_per_m:250};
 const isTul=()=>$('ps-category').value==='tul';
 function applyTulConfig(v=tulDefaults){
  $('ps-tul-pleats').value=(v.pleats||tulDefaults.pleats).join(', ');
@@ -53,6 +53,8 @@ function applyTulConfig(v=tulDefaults){
  $('ps-tul-fabric-discount').value=v.fabric_only_discount_pct??10;
  $('ps-tul-fabric-min').value=v.fabric_only_min_m??1;
  $('ps-tul-fabric-max').value=v.fabric_only_max_m??20;
+ $('ps-tul-lining-enabled').checked=v.lining_enabled??true;
+ $('ps-tul-lining-price').value=v.lining_price_per_m??250;
 }
 function tulConfig(){
  const arr=id=>[...new Set($(id).value.split(',').map(x=>x.trim()).filter(Boolean))];
@@ -68,7 +70,9 @@ function tulConfig(){
  const fabric_only_min_m=Number($('ps-tul-fabric-min').value),fabric_only_max_m=Number($('ps-tul-fabric-max').value);
  if(!Number.isFinite(fabric_only_discount_pct)||fabric_only_discount_pct<0||fabric_only_discount_pct>100)throw Error('Metre ile satış indirimi %0–100 arasında olmalı.');
  if(!Number.isInteger(fabric_only_min_m)||!Number.isInteger(fabric_only_max_m)||fabric_only_min_m<1||fabric_only_max_m>100||fabric_only_max_m<fabric_only_min_m)throw Error('Metre sınırları 1–100 aralığında tam sayı olmalı.');
- return {pleats,sewings,pleat_factors,min_billable_fabric_m,rustic_fee_try,fabric_only_enabled,fabric_only_discount_pct,fabric_only_min_m,fabric_only_max_m,updated_at:new Date().toISOString()};
+ const lining_enabled=$('ps-tul-lining-enabled').checked,lining_price_per_m=Number($('ps-tul-lining-price').value);
+ if(!Number.isFinite(lining_price_per_m)||lining_price_per_m<0||lining_price_per_m>100000)throw Error('Saten güneşlik metre fiyatı geçersiz.');
+ return {pleats,sewings,pleat_factors,min_billable_fabric_m,rustic_fee_try,fabric_only_enabled,fabric_only_discount_pct,fabric_only_min_m,fabric_only_max_m,lining_enabled,lining_price_per_m,updated_at:new Date().toISOString()};
 }
 
 const slugify=text=>text.toLocaleLowerCase('tr-TR').replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,90);
