@@ -225,7 +225,8 @@ async function sendCustomerPdfWhatsapp(){
  // Create/open the WhatsApp tab synchronously as part of the user's click to avoid popup blockers.
  const message='Merhaba '+(order.customer_name||'')+',\nPerde Konağı '+(order.order_number?'#'+order.order_number+' ':'')+'numaralı sipariş formunuz hazırdır. PDF dosyasını bu sohbet üzerinden iletiyoruz.\nİyi günler dileriz.';
  const url='https://wa.me/'+number+'?text='+encodeURIComponent(message);
- const tab=window.open(url,'_blank','noopener');
+ const tab=window.open(url,'_blank');
+ if(tab){try{tab.opener=null}catch(_){}}
  if(!tab){pdfStatus('WhatsApp sekmesi engellendi. Açılır pencere izni verip tekrar deneyin.',true);return}
  pdfBusy=true;$('pdf-btn').disabled=true;$('customer-whatsapp-btn').disabled=true;
  pdfStatus('WhatsApp sohbeti açıldı. PDF dosyası hazırlanıyor...');
