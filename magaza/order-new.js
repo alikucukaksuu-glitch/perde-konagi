@@ -271,6 +271,8 @@ async function loadForEdit(orderId,orgId){
   $('discount-percent').value=order.discount_percent??0;
   $('discount-amount').value=order.discount_amount??0;
   $('paid-value').value=order.paid_amount??0;
+  $('paid-value').disabled=true;
+  $('paid-value').title='Tahsilatları Siparişler > Ödeme Ekle bölümünden kaydedin.';
   $('payment-method').value=order.payment_method||'cash';
   document.querySelector('.order-topline h1').textContent='Siparişi Düzenle';
   $('submit-order').textContent='Değişiklikleri Kaydet';
