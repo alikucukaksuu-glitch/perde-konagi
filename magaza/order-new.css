@@ -54,3 +54,13 @@
 .stor-two label{display:grid;gap:6px;min-width:0}
 .stor-calculation{font-size:11px;color:#22563b;font-weight:600;line-height:1.6;padding:10px;background:#ecf5ed;border:1px solid #d7e8db;border-radius:9px}
 @media(max-width:520px){.stor-two{grid-template-columns:1fr}.catalog-choice{flex-wrap:wrap}}
+
+/* Ensure stor-only choices display, and pile control is completely removed for stor. */
+.product-sheet #pile-selection-row[hidden],
+.product-sheet #stor-options[hidden],
+.product-sheet #stor-color-row[hidden]{display:none!important}
+.product-sheet #stor-options:not([hidden]){display:grid!important;visibility:visible!important}
+.product-sheet .stor-price-only{display:grid!important;grid-template-columns:minmax(0,1fr)!important}
+.product-sheet .stor-price-only>label{min-width:0}
+.product-sheet #stor-options label{display:grid;gap:6px}
+.product-sheet #stor-options select{width:100%;min-height:42px;background:#fff}
