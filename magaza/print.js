@@ -168,6 +168,74 @@ function makeLabel(item){
  box.append(notes);
  return box;
 }
+
+function customerPhoneDigits(value){
+ let digits=String(value||'').replace(/\D/g,'');
+ if(digits.length===10&&digits.startsWith('5'))digits='90'+digits;
+ else if(digits.length===11&&digits.startsWith('0'))digits='9'+digits;
+ return /^90[1-9]\d{9}$/.test(digits)?digits:'';
+}
+function customerPdfFileName(){
+ const name=String(order.customer_name||'musteri').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,45);
+ return 'Perde_Konagi_Siparis_'+String(order.order_number||'').replace(/[^0-9a-zA-Z_-]/g,'')+'_'+name+'.pdf';
+}
+let pdfBusy=false;
+async function createCustomerPdf(){
+ if(mode!=='a4'||!order||!company||!branch)throw Error('Müşteri formu yüklenmedi.');
+ if(!window.html2pdf)throw Error('PDF oluşturma bileşeni yüklenemedi. İnternet bağlantınızı kontrol edin.');
+ const page=$('page');
+ await document.fonts?.ready;
+ const images=[...page.querySelectorAll('img')];
+ await Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true})})));
+ const options={
+  margin:0,
+  filename:customerPdfFileName(),
+  image:{type:'jpeg',quality:0.97},
+  html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0,windowWidth:1000},
+  jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+  pagebreak:{mode:['css','legacy'],avoid:['.a4-product','.a4-category-heading','.a4-new-customer']}
+ };
+ return await window.html2pdf().set(options).from(page).outputPdf('blob');
+}
+function downloadPdfBlob(blob){
+ const url=URL.createObjectURL(blob);
+ const link=document.createElement('a');
+ link.href=url;link.download=customerPdfFileName();document.body.append(link);
+ link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+function pdfStatus(message,failed=false){
+ const box=$('pdf-action-status');box.textContent=message;
+ box.dataset.error=failed?'1':'0';
+}
+async function downloadCustomerPdf(){
+ if(pdfBusy)return;
+ pdfBusy=true;$('pdf-btn').disabled=true;$('customer-whatsapp-btn').disabled=true;
+ pdfStatus('A4 müşteri PDF dosyası hazırlanıyor...');
+ try{
+  const blob=await createCustomerPdf();downloadPdfBlob(blob);
+  pdfStatus('PDF indirildi. Dosyayı bilgisayarınızın İndirilenler klasöründe bulabilirsiniz.');
+ }catch(e){pdfStatus('PDF hazırlanamadı: '+e.message,true)}
+ finally{pdfBusy=false;$('pdf-btn').disabled=false;$('customer-whatsapp-btn').disabled=false}
+}
+async function sendCustomerPdfWhatsapp(){
+ if(pdfBusy)return;
+ const number=customerPhoneDigits(order?.customer_phone);
+ if(!number){pdfStatus('Müşteri telefon numarası eksik veya geçersiz. Numara 05xx xxx xx xx biçiminde olmalıdır.',true);return}
+ // Create/open the WhatsApp tab synchronously as part of the user's click to avoid popup blockers.
+ const message='Merhaba '+(order.customer_name||'')+',\nPerde Konağı '+(order.order_number?'#'+order.order_number+' ':'')+'numaralı sipariş formunuz hazırdır. PDF dosyasını bu sohbet üzerinden iletiyoruz.\nİyi günler dileriz.';
+ const url='https://wa.me/'+number+'?text='+encodeURIComponent(message);
+ const tab=window.open(url,'_blank','noopener');
+ if(!tab){pdfStatus('WhatsApp sekmesi engellendi. Açılır pencere izni verip tekrar deneyin.',true);return}
+ pdfBusy=true;$('pdf-btn').disabled=true;$('customer-whatsapp-btn').disabled=true;
+ pdfStatus('WhatsApp sohbeti açıldı. PDF dosyası hazırlanıyor...');
+ try{
+  const blob=await createCustomerPdf();downloadPdfBlob(blob);
+  pdfStatus('PDF indirildi ve müşterinin WhatsApp sohbeti açıldı. PDF’yi sohbete dosya olarak ekleyip Gönder’e basın. Dosya otomatik eklenmez veya gönderilmez.');
+ }catch(e){pdfStatus('WhatsApp sohbeti açıldı fakat PDF hazırlanamadı: '+e.message+'. Gerekirse Yazdır > PDF olarak kaydet seçeneğini kullanın.',true)}
+ finally{pdfBusy=false;$('pdf-btn').disabled=false;$('customer-whatsapp-btn').disabled=false}
+}
+
 function addLabels(){
  document.body.classList.add('label-mode');
  const sheet=document.createElement('style');sheet.textContent='@media print{@page{size:80mm 50mm;margin:0}}';document.head.append(sheet);
@@ -219,6 +287,10 @@ async function start(){
   if(flow){flow.hidden=false;flow.querySelector('#label-order-no').textContent='#'+order.order_number;flow.querySelector('#label-count').textContent=String(items.filter(i=>i.status!=='cancelled').length);}
  }else{
   addA4();$('print-hint').textContent='A4 müşteri formu. Üretim barkodlarını ayrıca Barkod Yazdır üzerinden alın.';
+  $('pdf-btn').hidden=false;$('customer-whatsapp-btn').hidden=false;
+  $('pdf-btn').disabled=false;$('customer-whatsapp-btn').disabled=false;
+  $('pdf-btn').onclick=downloadCustomerPdf;
+  $('customer-whatsapp-btn').onclick=sendCustomerPdfWhatsapp;
  }
  $('print-btn').disabled=false;
  $('print-btn').onclick=async()=>{
