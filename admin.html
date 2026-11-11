@@ -165,6 +165,12 @@
 <div><label class="ps-label" for="ps-tul-sewings">Dikim Seçenekleri</label><input class="ps-input" id="ps-tul-sewings" placeholder="Kornişe Uygun Düğmeli Dikim, Rustik / Halkalı Dikim"></div></div>
 <div class="ps-fields-three"><div><label class="ps-label" for="ps-tul-minfabric">Minimum Kumaş Metresi</label><input id="ps-tul-minfabric" class="ps-input" type="number" min="0" step="0.01" value="1"></div>
 <div><label class="ps-label" for="ps-tul-rustic-fee">Rustik / Halkalı Dikim Ek Ücret (TL/adet)</label><input id="ps-tul-rustic-fee" class="ps-input" type="number" min="0" step="0.01" value="0"></div></div>
+<div class="ps-box" style="margin:12px 0;padding:14px;background:#fff8f1;border:1px solid #ffc28a;border-radius:10px"><label class="ps-label" for="ps-tul-fabric-enabled"><input id="ps-tul-fabric-enabled" type="checkbox" checked style="accent-color:#ea6e12;margin-right:8px">Metre ile kumaş satışı aktif</label>
+<p class="ps-hint">Bu seçenek açıkken müşteri dikimsiz kumaşı metre bazında ve belirlediğiniz indirimle alabilir. Pile ve dikim uygulanmaz.</p>
+<div class="ps-fields-three"><div><label class="ps-label" for="ps-tul-fabric-discount">Metre ile Alım İndirimi (%)</label><input class="ps-input" id="ps-tul-fabric-discount" type="number" min="0" max="100" step="0.01" value="10"></div>
+<div><label class="ps-label" for="ps-tul-fabric-min">Minimum Metre (m)</label><input class="ps-input" id="ps-tul-fabric-min" type="number" min="1" max="100" step="1" value="1"></div>
+<div><label class="ps-label" for="ps-tul-fabric-max">Maksimum Metre (m)</label><input class="ps-input" id="ps-tul-fabric-max" type="number" min="1" max="100" step="1" value="20"></div></div>
+</div>
 <p class="ps-hint"><b>Ölçüler:</b> En ve boy metin kutularında yalnızca tam santimetre kabul edilir: 50, 51, 52… 50,5 kabul edilmez. Ürün sınırları alttaki Ölçü Seçenekleri bölümünde belirlenir.</p>
 <p class="ps-hint"><b>Ürün Açıklaması:</b> Ürün Bilgileri bölümünden düzenlediğiniz ürün açıklaması, tül sayfasında Müşteri Yorumları bölümünün hemen üzerinde gösterilir.</p>
 </div></section>
@@ -282,4 +288,4 @@
 </div></section>
 </main></div></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="admin.js?v=tul-20261109-2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=tul-20261109-2"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script><script defer src="admin-orders.js?v=20261108-two-page-1"></script><script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script defer src="admin-reports.js?v=20261108-r1"></script><script defer src="admin-messages.js?v=20261108-contact-1"></script><script defer src="admin-settings.js?v=maintenance-only-20261109-3"></script></body></html>
+<script defer src="admin.js?v=tul-20261109-2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=tul-fabric-metre-20261111-1"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script><script defer src="admin-orders.js?v=20261108-two-page-1"></script><script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script defer src="admin-reports.js?v=20261108-r1"></script><script defer src="admin-messages.js?v=20261108-contact-1"></script><script defer src="admin-settings.js?v=maintenance-only-20261109-3"></script></body></html>
