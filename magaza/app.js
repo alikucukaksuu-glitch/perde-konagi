@@ -5,7 +5,7 @@ const sb=window.supabase?.createClient(API,KEY);
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const titles={new:'Yeni Sipariş',workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',delivered:'Teslim Edildi',cancelled:'İptal'};
+const titles={new:'İşlemde',processing:'İşlemde',waiting:'Beklemede',workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',delivered:'Teslim Edildi',cancelled:'İptal'};
 let user=null,organizations=[],branches=[],orders=[],items=[],org='',filterStatus='',lineSeq=0,expandedOrders=new Set();
 function show(id){['auth-panel','setup-panel','erp-panel'].forEach(n=>$(n).hidden=n!==id)}
 function msg(id,message){$(id).textContent=message||''}
@@ -42,7 +42,7 @@ async function load(){
  msg('orders-message','Siparişler yükleniyor...');
  try{
   branches=await fetchAll('erp_branches','id,name,organization_id',q=>q.eq('organization_id',org).order('name'));
-  orders=await fetchAll('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(250));
+  orders=await fetchAll('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method,waiting_reason',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(250));
   items=orders.length?await fetchAll('erp_order_items','id,order_id,category,product_name,width_cm,height_cm,unit_price,production_note,status,barcode',q=>q.eq('organization_id',org).in('order_id',orders.map(x=>x.id))):[];
   const dropdown=$('filter-branch'),old=dropdown.value;
   dropdown.innerHTML='<option value="">Tüm Şubeler</option>';
@@ -95,13 +95,17 @@ function render(){
    '<button class="secondary" type="button" disabled title="Tahsilat ekleme sonraki aşamada">◷ Ödeme Ekle (yakında)</button>'+
    '<button class="secondary compact-delete" type="button" disabled title="Güvenli silme akışı sonraki aşamada">▤ Sil (yakında)</button>'+
   '</div></div></div>'+
+  ((o.status==='processing'||o.status==='new')?
+   '<div class="waiting-controls"><button type="button" class="secondary waiting-open" data-wait="'+escapeHtml(o.id)+'">⏸ Beklemeye Al</button><div class="wait-form" id="wait-form-'+escapeHtml(o.id)+'" hidden><label>Bekleme nedeni *<textarea id="wait-reason-'+escapeHtml(o.id)+'" maxlength="1500" rows="2" placeholder="Örn. Müşteriden ölçü bilgisi bekleniyor."></textarea></label><div class="wait-buttons"><button type="button" class="secondary" data-cancel-wait="'+escapeHtml(o.id)+'">Vazgeç</button><button type="button" class="primary" data-confirm-wait="'+escapeHtml(o.id)+'">Beklemeye Al</button></div></div></div>':
+   o.status==='waiting'?
+   '<div class="waiting-controls is-waiting"><div class="wait-current"><b>⏸ Müşteriden Bilgi Bekleniyor</b><p>'+escapeHtml(o.waiting_reason||'Bekleme nedeni belirtilmedi')+'</p></div><button type="button" class="primary" data-resume="'+escapeHtml(o.id)+'">▶ Tekrar İşleme Al</button></div>':'')+
   '<button type="button" class="compact-expand" data-expand="'+escapeHtml(o.id)+'" aria-expanded="'+expanded+'"><span>'+(expanded?'⌃ Detayı Gizle':'⌄ Detayı Göster')+'</span></button>'+
   (expanded?'<div class="compact-expanded"><div class="compact-expanded-head"><b>Ürünler ('+rows.length+')</b><span>'+status+'</span></div>'+orderItems+'<div class="compact-order-note"><b>Genel Sipariş Notu</b><p>'+escapeHtml(o.customer_note||'Not girilmemiş.')+'</p></div><div class="compact-audit"><b>Değişiklik Geçmişi</b><div id="audit-'+escapeHtml(o.id)+'" class="audit-list">Yükleniyor...</div></div></div>':'')+
   '</article>';
  }).join('');
  if(!subset.length&&orders.length)msg('orders-message','Seçilen filtrelerde sipariş bulunamadı.');else if(orders.length)msg('orders-message','');
 }
-const auditLabels={customer_name:'Müşteri Adı',customer_phone:'Telefon',delivery_date:'Teslim Tarihi',customer_note:'Sipariş Notu',branch_id:'Şube',order_type:'Sipariş Tipi',payment_method:'Ödeme Şekli',total_amount:'Genel Toplam',subtotal_amount:'Ara Toplam',discount_percent:'İskonto %',discount_amount:'İskonto ₺',paid_amount:'Ödenen Tutar',status:'Sipariş Durumu',category:'Kategori',product_name:'Ürün',width_cm:'En',height_cm:'Boy',unit_price:'Ürün Fiyatı',production_note:'Üretim Notu'};
+const auditLabels={waiting_reason:'Bekleme Nedeni',customer_name:'Müşteri Adı',customer_phone:'Telefon',delivery_date:'Teslim Tarihi',customer_note:'Sipariş Notu',branch_id:'Şube',order_type:'Sipariş Tipi',payment_method:'Ödeme Şekli',total_amount:'Genel Toplam',subtotal_amount:'Ara Toplam',discount_percent:'İskonto %',discount_amount:'İskonto ₺',paid_amount:'Ödenen Tutar',status:'Sipariş Durumu',category:'Kategori',product_name:'Ürün',width_cm:'En',height_cm:'Boy',unit_price:'Ürün Fiyatı',production_note:'Üretim Notu'};
 const ignoredAuditFields=new Set(['updated_at','created_at','id','order_id','organization_id','created_by','barcode','arrived_at','arrived_by','quantity','slot_key']);
 function auditValue(field,value){
  if(value===null||value===undefined||value==='')return '—';
@@ -221,7 +225,33 @@ function handlers(){
  $('close-detail').onclick=()=>$('order-detail').hidden=true;
  $('add-item').onclick=addLine;
  $('order-form').onsubmit=saveOrder;
- $('orders-list').onclick=e=>{const expand=e.target.closest('[data-expand]');if(expand){const id=expand.dataset.expand;if(expandedOrders.has(id))expandedOrders.delete(id);else expandedOrders.add(id);render();if(expandedOrders.has(id))loadHistory(id);return}const edit=e.target.closest('[data-edit]');if(edit){location.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(edit.dataset.edit);return}const button=e.target.closest('[data-detail]');if(button)openDetail(button.dataset.detail)};
+ async function setWaiting(orderId,action){
+ const order=orders.find(o=>o.id===orderId);if(!order)return;
+ const reason=action==='wait'?$('wait-reason-'+orderId)?.value.trim():null;
+ if(action==='wait'&&(!reason||reason.length<3)){
+  msg('orders-message','Bekleme nedenini en az 3 karakter olarak yazın.');return;
+ }
+ const button=document.querySelector('[data-'+(action==='wait'?'confirm-wait':'resume')+'="'+orderId+'"]');
+ if(button)button.disabled=true;
+ msg('orders-message','Durum güncelleniyor...');
+ try{
+  const {error}=await sb.rpc('erp_set_order_waiting',{p_order_id:orderId,p_org:org,p_action:action,p_reason:reason});
+  if(error)throw error;
+  await load();
+  msg('orders-message',action==='wait'?'Sipariş Beklemede durumuna alındı.':'Sipariş yeniden İşlemde durumuna alındı.');
+ }catch(err){msg('orders-message','Durum değiştirilemedi: '+err.message)}
+ finally{if(button?.isConnected)button.disabled=false}
+}
+$('orders-list').onclick=e=>{
+ const wait=e.target.closest('[data-wait]');
+ if(wait){const f=$('wait-form-'+wait.dataset.wait);if(f){f.hidden=false;f.querySelector('textarea')?.focus();}return;}
+ const cancel=e.target.closest('[data-cancel-wait]');
+ if(cancel){$('wait-form-'+cancel.dataset.cancelWait).hidden=true;return;}
+ const confirmWait=e.target.closest('[data-confirm-wait]');
+ if(confirmWait){setWaiting(confirmWait.dataset.confirmWait,'wait');return;}
+ const resume=e.target.closest('[data-resume]');
+ if(resume){setWaiting(resume.dataset.resume,'resume');return;}
+ const expand=e.target.closest('[data-expand]');if(expand){const id=expand.dataset.expand;if(expandedOrders.has(id))expandedOrders.delete(id);else expandedOrders.add(id);render();if(expandedOrders.has(id))loadHistory(id);return}const edit=e.target.closest('[data-edit]');if(edit){location.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(edit.dataset.edit);return}const button=e.target.closest('[data-detail]');if(button)openDetail(button.dataset.detail)};
  $('export-csv').onclick=exportCSV;
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('order-editor').hidden=true;$('order-detail').hidden=true}});
 }
