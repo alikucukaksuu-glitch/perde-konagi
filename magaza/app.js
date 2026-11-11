@@ -6,7 +6,7 @@ const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const titles={new:'Yeni Sipariş',workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',delivered:'Teslim Edildi',cancelled:'İptal'};
-let user=null,organizations=[],branches=[],orders=[],items=[],org='',filterStatus='',lineSeq=0;
+let user=null,organizations=[],branches=[],orders=[],items=[],org='',filterStatus='',lineSeq=0,expandedOrders=new Set();
 function show(id){['auth-panel','setup-panel','erp-panel'].forEach(n=>$(n).hidden=n!==id)}
 function msg(id,message){$(id).textContent=message||''}
 function dateTR(s){return s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString('tr-TR'):'Belirtilmedi'}
@@ -42,7 +42,7 @@ async function load(){
  msg('orders-message','Siparişler yükleniyor...');
  try{
   branches=await fetchAll('erp_branches','id,name,organization_id',q=>q.eq('organization_id',org).order('name'));
-  orders=await fetchAll('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(250));
+  orders=await fetchAll('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(250));
   items=orders.length?await fetchAll('erp_order_items','id,order_id,category,product_name,width_cm,height_cm,unit_price,production_note,status,barcode',q=>q.eq('organization_id',org).in('order_id',orders.map(x=>x.id))):[];
   const dropdown=$('filter-branch'),old=dropdown.value;
   dropdown.innerHTML='<option value="">Tüm Şubeler</option>';
@@ -71,8 +71,33 @@ function render(){
   return true;
  });
  $('orders-list').innerHTML=subset.map(o=>{
+  const rows=items.filter(i=>i.order_id===o.id);
   const remaining=Number(o.total_amount)-Number(o.paid_amount);
-  return '<article class="order card"><div class="order-head"><div><small>#'+escapeHtml(o.order_number)+' · '+escapeHtml(dateTR(o.created_at))+'</small><h3>'+escapeHtml(o.customer_name)+'</h3></div><span class="chip '+escapeHtml(o.status)+'">'+escapeHtml(titles[o.status]||o.status)+'</span></div><div class="order-meta"><span>⌂ '+escapeHtml(branchName(o.branch_id))+'</span><span>☎ '+escapeHtml(o.customer_phone||'Telefon belirtilmedi')+'</span><span>▣ '+items.filter(i=>i.order_id===o.id).length+' ürün</span><span>◷ Teslim '+escapeHtml(dateTR(o.delivery_date))+'</span></div><div class="money-grid"><div><small>Toplam</small><b>'+money(o.total_amount)+'</b></div><div><small>Ödenen</small><b>'+money(o.paid_amount)+'</b></div><div><small>Kalan</small><b class="'+(remaining>0?'debt':'')+'">'+money(remaining)+'</b></div></div><div class="order-buttons"><button type="button" class="secondary" data-detail="'+escapeHtml(o.id)+'">Siparişi Aç / Düzenle</button></div></article>';
+  const base=Number(o.subtotal_amount)||Number(o.total_amount);
+  const discount=Math.max(0,base-Number(o.total_amount));
+  const expanded=expandedOrders.has(o.id);
+  const status=escapeHtml(titles[o.status]||o.status);
+  const orderItems=rows.map((item,index)=>'<div class="compact-item"><span class="compact-item-number">'+(index+1)+'</span><div><b>'+escapeHtml(item.category)+' · '+escapeHtml(item.product_name)+'</b><small>En '+escapeHtml(item.width_cm??'—')+' × Boy '+escapeHtml(item.height_cm??'—')+' cm · '+money(item.unit_price)+'</small><small>Üretim Notu: '+escapeHtml(item.production_note||'—')+'</small></div><span class="chip '+escapeHtml(item.status)+'">'+escapeHtml(item.status==='ready'?'Mağazada':'Atölyede')+'</span></div>').join('');
+  return '<article class="order card order-compact" id="order-'+escapeHtml(o.id)+'">'+
+  '<div class="compact-main"><div class="compact-info">'+
+   '<div class="compact-title"><span class="compact-number">'+escapeHtml(o.order_number)+'</span><h3>'+escapeHtml(o.customer_name)+'</h3><span class="chip '+escapeHtml(o.status)+'">'+status+'</span></div>'+
+   '<div class="compact-person"><div><small>MÜŞTERİ</small><strong>'+escapeHtml(o.customer_name)+'</strong></div><div><small>TELEFON</small><strong>'+escapeHtml(o.customer_phone||'—')+'</strong></div></div>'+
+   '<div class="compact-person"><div class="compact-date"><small>TESLİM TARİHİ</small><strong>'+escapeHtml(dateTR(o.delivery_date))+'</strong></div><div><small>SİPARİŞ TARİHİ</small><strong>'+escapeHtml(dateTR(o.created_at))+'</strong></div></div>'+
+   '<div class="compact-branch">'+escapeHtml(branchName(o.branch_id))+' · '+rows.length+' ürün</div>'+
+  '</div><div class="compact-right"><div class="compact-money">'+
+   '<div><small>G.TOPLAM</small><strong>'+money(base)+'</strong></div>'+
+   '<div><small>İskonto</small><strong>'+money(discount)+'</strong></div>'+
+   '<div><small>Ödenen</small><strong>'+money(o.paid_amount)+'</strong></div>'+
+   '<div><small>Kalan</small><strong class="'+(remaining>0?'debt':'')+'">'+money(remaining)+'</strong></div>'+
+  '</div><div class="compact-actions">'+
+   '<button class="secondary" type="button" disabled title="A4 yazdırma sonraki aşamada">▣ Yazdır (yakında)</button>'+
+   '<button class="secondary" type="button" data-detail="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
+   '<button class="secondary" type="button" disabled title="Tahsilat ekleme sonraki aşamada">◷ Ödeme Ekle (yakında)</button>'+
+   '<button class="secondary compact-delete" type="button" disabled title="Güvenli silme akışı sonraki aşamada">▤ Sil (yakında)</button>'+
+  '</div></div></div>'+
+  '<button type="button" class="compact-expand" data-expand="'+escapeHtml(o.id)+'" aria-expanded="'+expanded+'"><span>'+(expanded?'⌃ Detayı Gizle':'⌄ Detayı Göster')+'</span></button>'+
+  (expanded?'<div class="compact-expanded"><div class="compact-expanded-head"><b>Ürünler ('+rows.length+')</b><span>'+status+'</span></div>'+orderItems+'<div class="compact-order-note"><b>Genel Sipariş Notu</b><p>'+escapeHtml(o.customer_note||'Not girilmemiş.')+'</p></div></div>':'')+
+  '</article>';
  }).join('');
  if(!subset.length&&orders.length)msg('orders-message','Seçilen filtrelerde sipariş bulunamadı.');else if(orders.length)msg('orders-message','');
 }
@@ -151,7 +176,7 @@ function handlers(){
  $('close-detail').onclick=()=>$('order-detail').hidden=true;
  $('add-item').onclick=addLine;
  $('order-form').onsubmit=saveOrder;
- $('orders-list').onclick=e=>{const button=e.target.closest('[data-detail]');if(button)openDetail(button.dataset.detail)};
+ $('orders-list').onclick=e=>{const expand=e.target.closest('[data-expand]');if(expand){const id=expand.dataset.expand;if(expandedOrders.has(id))expandedOrders.delete(id);else expandedOrders.add(id);render();return}const button=e.target.closest('[data-detail]');if(button)openDetail(button.dataset.detail)};
  $('export-csv').onclick=exportCSV;
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('order-editor').hidden=true;$('order-detail').hidden=true}});
 }
