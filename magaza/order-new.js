@@ -40,6 +40,9 @@ function parseStorSpecs(spec){
  side:get('Zincir Yönü')==='Sağ'?'right':'left',tube:get('Boru').startsWith('38')?'38':'32',
  foot:get('Yan Ayak')==='Metal'?'metal':'plastic'}
 }
+function stripStorOptions(spec){
+ return String(spec||'').split(/;\s*/).filter(part=>!/^(Kasa|Kasa Rengi|Zincir|Zincir Yönü|Boru|Yan Ayak|Hesap En|Hesap Boy):\s*/.test(part)).join('; ').trim();
+}
 function syncStorColor(value){
  const colors=storCaseColors[value]||[];
  $('stor-color-row').hidden=!colors.length;
@@ -199,7 +202,7 @@ function openItem(category,index){
  $('product-price').value=value?(value.basePrice??value.price):'';
  $('product-quantity').value=value?.qty??1;
  $('product-pile').value=value?.pile||'';
- $('product-spec').value=value?.spec||'';
+ $('product-spec').value=category==='STOR PERDE'?stripStorOptions(value?.spec||''):value?.spec||'';
  if(category==='STOR PERDE'){
   const cfg=value?.stor||parseStorSpecs(value?.spec||'');
   $('stor-case').value=cfg.caseType;syncStorColor(cfg.caseType);
