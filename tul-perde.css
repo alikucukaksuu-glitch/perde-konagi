@@ -1,1 +1,16 @@
 html[data-tul-view="collection"] .tc-product-only{display:none!important}html[data-tul-view="product"] #tc-collection{display:none!important}.tc-photo{aspect-ratio:1/1.12;border-radius:14px;overflow:hidden;border:7px solid #e7dcd0;background:#efe7dd}.tc-photo img{width:100%;height:100%;object-fit:cover;display:block}.tc-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.tc-choice{border:1px solid #dbcbbd;background:#fff;border-radius:9px;min-height:112px;text-align:center;cursor:pointer;padding:9px}.tc-choice strong{display:block;color:#49372d}.tc-choice small{display:block;color:#806852;margin-top:8px}.tc-choice[aria-pressed=true]{border:2px solid #b87542;background:#fff2e5;padding:8px}.tc-cart{display:grid;gap:10px;background:#faeee1;padding:13px;border-radius:10px;text-align:center}.tc-cart button{padding:14px;background:#9f7858;border:0;border-radius:8px;color:#fff;font-weight:700;font-size:15px}.tc-cart button:disabled{opacity:.5;cursor:not-allowed}.tc-cart a{font-size:12px;color:#866043}.tc-cart small{color:#78604c}.tc-below{max-width:1170px;margin:30px auto}.tc-help{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.tc-help>div{border-radius:12px;border:1px solid #e9d9c9;padding:18px;background:white}.tc-help h3{margin:0 0 9px;font:22px Georgia,serif}.tc-help p{font-size:13px;line-height:1.6;margin:0}.tc-below .pk-reviews{max-width:none;margin-top:20px}@media(max-width:780px){.tc-help{grid-template-columns:1fr}.tc-choices{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Unditched fabric by metre option — Perde Konağı */
+.tc-fabric-purchase{border:1.5px solid #ff7515;border-radius:9px;background:#fffaf7;overflow:hidden;margin:15px 0 17px}
+.tc-fabric-head{display:flex;align-items:center;gap:9px;cursor:pointer;padding:13px 15px;color:#f3650c;font-size:14px;border-bottom:1px solid #ffe1ca}
+.tc-fabric-head input{accent-color:#ff720d;width:17px;height:17px;flex-shrink:0}
+.tc-fabric-arrows{font-size:21px;line-height:1;font-weight:bold}
+.tc-discount-badge{margin-left:auto;background:#ff7108;color:white;border-radius:30px;padding:4px 10px;white-space:nowrap;font-weight:700;font-size:12px}
+.tc-fabric-body{padding:11px 15px 15px}.tc-fabric-body p{font-size:12px;line-height:1.7;color:#745f51;margin:0 0 15px}
+.tc-fabric-body label{display:block;font-size:13px;margin-bottom:8px}
+#tc-fabric-metres{display:block;width:100%;border:1px solid #dbd8d4;background:white;padding:12px;border-radius:9px;color:#473b32;font-size:14px}
+#tc-fabric-metres:disabled{opacity:.65}
+.tc-fabric-body .tc-fabric-hint{margin:8px 0 0;font-size:11px;color:#a56f4a}
+.tc-fabric-purchase.tc-active{background:#fff8f1}
+.tc-disabled-option{opacity:.45;pointer-events:none}
+.tc-disabled-option .tc-choice{cursor:not-allowed}
+@media(max-width:480px){.tc-fabric-head{padding:10px;font-size:12px;gap:6px}.tc-discount-badge{font-size:10px;padding:4px 7px}.tc-fabric-body{padding:10px}}
