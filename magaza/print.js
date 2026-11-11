@@ -66,6 +66,7 @@ function makeLabel(item){
 }
 function addLabels(){
  document.body.classList.add('label-mode');
+ const sheet=document.createElement('style');sheet.textContent='@media print{@page{size:80mm 50mm;margin:0}}';document.head.append(sheet);
  const page=$('page');page.replaceChildren();
  const labels=items.filter(i=>i.status!=='cancelled');
  for(const item of labels)page.append(makeLabel(item));
@@ -93,6 +94,7 @@ async function start(){
   if(!['processing','new'].includes(order.status)){fail('Barkod yalnızca İşlemde durumundaki sipariş için yazdırılır.');return}
   if(items.some(i=>!['processing','cancelled'].includes(i.status))){fail('Siparişte üretim aşaması farklı ürünler var. Barkod basmadan önce kontrol edin.');return}
   addLabels();
+  if($('warning').textContent)return;
   $('print-hint').textContent='Baskıyı başlatın. Çıktının gerçekten alındığını kontrol ettikten sonra “Yazdırıldı · Atölyeye Gönder” düğmesine basın. Bu onay barkodu kilitler ve siparişi Atölyede durumuna geçirir.';
  }else{
   addA4();$('print-hint').textContent='A4 müşteri formu. Üretim barkodlarını ayrıca Barkod Yazdır üzerinden alın.';
