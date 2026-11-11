@@ -83,7 +83,7 @@ function applyGuideSettings(data){
 function getGuideSettings(){
  const guide={updated_at:new Date().toISOString()};
  for(const [key,textId,imageId] of guideKeys){
-  guide[key+'_text']=$ (textId).value.trim();
+  guide[key+'_text']=$(textId).value.trim();
   const img=$(imageId).value.trim();
   if(img&&(img.startsWith('//')||/^(?:javascript:|data:)/i.test(img)||(!/^https:\/\//i.test(img)&&(!/^[a-z0-9_./-]+$/i.test(img)||img.includes('..')))))throw Error('Rehber görseli için geçerli GitHub dosya adı veya HTTPS adresi giriniz.');
   guide[key+'_image']=img;
@@ -246,7 +246,7 @@ function validate(){
  if(!Object.values(m).every(Number.isFinite)||m.min_width<(isWood()?30:isPlise()?20:50)||m.max_width>(isWood()?300:isPlise()?200:isTul()?500:280)||m.min_height<(isWood()?30:isPlise()?20:50)||m.max_height>(isWood()?300:isPlise()?200:isTul()?300:280)||m.min_width>m.max_width||m.min_height>m.max_height)throw Error(isTul()?'Tül en 50–500 cm, boy 50–300 cm arasında olmalıdır.':isWood()?'Ahşap jaluzi en ve boy 30–300 cm arasında olmalıdır.':isPlise()?'Plise en 20–200 cm, boy 20–200 cm arasında olmalıdır.':'Ölçü sınırları 50–280 cm aralığında olmalıdır.');if(isWood()){woodConfig();if([m.min_width,m.max_width,m.min_height,m.max_height].some(v=>!Number.isInteger(v*2)))throw Error('Ahşap jaluzi ölçü sınırları 0,5 cm adımlarla olmalıdır.')}if(isPlise())pliseConfig();if(isTul()){tulConfig();if([m.min_width,m.max_width,m.min_height,m.max_height].some(x=>!Number.isInteger(x)))throw Error('Tül ölçüleri tam santimetre olmalı.');}
  if(stock!==''&&(!Number.isInteger(Number(stock))||Number(stock)<0))throw Error('Stok sıfır veya pozitif bir tam sayı olmalıdır.');
  if(variants().length>8)throw Error('En fazla 8 varyant grubu ekleyebilirsiniz.');
- return {title,price,m,stock:stock===''?null:Number(stock),plise:isPlise()?pliseConfig():null,wood:isWood()?woodConfig():null,tul:isTul()?tulConfig():null};
+ return {title,price,m,stock:stock===''?null:Number(stock),plise:isPlise()?pliseConfig():null,wood:isWood()?woodConfig():null,tul:isTul()?tulConfig():null,guides:getGuideSettings()};
 }
 async function save(force){
  if(busy)return;
@@ -278,7 +278,7 @@ async function save(force){
    const {error}=await sb.storage.from(bucket).upload(path,image.file,{contentType:image.file.type,cacheControl:'3600',upsert:false});
    if(error)throw error;image.path=path;stored.push(path);
   }
-  const {error:guideError}=await sb.from('shop_product_guides').upsert({slug,...getGuideSettings()},{onConflict:'slug'});if(guideError)throw guideError;
+  const {error:guideError}=await sb.from('shop_product_guides').upsert({slug,...data.guides},{onConflict:'slug'});if(guideError)throw guideError;
   if(data.tul){const {error:tulError}=await sb.from('tul_product_config').upsert({slug,...data.tul},{onConflict:'slug'});if(tulError)throw tulError;}
   if(data.wood){const {error:woodError}=await sb.from('wood_blind_product_config').upsert({slug,...data.wood},{onConflict:'slug'});if(woodError)throw woodError;}
   if(data.plise){const {error:pliseError}=await sb.from('plise_product_config').upsert({slug,...data.plise},{onConflict:'slug'});if(pliseError)throw pliseError;}
