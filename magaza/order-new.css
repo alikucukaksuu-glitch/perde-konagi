@@ -78,3 +78,21 @@
 .product-sheet #wood-options select{width:100%;min-height:42px;background:#fff}
 .product-sheet .wood-ribbon-check{display:flex;align-items:center;gap:9px;font-weight:700}
 .product-sheet .wood-ribbon-check input{width:18px;height:18px;flex:none}
+
+/* Manual WhatsApp production dispatch. Do not expose group invitation in source. */
+.whatsapp-dispatch{background:#1b7951!important;color:#fff!important;border:1px solid #176341!important;border-radius:9px!important;padding:10px 15px!important;font-weight:700;cursor:pointer}
+.whatsapp-dispatch:hover{background:#145f3f!important}
+.whatsapp-overlay[hidden]{display:none!important}
+.whatsapp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;display:flex;justify-content:center;align-items:center;padding:16px}
+.whatsapp-dialog{background:white;color:#1f3027;border-radius:16px;padding:24px;width:min(720px,100%);max-height:94vh;overflow:auto;box-shadow:0 14px 50px rgba(0,0,0,.2)}
+.whatsapp-dialog-top{display:flex;align-items:start;justify-content:space-between;gap:10px}
+.whatsapp-dialog h2{margin:3px 0;font-size:24px}
+.whatsapp-dialog small{color:#377657;font-weight:700}
+.whatsapp-dialog p{font-size:13px;color:#506256;line-height:1.5}
+.whatsapp-dialog textarea{display:block;width:100%;min-height:240px;box-sizing:border-box;border:1px solid #bdc8c0;border-radius:10px;padding:12px;font-family:inherit;font-size:13px;line-height:1.5}
+#whatsapp-result{font-size:13px;color:#1d6b49;padding:10px 0;min-height:20px}
+.whatsapp-buttons{display:flex;flex-wrap:wrap;gap:8px}
+.whatsapp-buttons button{min-height:40px}
+.whatsapp-confirm{margin-top:16px;padding-top:12px;border-top:1px solid #d8e2da}
+.whatsapp-confirm button{margin-top:4px}
+@media(max-width:600px){.whatsapp-dialog{padding:16px}.whatsapp-dialog h2{font-size:19px}.whatsapp-buttons button{flex:1}}
