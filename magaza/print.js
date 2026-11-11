@@ -16,7 +16,7 @@ function a4OrderItem(card,item,index){
  txt(product,'strong','a4-product-name',(index+1)+'. '+item.product_name);
  const size=(item.width_cm??'—')+' × '+(item.height_cm??'—')+' cm';
  const specs=[
-  ['Ölçü',size],['Adet','1'],['Pile',details.pile||'—'],['Tutar',fmt(item.unit_price)]
+  ['Ölçü',size],['Adet','1'],...(item.category==='STOR PERDE'||item.category==='PLİSE PERDE'||item.category==='AHŞAP JALUZİ'?[]:[['Pile',details.pile||'—']]),['Tutar',fmt(item.unit_price)]
  ];
  for(const [key,value] of specs){
   const row=el('div','a4-product-detail');
@@ -34,7 +34,7 @@ function a4Category(page,category,limit){
  txt(heading,'h2','',category);
  if(all.length)txt(heading,'span','',all.length+' ürün');
  section.append(heading);
- if(category==='STOR PERDE'||category==='AKSESUAR'){
+ if(['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ','AKSESUAR'].includes(category)){
   const grid=el('div','a4-entry-lines');
   const count=Math.max(6,all.length);
   for(let i=0;i<count;i++){
@@ -85,6 +85,8 @@ function addA4(){
  a4Category(page,'FON PERDE',5);
  a4Category(page,'GÜNEŞLİK',5);
  a4Category(page,'STOR PERDE',6);
+ if(items.some(x=>x.category==='PLİSE PERDE'&&x.status!=='cancelled'))a4Category(page,'PLİSE PERDE',6);
+ if(items.some(x=>x.category==='AHŞAP JALUZİ'&&x.status!=='cancelled'))a4Category(page,'AHŞAP JALUZİ',6);
  a4Category(page,'AKSESUAR',6);
  const note=el('div','a4-new-note');
  txt(note,'strong','','SİPARİŞ NOTU');
