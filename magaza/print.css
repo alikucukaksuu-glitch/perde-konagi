@@ -163,3 +163,10 @@
 @media print{
  .label-mode .qr-label{grid-template-rows:6mm 4.5mm 6.5mm 22mm minmax(0,1fr)!important}
 }
+
+/* Keep QR sufficiently large for phone scanning after the header fix. */
+.label-mode .qr-label{grid-template-rows:5.8mm 4.5mm 6.2mm 24mm minmax(0,1fr)!important}
+.label-mode .qr-label-mid{height:24mm!important;grid-template-columns:minmax(0,1fr) 24mm!important}
+.label-mode .qr-image{width:22mm!important;height:22mm!important;padding:.5mm!important}
+.label-mode .qr-image img,.label-mode .qr-image canvas{width:21mm!important;height:21mm!important}
+@media print{.label-mode .qr-label{grid-template-rows:5.8mm 4.5mm 6.2mm 24mm minmax(0,1fr)!important}}
