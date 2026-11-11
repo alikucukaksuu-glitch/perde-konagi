@@ -182,6 +182,10 @@ function stage(next){
  $('step-label').textContent=next===1?'1 / 2 · Müşteri Bilgileri':'2 / 2 · Sipariş ve Ürünler';
  if(next===2){
   $('order-status-display').value=editing?.status==='new'?'processing':editing?.status||'processing';
+  $('editor-print-a4').hidden=!editing;
+  $('editor-print-label').hidden=!editing;
+  $('editor-print-label').disabled=!editing||!['processing','new'].includes(editing.status)||Boolean(editing.barcode_printed_at);
+  $('editor-print-label').title=editing?.barcode_printed_at?'Bu siparişin barkodu daha önce basılmış':'';
   syncOrderStatusOptions();
   $('summary-customer').textContent=$('customer-name').value.trim();
   $('summary-phone').textContent=$('customer-phone').value.trim()||'—';
@@ -371,6 +375,14 @@ $('product-shade').onclick=$('close-product').onclick=closeItem;
 $('product-pile').onchange=calculateItemTotal;
 ['discount-percent','discount-amount','paid-value'].forEach(id=>$(id).oninput=updateMoney);
 $('submit-order').onclick=submit;
+function openEditorPrint(type){
+ if(!editing||!org)return;
+ const url='./print.html?type='+encodeURIComponent(type)+'&org='+encodeURIComponent(org.id)+'&id='+encodeURIComponent(editing.id);
+ const win=window.open(url,'_blank','noopener');
+ if(!win)location.href=url;
+}
+$('editor-print-a4').onclick=()=>openEditorPrint('a4');
+$('editor-print-label').onclick=()=>openEditorPrint('label');
 $('order-logout').onclick=async()=>{await sb.auth.signOut();location.href='./'};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('product-overlay').hidden)closeItem()});
 start();
