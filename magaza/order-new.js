@@ -52,7 +52,10 @@ function syncStorColor(value){
 function syncCategoryUI(){
  const stor=isStor();
  $('stor-options').hidden=!stor;
- $('product-pile').closest('label').hidden=stor;
+ $('pile-selection-row').hidden=stor;
+ $('product-pile').disabled=stor;
+ if(stor)$('product-pile').value='';
+ $('unit-options-row').classList.toggle('stor-price-only',stor);
  $('product-price').closest('label').firstChild.textContent=stor?'m² Birim Fiyatı (₺) *':'Temel Birim Fiyat (₺) *';
  $('product-width').required=stor;$('product-height').required=stor;
  if(stor)syncStorColor($('stor-case').value);
