@@ -89,8 +89,7 @@ async function load(){
 load();
 })();
 
-/* Product image swipe support: reuses existing thumbnail click handlers.
-   Works with static product pages and galleries populated asynchronously. */
+/* Smooth, finger-following product carousel. Uses each gallery's existing thumbnail actions. */
 (function(){
  'use strict';
  if(window.pkGallerySwipeInstalled)return;
@@ -102,42 +101,98 @@ load();
   ['#wb-main-image','#wb-main-image','#wb-gallery button']
  ];
  const style=document.createElement('style');
- style.textContent='img.mainpic,#pp-window,#tc-photo,#wb-main-image{touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}';
+ style.textContent=[
+  'img.mainpic,#pp-window,#tc-photo,#wb-main-image{touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}',
+  '.pk-swipe-window{position:fixed;z-index:1000;overflow:hidden;pointer-events:none;background:#f4f0ec;contain:paint}',
+  '.pk-swipe-track{height:100%;width:300%;display:flex;will-change:transform}',
+  '.pk-swipe-slide{width:33.333333%;height:100%;flex:0 0 33.333333%;overflow:hidden}',
+  '.pk-swipe-slide img{width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}'
+ ].join('');
  document.head.appendChild(style);
- let start=null;
- function groupOf(node){
-  if(!(node instanceof Element))return null;
-  for(const [surface,image,buttons] of galleries){
-   const el=node.closest(surface);
-   if(el)return {el,image,buttons};
+ let gesture=null;
+ function findGallery(target){
+  if(!(target instanceof Element))return null;
+  for(const [surface,image,selector] of galleries){
+   const el=target.closest(surface);
+   if(el)return {el,image,selector};
   }
   return null;
  }
- document.addEventListener('touchstart',function(e){
-  if(e.touches.length!==1){start=null;return}
-  const group=groupOf(e.target);
-  if(!group){start=null;return}
-  start={group,x:e.touches[0].clientX,y:e.touches[0].clientY,time:Date.now()};
- },{passive:true});
- document.addEventListener('touchcancel',()=>{start=null},{passive:true});
- document.addEventListener('touchend',function(e){
-  if(!start||e.changedTouches.length!==1){start=null;return}
-  const gesture=start;start=null;
-  const dx=e.changedTouches[0].clientX-gesture.x;
-  const dy=e.changedTouches[0].clientY-gesture.y;
-  if(Math.abs(dx)<45||Math.abs(dx)<Math.abs(dy)*1.3||Date.now()-gesture.time>1500)return;
-  const buttons=[...document.querySelectorAll(gesture.group.buttons)].filter(b=>!b.disabled);
-  if(buttons.length<2)return;
-  const image=document.querySelector(gesture.group.image);
-  let index=buttons.findIndex(b=>b.classList.contains('active')||b.getAttribute('aria-pressed')==='true');
-  if(index<0&&image){
-   index=buttons.findIndex(b=>{
-    const thumb=b.querySelector('img');
-    return thumb&&thumb.src===image.src;
-   });
+ function destroy(g){
+  if(g?.overlay){g.overlay.remove();g.overlay=null;g.track=null}
+ }
+ function makeOverlay(g){
+  const img=document.querySelector(g.gallery.image);
+  if(!img)return false;
+  const box=g.gallery.el.getBoundingClientRect();
+  if(box.width<30||box.height<30)return false;
+  const overlay=document.createElement('div');
+  overlay.className='pk-swipe-window';
+  Object.assign(overlay.style,{left:box.left+'px',top:box.top+'px',width:box.width+'px',height:box.height+'px',borderRadius:getComputedStyle(g.gallery.el).borderRadius||'0px'});
+  const track=document.createElement('div');
+  track.className='pk-swipe-track';
+  const fit=getComputedStyle(img).objectFit||'cover';
+  const position=getComputedStyle(img).objectPosition||'center';
+  for(const offset of [-1,0,1]){
+   const slide=document.createElement('div');slide.className='pk-swipe-slide';
+   const photo=document.createElement('img');
+   const index=g.index+offset;
+   const thumb=g.buttons[index]?.querySelector('img');
+   photo.src=offset===0?img.currentSrc||img.src:(thumb?.currentSrc||thumb?.src||img.src);
+   photo.alt='';
+   photo.draggable=false;
+   photo.style.objectFit=fit;photo.style.objectPosition=position;
+   slide.appendChild(photo);track.appendChild(slide);
   }
-  if(index<0)index=0;
-  const next=index+(dx<0?1:-1);
-  if(next>=0&&next<buttons.length)buttons[next].click();
+  overlay.appendChild(track);document.body.appendChild(overlay);
+  g.overlay=overlay;g.track=track;g.width=box.width;
+  return true;
+ }
+ function position(g,dx,animate){
+  g.track.style.transition=animate?'transform 240ms cubic-bezier(.22,.8,.22,1)':'none';
+  g.track.style.transform='translate3d(calc(-33.333333% + '+dx+'px),0,0)';
+ }
+ document.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1||gesture?.overlay)return;
+  const gallery=findGallery(e.target);
+  if(!gallery)return;
+  const buttons=[...document.querySelectorAll(gallery.selector)].filter(b=>!b.disabled);
+  if(buttons.length<2)return;
+  const img=document.querySelector(gallery.image);
+  let index=buttons.findIndex(b=>b.classList.contains('active')||b.getAttribute('aria-pressed')==='true');
+  if(index<0&&img)index=buttons.findIndex(b=>b.querySelector('img')?.src===img.src);
+  gesture={gallery,buttons,index:Math.max(index,0),x:e.touches[0].clientX,y:e.touches[0].clientY,time:Date.now(),mode:'pending',overlay:null};
  },{passive:true});
+ document.addEventListener('touchmove',e=>{
+  const g=gesture;
+  if(!g||e.touches.length!==1)return;
+  const dx=e.touches[0].clientX-g.x;
+  const dy=e.touches[0].clientY-g.y;
+  if(g.mode==='pending'){
+   if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>9){gesture=null;return}
+   if(Math.abs(dx)<8||Math.abs(dx)<Math.abs(dy)*1.2)return;
+   if(!makeOverlay(g)){gesture=null;return}
+   g.mode='drag';
+  }
+  if(g.mode!=='drag')return;
+  if(e.cancelable)e.preventDefault();
+  const edge=dx>0&&g.index===0||dx<0&&g.index===g.buttons.length-1;
+  const shown=edge?dx*.18:dx;
+  position(g,Math.max(-g.width,Math.min(g.width,shown)),false);
+ },{passive:false});
+ document.addEventListener('touchend',e=>{
+  const g=gesture;gesture=null;
+  if(!g||g.mode!=='drag'||!g.overlay||e.changedTouches.length!==1)return;
+  const dx=e.changedTouches[0].clientX-g.x;
+  const dy=e.changedTouches[0].clientY-g.y;
+  const direction=dx<0?1:-1;
+  const next=g.index+direction;
+  const shouldChange=Math.abs(dx)>Math.max(45,g.width*.18)&&Math.abs(dx)>Math.abs(dy)*1.2&&next>=0&&next<g.buttons.length;
+  position(g,shouldChange?-direction*g.width:0,true);
+  window.setTimeout(()=>{
+   if(shouldChange&&g.buttons[next].isConnected)g.buttons[next].click();
+   destroy(g);
+  },250);
+ },{passive:true});
+ document.addEventListener('touchcancel',()=>{destroy(gesture);gesture=null},{passive:true});
 })();
