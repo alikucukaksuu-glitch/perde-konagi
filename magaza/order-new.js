@@ -15,6 +15,19 @@ const storCaseColors={open:[],classic:['Beyaz','Krem'],colored:['Gri','Antrasit'
 let catalogCache=[],catalogOrg=null,catalogRequest=null,manualPrice=false;
 function isStor(){return $('product-category').value==='STOR PERDE'}
 function isPlise(){return $('product-category').value==='PLİSE PERDE'}
+const pliseMounts=['Vidalı Montaj','Yapışkanlı Montaj','Pratik Montaj','Askılı Montaj'];
+const pliseCaseColors=['Beyaz','Krem','Siyah','Antrasit','Vizon','Gri'];
+function pliseConfiguration(){return {mount:$('plise-mount').value,caseColor:$('plise-case-color').value}}
+function parsePliseConfiguration(spec){
+ const fields=String(spec||'').split(/;\s*/);
+ const field=name=>(fields.find(p=>p.startsWith(name+': '))||'').slice(name.length+2);
+ return {mount:pliseMounts.includes(field('Montaj'))?field('Montaj'):pliseMounts[0],
+ caseColor:pliseCaseColors.includes(field('Kasa Rengi'))?field('Kasa Rengi'):pliseCaseColors[0]};
+}
+function stripPliseSystemFields(spec){
+ return String(spec||'').split(/;\s*/).filter(x=>!(/^(Montaj|Kasa Rengi|Hesap En|Hesap Boy):\s*/.test(x))).join('; ').trim();
+}
+
 function plisePrice(base,w,h){
  const width=Math.ceil(Number(w)-1e-9),height=Math.ceil(Number(h)-1e-9);
  return rounded(Math.max(1,width*height/10000)*Number(base));
@@ -63,6 +76,7 @@ const pileControlSelect=document.getElementById('product-pile');
 function syncCategoryUI(){
  const stor=isStor(),plise=isPlise();
  $('stor-options').hidden=!stor;
+ $('plise-options').hidden=!plise;
  // Remove the pile field from the DOM for stor products, not just visually hide it.
  // Restore the exact same field when switching back to tulle/fon/other categories.
  const pileRow=pileControlRow,unitRow=$('unit-options-row');
@@ -220,6 +234,7 @@ function openItem(category,index){
  $('catalog-search').value='';
  $('catalog-results').hidden=true;
  $('stor-case').value='open';$('stor-chain').value='plastic';$('stor-side').value='left';$('stor-tube').value='32';$('stor-foot').value='plastic';
+ $('plise-mount').value=pliseMounts[0];$('plise-case-color').value=pliseCaseColors[0];
  syncCategoryUI();
  $('product-name').value=value?.name||'';
  $('product-width').value=value?.width??'';
@@ -227,12 +242,17 @@ function openItem(category,index){
  $('product-price').value=value?(value.basePrice??value.price):'';
  $('product-quantity').value=value?.qty??1;
  pileControlSelect.value=value?.pile||'';
- $('product-spec').value=category==='STOR PERDE'?stripStorOptions(value?.spec||''):category==='PLİSE PERDE'?String(value?.spec||'').replace(/(?:^|;\s*)Hesap (?:En|Boy):\s*[^;]*/g,'').replace(/^;\s*|;\s*$/g,''):value?.spec||'';
+ $('product-spec').value=category==='STOR PERDE'?stripStorOptions(value?.spec||''):category==='PLİSE PERDE'?stripPliseSystemFields(value?.spec||''):value?.spec||'';
  if(category==='STOR PERDE'){
   const cfg=value?.stor||parseStorSpecs(value?.spec||'');
   $('stor-case').value=cfg.caseType;syncStorColor(cfg.caseType);
   if(cfg.color&&[...$('stor-color').options].some(x=>x.value===cfg.color))$('stor-color').value=cfg.color;
   $('stor-chain').value=cfg.chain;$('stor-side').value=cfg.side;$('stor-tube').value=cfg.tube;$('stor-foot').value=cfg.foot;
+ }
+ if(category==='PLİSE PERDE'){
+  const config=value?.plise||parsePliseConfiguration(value?.spec);
+  $('plise-mount').value=config.mount;
+  $('plise-case-color').value=config.caseColor;
  }
  manualPrice=false;
  fetchCatalog().then(()=>{if(active?.category===category)showCatalog()});
@@ -293,8 +313,9 @@ function storeItem(e){
  const totalBefore=[...products.values()].reduce((n,p)=>n+p.qty,0)-(old?.qty||0);
  if(totalBefore+qty>60){$('product-status-message').textContent='Bir siparişte en fazla 60 fiziksel parça eklenebilir.';return}
  const cfg=category==='STOR PERDE'?storSettings():null;
- const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):category==='PLİSE PERDE'?['Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
- const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||'processing'};
+ const plise=category==='PLİSE PERDE'?pliseConfiguration():null;
+ const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):plise?['Montaj: '+plise.mount,'Kasa Rengi: '+plise.caseColor,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
+ const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,plise,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||'processing'};
  products.delete(oldKey);products.set(key(category,index),record);
  closeItem();drawSlots();
 }
@@ -401,7 +422,7 @@ async function loadForEdit(orderId,orgId){
    const legacyBase=Number(line.unit_price)/pileFactor(parsedPile);
    const basePrice=baseMatch?Number(baseMatch[1]):rounded(legacyBase);
    const detailedSpec=(specParts?.[2]||(!specParts?spec:''))?.replace(/(?:^|;\s*)Baz Fiyat:\s*\d+(?:\.\d+)?/,'').trim().replace(/^;\s*|;\s*$/g,'');
-   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,status:line.status||'processing',note:spec?notes.split('\n').slice(1).join('\n'):notes});
+   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,status:line.status||'processing',note:spec?notes.split('\n').slice(1).join('\n'):notes});
   }
   $('store-select').value=order.branch_id;
   $('customer-name').value=order.customer_name;
