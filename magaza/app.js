@@ -215,27 +215,36 @@ function openPrint(id,type){
  const win=window.open(url,'_blank','noopener');
  if(!win)location.href=url;
 }
-async function addPayment(id){
- const o=orders.find(x=>x.id===id);
- if(!o)return;
+let paymentOrderId=null,paymentSubmitting=false;
+function closePayment(){$('payment-modal').hidden=true;paymentOrderId=null;}
+function addPayment(id){
+ const o=orders.find(x=>x.id===id);if(!o)return;
  const remaining=Math.round((Number(o.total_amount)-Number(o.paid_amount))*100)/100;
  if(remaining<=0){msg('orders-message','Bu siparişin kalan borcu yok.');return}
- const input=prompt('Kalan borç '+money(remaining)+'. Alınan ödeme tutarını TL olarak yazın:',String(remaining).replace('.',','));
- if(input===null)return;
- const value=Number(input.trim().replace(',','.'));
- if(!Number.isFinite(value)||value<=0||value>remaining){msg('orders-message','Ödeme tutarı geçersiz veya kalan borcu aşıyor.');return}
- const choice=prompt('Ödeme yöntemi yazın: Nakit / Kart / Havale','Nakit');
- if(choice===null)return;
- const method={'nakit':'cash','kart':'card','kredi kartı':'card','havale':'transfer','eft':'transfer','havale/eft':'transfer'}[choice.trim().toLocaleLowerCase('tr-TR')];
- if(!method){msg('orders-message','Yöntem Nakit, Kart veya Havale olmalıdır.');return}
- const note=prompt('Tahsilat açıklaması (isteğe bağlı, boş bırakabilirsiniz):','');
- if(note===null)return;
- if(note.length>500){msg('orders-message','Tahsilat notu 500 karakteri aşamaz.');return}
- if(!confirm(money(value)+' ödeme '+choice+' olarak kaydedilecek. Onaylıyor musunuz?'))return;
- msg('orders-message','Ödeme kaydediliyor...');
- const {error}=await sb.rpc('erp_add_payment',{p_org:org,p_order:id,p_amount:value,p_method:method,p_note:note});
- if(error){msg('orders-message','Ödeme kaydedilemedi: '+error.message);return}
- await load();msg('orders-message',money(value)+' tahsilat eklendi.');
+ paymentOrderId=id;
+ $('payment-total').textContent=money(o.total_amount);
+ $('payment-paid').textContent=money(o.paid_amount);
+ $('payment-remaining').textContent=money(remaining);
+ $('payment-amount').value='';$('payment-amount').max=String(remaining);
+ $('payment-method-input').value='cash';$('payment-note').value='';
+ $('payment-message').textContent='';
+ $('payment-modal').hidden=false;$('payment-amount').focus();
+}
+async function savePayment(e){
+ e.preventDefault();
+ if(paymentSubmitting||!paymentOrderId)return;
+ const o=orders.find(x=>x.id===paymentOrderId);
+ if(!o)return;
+ const remaining=Math.round((Number(o.total_amount)-Number(o.paid_amount))*100)/100;
+ const value=Number($('payment-amount').value),method=$('payment-method-input').value,note=$('payment-note').value.trim();
+ if(!Number.isFinite(value)||value<=0||value>remaining){$('payment-message').textContent='Tutar kalan borcu aşamaz.';return}
+ paymentSubmitting=true;$('payment-submit').disabled=true;$('payment-message').textContent='Ödeme kaydediliyor...';
+ try{
+  const {error}=await sb.rpc('erp_add_payment',{p_org:org,p_order:paymentOrderId,p_amount:value,p_method:method,p_note:note});
+  if(error)throw error;
+  closePayment();await load();msg('orders-message',money(value)+' tahsilat başarıyla kaydedildi.');
+ }catch(err){$('payment-message').textContent='Ödeme kaydedilemedi: '+err.message}
+ finally{paymentSubmitting=false;$('payment-submit').disabled=false}
 }
 async function archiveOrder(id){
  const o=orders.find(x=>x.id===id);if(!o)return;
@@ -299,8 +308,11 @@ $('orders-list').onclick=e=>{
  const payment=e.target.closest('[data-payment]');if(payment){addPayment(payment.dataset.payment);return;}
  const deletion=e.target.closest('[data-delete]');if(deletion){archiveOrder(deletion.dataset.delete);return;}
  const expand=e.target.closest('[data-expand]');if(expand){const id=expand.dataset.expand;if(expandedOrders.has(id))expandedOrders.delete(id);else expandedOrders.add(id);render();if(expandedOrders.has(id))loadHistory(id);return}const edit=e.target.closest('[data-edit]');if(edit){location.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(edit.dataset.edit);return}const button=e.target.closest('[data-detail]');if(button)openDetail(button.dataset.detail)};
+ $('payment-form').onsubmit=savePayment;
+ $('payment-close').onclick=$('payment-cancel').onclick=closePayment;
+ $('payment-modal').addEventListener('click',e=>{if(e.target===$('payment-modal'))closePayment()});
  $('export-csv').onclick=exportCSV;
- document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('order-editor').hidden=true;$('order-detail').hidden=true}});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('order-editor').hidden=true;$('order-detail').hidden=true;closePayment()}});
 }
 if(!sb){show('auth-panel');msg('login-message','Supabase bağlantı kütüphanesi yüklenemedi.');return}
 handlers();initialize();
