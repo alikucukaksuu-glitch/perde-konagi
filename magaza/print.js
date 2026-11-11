@@ -9,44 +9,98 @@ function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className
 function txt(parent,tag,cls,text){const n=el(tag,cls,text);parent.append(n);return n}
 function fail(t){$('warning').textContent=t;$('print-btn').disabled=true;$('confirm-label').disabled=true}
 function pair(parent,key,val){txt(parent,'dt','',key);txt(parent,'dd','',val||'—')}
+function a4OrderItem(card,item,index){
+ const product=el('article','a4-product'+(item?' is-filled':' is-empty'));
+ if(!item)return product;
+ const details=parseProductionInfo(item.production_note);
+ txt(product,'strong','a4-product-name',(index+1)+'. '+item.product_name);
+ const size=(item.width_cm??'—')+' × '+(item.height_cm??'—')+' cm';
+ const specs=[
+  ['Ölçü',size],['Adet','1'],['Pile',details.pile||'—'],['Tutar',fmt(item.unit_price)]
+ ];
+ for(const [key,value] of specs){
+  const row=el('div','a4-product-detail');
+  txt(row,'span','',key);
+  txt(row,'b','',value);
+  product.append(row);
+ }
+ card.append(product);
+ return product;
+}
+function a4Category(page,category,limit){
+ const all=items.filter(x=>x.category===category&&x.status!=='cancelled');
+ const section=el('section','a4-category');
+ const heading=el('div','a4-category-heading');
+ txt(heading,'h2','',category);
+ if(all.length)txt(heading,'span','',all.length+' ürün');
+ section.append(heading);
+ if(category==='STOR PERDE'||category==='AKSESUAR'){
+  const grid=el('div','a4-entry-lines');
+  const count=Math.max(6,all.length);
+  for(let i=0;i<count;i++){
+   const line=el('div','a4-entry-line');
+   const item=all[i];
+   txt(line,'span','',(i+1)+'.');
+   txt(line,'span','',item?item.product_name+' · '+(item.width_cm??'—')+' × '+(item.height_cm??'—')+' cm · '+fmt(item.unit_price):'');
+   grid.append(line);
+  }
+  section.append(grid);
+ }else{
+  const grid=el('div','a4-product-grid');
+  const cells=Math.max(limit,all.length);
+  for(let i=0;i<cells;i++)a4OrderItem(grid,all[i],i);
+  section.append(grid);
+ }
+ page.append(section);
+}
 function addA4(){
  const page=$('page');page.replaceChildren();
- const head=el('div','a4-head'),info=el('div','a4-company'),client=el('div','a4-client');
- txt(info,'h1','',company.name);const branchLabel=(branch.name||'')+' ŞUBESİ';
- txt(info,'b','',branchLabel);
- txt(info,'p','',[branch.address,branch.phone].filter(Boolean).join('\n'));
- if(company.address)txt(info,'p','',company.address);
- if(company.phone)txt(info,'p','','Tel: '+company.phone);
- if(company.instagram)txt(info,'p','',company.instagram);
+ document.body.classList.add('a4-mode');
+ const header=el('header','a4-new-head');
+ const brand=el('div','a4-new-brand');
  if(company.logo_url&&/^https:\/\//.test(company.logo_url)){
-  const img=el('img','a4-logo');img.src=company.logo_url;img.alt=company.name;client.append(img);
- }else txt(client,'h2','',company.name);
- const dl=el('dl');pair(dl,'Sipariş No','#'+order.order_number);pair(dl,'Müşteri Adı',order.customer_name);pair(dl,'Telefon',order.customer_phone);pair(dl,'Teslim Tarihi',date(order.delivery_date));client.append(dl);
- head.append(info,client);page.append(head);
- for(const category of ['TÜL PERDE','FON PERDE','GÜNEŞLİK','STOR PERDE','AKSESUAR']){
-  const group=el('section','a4-group');
-  txt(group,'h2','',category);
-  const rows=items.filter(x=>x.category===category&&x.status!=='cancelled');
-  if(category==='STOR PERDE'||category==='AKSESUAR'){
-   const grid=el('div','a4-lines');
-   for(let i=0;i<6;i++){const r=rows[i],line=el('div');line.textContent=(i+1)+'. '+(r?r.product_name+' · '+(r.width_cm??'—')+' × '+(r.height_cm??'—')+' cm':'');grid.append(line)}
-   group.append(grid);
-  }else{
-   const grid=el('div','a4-grid');
-   for(let i=0;i<(category==='TÜL PERDE'?10:5);i++){
-    const r=rows[i],cell=el('div','a4-cell');
-    if(r){txt(cell,'strong','',r.product_name);txt(cell,'span','',(r.width_cm??'—')+' × '+(r.height_cm??'—')+' cm');txt(cell,'div','',r.production_note||'');}
-    grid.append(cell);
-   }group.append(grid);
-  }
-  page.append(group);
+  const logo=el('img','a4-new-logo');logo.src=company.logo_url;logo.alt=company.name;brand.append(logo);
  }
- txt(page,'div','a4-note','Not: '+(order.customer_note||''));
- const totals=el('div','a4-totals');
- for(const [name,value] of [['Toplam',order.total_amount],['Ödenen',order.paid_amount],['Kalan',Number(order.total_amount)-Number(order.paid_amount)]]){
-  const cell=el('div');txt(cell,'span','',name);txt(cell,'b','',fmt(value));totals.append(cell);
- }page.append(totals);
- txt(page,'div','a4-footer','ÖZEL SİPARİŞ YAPILAN TÜLLERDE DEĞİŞİM YAPILMAMAKTADIR. MÜŞTERİ KAYNAKLI HATALI ÖLÇÜLERDE ÜCRET ALINIR.');
+ const brandCopy=el('div','a4-brand-copy');
+ txt(brandCopy,'h1','',company.name);
+ txt(brandCopy,'strong','',(branch.name||'')+' ŞUBESİ');
+ brand.append(brandCopy);
+ const contact=el('div','a4-new-contact');
+ if(branch.address)txt(contact,'p','',branch.address);
+ if(branch.phone)txt(contact,'p','','Tel: '+branch.phone);
+ if(company.phone&&company.phone!==branch.phone)txt(contact,'p','','Merkez: '+company.phone);
+ if(company.instagram)txt(contact,'p','',company.instagram);
+ brand.append(contact);
+ const customer=el('div','a4-new-customer');
+ const dl=el('dl');
+ pair(dl,'Sipariş No','#'+order.order_number);
+ pair(dl,'Müşteri',order.customer_name);
+ pair(dl,'Telefon',order.customer_phone);
+ pair(dl,'Teslim Tarihi',date(order.delivery_date));
+ if(order.created_at)pair(dl,'Sipariş Tarihi',date(order.created_at));
+ customer.append(dl);
+ header.append(brand,customer);
+ page.append(header);
+ a4Category(page,'TÜL PERDE',10);
+ a4Category(page,'FON PERDE',5);
+ a4Category(page,'GÜNEŞLİK',5);
+ a4Category(page,'STOR PERDE',6);
+ a4Category(page,'AKSESUAR',6);
+ const note=el('div','a4-new-note');
+ txt(note,'strong','','SİPARİŞ NOTU');
+ txt(note,'p','',order.customer_note||'—');
+ page.append(note);
+ const totals=el('div','a4-new-totals');
+ const discount=Math.max(0,Number(order.subtotal_amount||0)-Number(order.total_amount||0));
+ for(const [name,value] of [
+  ['Toplam',order.total_amount],['Ödenen',order.paid_amount],
+  ['Kalan',Math.max(0,Number(order.total_amount)-Number(order.paid_amount))]
+ ]){
+  const cell=el('div','a4-new-total');
+  txt(cell,'span','',name);txt(cell,'strong','',fmt(value));totals.append(cell);
+ }
+ page.append(totals);
+ txt(page,'footer','a4-new-footer','Özel ölçüyle hazırlanan ürünlerde iade ve değişim koşulları yürürlükteki mevzuata tabidir.');
 }
 function parseProductionInfo(note){
  const source=String(note||'');
@@ -114,7 +168,7 @@ async function start(){
  const {data:user,error:authError}=await sb.auth.getUser();
  if(authError||!user?.user){fail('Giriş yapmanız gerekiyor');return}
  const [{data:o,error:e1},{data:rows,error:e2},{data:co,error:e3}]=await Promise.all([
-  sb.from('erp_orders').select('id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,customer_note,total_amount,paid_amount,status,barcode_printed_at').eq('id',id).eq('organization_id',orgId).single(),
+  sb.from('erp_orders').select('id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,customer_note,total_amount,paid_amount,status,barcode_printed_at,created_at').eq('id',id).eq('organization_id',orgId).single(),
   sb.from('erp_order_items').select('id,category,product_name,width_cm,height_cm,unit_price,production_note,barcode,status').eq('order_id',id).eq('organization_id',orgId).order('created_at'),
   sb.from('erp_organizations').select('id,name,logo_url,phone,email,address,instagram').eq('id',orgId).single()
  ]);
