@@ -170,3 +170,14 @@
 .label-mode .qr-image{width:22mm!important;height:22mm!important;padding:.5mm!important}
 .label-mode .qr-image img,.label-mode .qr-image canvas{width:21mm!important;height:21mm!important}
 @media print{.label-mode .qr-label{grid-template-rows:5.8mm 4.5mm 6.2mm 24mm minmax(0,1fr)!important}}
+
+/* A4 PDF and customer WhatsApp actions; hidden for thermal labels and on paper. */
+#pdf-btn{border-color:#b6c7bb;background:#f4f8f4;color:#1d4230}
+#customer-whatsapp-btn{background:#1b7a50;border-color:#1b7a50;color:white}
+#customer-whatsapp-btn:hover{background:#12623d}
+.pdf-action-status{max-width:800px;margin:12px auto;padding:10px 15px;background:#eaf5ed;color:#1b5134;border-radius:9px;font-size:12px}
+.pdf-action-status:empty{display:none}
+.pdf-action-status[data-error="1"]{background:#fff1e6;color:#8c4018}
+.tools button[hidden]{display:none!important}
+@media(max-width:600px){.toolbar .tools{flex-wrap:wrap}.toolbar .tools button{padding:9px 10px;font-size:12px}}
+@media print{.pdf-action-status{display:none!important}}
