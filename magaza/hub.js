@@ -3,7 +3,7 @@ const sb=window.supabase?.createClient('https://rwylhxrtggsicieuyjrm.supabase.co
 const $=id=>document.getElementById(id);
 const qs=new URLSearchParams(location.search);
 const tab=['products','workshop','customers'].includes(qs.get('tab'))?qs.get('tab'):'products';
-const categories=['TÜL PERDE','FON PERDE','GÜNEŞLİK','STOR PERDE','AKSESUAR'];
+const categories=['TÜL PERDE','FON PERDE','GÜNEŞLİK','STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ','AKSESUAR'];
 const fmt=x=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(x)||0);
 const trDate=x=>x?new Date(x).toLocaleString('tr-TR'):'—';
 let user=null,org='',members=[],orgs=[],catalog=[],orders=[],items=[],branches=[],productEditing=null,role='staff',expanded=new Set(),working=false;
