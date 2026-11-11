@@ -426,7 +426,14 @@ async function start(){
   if(!branches.length){$('auth-warning').hidden=false;alertText('Şirket Ayarlarından önce şube ekleyin.');return}
   setDate(7);$('stage1').hidden=false;
   const editId=new URLSearchParams(location.search).get('edit');
-  if(editId)await loadForEdit(editId,selected.organization_id);
+  if(editId){
+   await loadForEdit(editId,selected.organization_id);
+   if(new URLSearchParams(location.search).get('whatsapp')==='1'&&editing?.id){
+    const clean=new URL(location.href);clean.searchParams.delete('whatsapp');
+    history.replaceState(null,'',clean.pathname+clean.search);
+    await openWhatsAppProduction();
+   }
+  }
  }catch(e){$('auth-warning').hidden=false;alertText('Sipariş ekranı yüklenemedi: '+e.message)}
 }
 async function loadForEdit(orderId,orgId){
