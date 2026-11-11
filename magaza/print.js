@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY),$=id=>document.getElementById(id);
-const q=new URLSearchParams(location.search),id=q.get('id'),orgId=q.get('org'),mode=q.get('type')==='label'?'label':'a4';
+const q=new URLSearchParams(location.search),id=q.get('id'),orgId=q.get('org'),mode=q.get('type')==='label'?'label':'a4',reprint=q.get('reprint')==='1';
 let order=null,company=null,branch=null,items=[],printedRequested=false;
 const fmt=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const date=s=>s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString('tr-TR'):'—';
@@ -125,9 +125,16 @@ async function start(){
  branch=br;
  $('warning').textContent='';
  if(mode==='label'){
-  if(order.barcode_printed_at){fail('Barkod bu sipariş için daha önce basılmış. Tekrar baskı yetkili işlem gerektirir.');return}
-  if(!['processing','new'].includes(order.status)){fail('Barkod yalnızca İşlemde durumundaki sipariş için yazdırılır.');return}
-  if(items.some(i=>!['processing','cancelled'].includes(i.status))){fail('Siparişte üretim aşaması farklı ürünler var. Barkod basmadan önce kontrol edin.');return}
+  if(reprint){
+   const {data:membership,error:roleError}=await sb.from('erp_members').select('role').eq('organization_id',orgId).eq('user_id',user.user.id).maybeSingle();
+   if(roleError||!['owner','manager'].includes(membership?.role)){fail('Yeniden baskı için yönetici yetkisi gerekli.');return}
+   if(!order.barcode_printed_at){fail('Henüz ilk barkod baskısı tamamlanmadı.');return}
+   if(order.status==='cancelled'){fail('İptal edilen sipariş yazdırılamaz.');return}
+  }else{
+   if(order.barcode_printed_at){fail('Barkod daha önce basılmış. Yeniden baskı için yöneticinin Yeniden Yazdır seçeneğini kullanması gerekir.');return}
+   if(!['processing','new'].includes(order.status)){fail('Barkod yalnızca İşlemde durumunda basılabilir.');return}
+   if(items.some(i=>!['processing','cancelled'].includes(i.status))){fail('Bazı ürünlerin durumu farklı, baskıdan önce kontrol edin.');return}
+  }
   try{
    const active=items.filter(i=>i.status!=='cancelled');
    const tokens=await Promise.all(active.map(i=>sb.rpc('erp_get_item_receive_token',{p_org:orgId,p_item:i.id})));
@@ -138,16 +145,25 @@ async function start(){
   }catch(e){fail('QR kod hazırlanamadı: '+e.message);return}
   addLabels();
   if($('warning').textContent)return;
-  $('print-hint').textContent='Baskıyı başlatın. Çıktının gerçekten alındığını kontrol ettikten sonra “Yazdırıldı · Atölyeye Gönder” düğmesine basın. Bu onay barkodu kilitler ve siparişi Atölyede durumuna geçirir.';
+  $('print-hint').textContent=reprint?'Yönetici yeniden baskısıdır. Sipariş ve üretim durumu değişmez. Baskı gerekçesi işlem geçmişine kaydedilir.':'Baskıyı başlatın. Çıktının gerçekten alındığını kontrol ettikten sonra “Yazdırıldı · Atölyeye Gönder” düğmesine basın. Bu onay barkodu kilitler ve siparişi Atölyede durumuna geçirir.';
   const flow=$('label-flow');
   if(flow){flow.hidden=false;flow.querySelector('#label-order-no').textContent='#'+order.order_number;flow.querySelector('#label-count').textContent=String(items.filter(i=>i.status!=='cancelled').length);}
  }else{
   addA4();$('print-hint').textContent='A4 müşteri formu. Üretim barkodlarını ayrıca Barkod Yazdır üzerinden alın.';
  }
  $('print-btn').disabled=false;
- $('print-btn').onclick=()=>{
+ $('print-btn').onclick=async()=>{
+  if(mode==='label'&&reprint){
+   const reason=prompt('Etiket yeniden baskı gerekçesi (en az 5 karakter):','QR kod okunmuyor');
+   if(reason===null)return;
+   if(reason.trim().length<5){$('warning').textContent='Yeniden baskı açıklaması en az 5 karakter olmalı.';return}
+   $('print-btn').disabled=true;
+   const {error}=await sb.rpc('erp_log_label_reprint',{p_org:orgId,p_order:id,p_reason:reason.trim()});
+   $('print-btn').disabled=false;
+   if(error){$('warning').textContent='Yeniden baskı kaydı oluşturulamadı: '+error.message;return}
+  }
   printedRequested=true;
-  if(mode==='label'){$('confirm-label').hidden=false;$('confirm-label').disabled=false}
+  if(mode==='label'&&!reprint){$('confirm-label').hidden=false;$('confirm-label').disabled=false}
   window.print();
  };
  $('confirm-label').onclick=async()=>{
