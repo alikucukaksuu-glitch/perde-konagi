@@ -107,6 +107,9 @@ async function init(){
 }
 async function load(){
  if(loading)return;loading=true;selectedOrg=$('org').value;feedback('Kasa verileri yükleniyor...');
+ const role=members.find(m=>m.organization_id===selectedOrg)?.role;
+ $('expense-btn').disabled=!['owner','manager','admin'].includes(role);
+ $('expense-btn').title=$('expense-btn').disabled?'Gider ekleme yetkisi yalnızca işletme yöneticisindedir':'';
  try{
   const [b,o,p,m]=await Promise.all([
    readAll('erp_branches','id,name',q=>q.eq('organization_id',selectedOrg)),
@@ -156,24 +159,43 @@ function csvData(){
  return [['Tarih','Tür','Açıklama','Sipariş No','Müşteri','Yöntem','Tutar','Personel'],...filtered.map(r=>[dateTR(r.date),r.direction==='income'?'Tahsilat':'Ödeme',r.description,map.get(r.order_id)?.order_number||'',r.customer||'',methodLabel[r.method]||r.method,r.amount,r.actor===user?.id?'Ben':r.actor||''])];
 }
 function exportCsv(){
- const csv='\ufeff'+csvData().map(row=>row.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(';')).join('\r\n');
+ const csv='\ufeff'+csvData().map(row=>row.map(v=>{let value=String(v??'');if(/^[\s]*[=+@\-]/.test(value)&&!/^\d{1,2}\.\d{1,2}\.\d{4}/.test(value))value="'"+value;return '"'+value.replaceAll('"','""')+'"'}).join(';')).join('\r\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
  const a=document.createElement('a');a.href=url;a.download='KONAK_ERP_Kasa_'+localDate(new Date())+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
 function exportPdf(){
  if(!window.jspdf?.jsPDF){feedback('PDF kitaplığı yüklenemedi.',true);return}
- const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});
- const rows=csvData();
- const latin=s=>String(s).replaceAll('İ','I').replaceAll('ı','i').replaceAll('Ş','S').replaceAll('ş','s').replaceAll('ğ','g').replaceAll('Ğ','G').replaceAll('ü','u').replaceAll('Ü','U').replaceAll('ç','c').replaceAll('Ç','C').replaceAll('ö','o').replaceAll('Ö','O');
- doc.setFontSize(16);doc.text('KONAK ERP | Kasa Hareketleri',12,16);
- doc.setFontSize(9);doc.text('Tarih: '+localDate(new Date())+'  |  Islem sayisi: '+filtered.length,12,23);
- let y=33;
- for(let i=1;i<rows.length;i++){
-  if(y>275){doc.addPage();y=18}
-  const r=rows[i];
-  doc.text(latin(r[0]),12,y);doc.text(latin(r[1]),46,y);doc.text(latin(String(r[2]).slice(0,45)),74,y);doc.text(latin(r[6]),198,y,{align:'right'});
-  y+=7;
+ const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'landscape'});
+ const map=new Map(orders.map(o=>[o.id,o]));
+ const latin=s=>String(s??'').replaceAll('İ','I').replaceAll('ı','i').replaceAll('Ş','S').replaceAll('ş','s').replaceAll('ğ','g').replaceAll('Ğ','G').replaceAll('ü','u').replaceAll('Ü','U').replaceAll('ç','c').replaceAll('Ç','C').replaceAll('ö','o').replaceAll('Ö','O');
+ const cols=[{label:'Tarih',x:12},{label:'Tur',x:44},{label:'Aciklama',x:63},{label:'Siparis',x:137},{label:'Musteri',x:159},{label:'Yontem',x:222},{label:'Tutar',x:282,right:true}];
+ let y=18,printed=0;
+ function heading(){
+  doc.setFillColor(235,244,238);doc.rect(8,8,281,16,'F');
+  doc.setFontSize(15);doc.setTextColor(23,65,40);
+  doc.text('KONAK ERP | Kasa Hareketleri',12,17);
+  doc.setFontSize(9);doc.setTextColor(90,110,97);
+  doc.text('Kayit sayisi: '+filtered.length+' | '+localDate(new Date()),285,17,{align:'right'});
+  doc.setFontSize(8);doc.setTextColor(30,57,38);
+  cols.forEach(c=>doc.text(c.label,c.x,33,c.right?{align:'right'}:undefined));
+  doc.setDrawColor(215,227,217);doc.line(10,36,287,36);
+  y=42;
  }
+ heading();
+ doc.setFontSize(7);
+ for(const r of filtered){
+  if(y>192){doc.addPage();heading();doc.setFontSize(7)}
+  const o=map.get(r.order_id);
+  const values=[dateTR(r.date),r.direction==='income'?'Tahsilat':'Odeme',r.description,o?'#'+o.order_number:'—',r.customer||'—',methodLabel[r.method]||r.method,money(r.amount)];
+  const widths=[30,18,72,20,61,34,30];
+  cols.forEach((c,i)=>{
+   const text=doc.splitTextToSize(latin(values[i]),widths[i]);
+   doc.text(text.slice(0,2),c.x,y,c.right?{align:'right'}:undefined);
+  });
+  doc.setDrawColor(239,242,239);doc.line(10,y+5,287,y+5);y+=Math.max(9,Math.min(2,doc.splitTextToSize(latin(r.description),72).length)*4.2+3);
+  printed++;
+ }
+ if(!printed){doc.setTextColor(130,140,130);doc.text('Secili filtrede kayit bulunamadi.',13,46)}
  doc.save('KONAK_ERP_Kasa_'+localDate(new Date())+'.pdf');
 }
 $('org').onchange=()=>{$('branch').value='';load()};
