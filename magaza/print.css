@@ -181,3 +181,17 @@
 .tools button[hidden]{display:none!important}
 @media(max-width:600px){.toolbar .tools{flex-wrap:wrap}.toolbar .tools button{padding:9px 10px;font-size:12px}}
 @media print{.pdf-action-status{display:none!important}}
+
+/* PDF-only A4 capture. A fixed unscaled desktop canvas avoids mobile horizontal clipping. */
+.pdf-capture-wrapper{position:fixed;top:0;left:0;width:794px;z-index:-99999;pointer-events:none;background:#fff}
+.a4-mode .pdf-capture-wrapper .pdf-capture-page{
+ box-sizing:border-box!important;
+ display:block!important;
+ width:794px!important;max-width:none!important;min-width:794px!important;
+ min-height:0!important;height:auto!important;
+ margin:0!important;padding:45px!important;
+ transform:none!important;box-shadow:none!important;
+ overflow:visible!important;background:#fff!important;
+}
+.a4-mode .pdf-capture-page .a4-new-head{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)!important}
+.a4-mode .pdf-capture-page .a4-product-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important}
