@@ -7,7 +7,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const GROUPS=['TÜL PERDE','FON PERDE','GÜNEŞLİK','STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ','AKSESUAR'];
 const METERS=new Set(['TÜL PERDE','FON PERDE','GÜNEŞLİK']);
 const AREA=new Set(['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ']);
-let user=null,members=[],orgs=[],branches=[],allOrders=[],allItems=[],products=[],page=0,requestId=0;
+let user=null,members=[],orgs=[],branches=[],allOrders=[],allItems=[],products=[],page=0,requestId=0,statusMode='active';
 function feedback(t,error=false){$('feedback').textContent=t;$('feedback').classList.toggle('error',error)}
 function unit(category){return METERS.has(category)?'metre':AREA.has(category)?'metrekare':'adet'}
 function measure(row){
@@ -84,15 +84,12 @@ async function reload(){
 }
 function compute(){
  const branch=$('branch').value;
- const orders=allOrders.filter(o=>o.status!=='cancelled'&&(!branch||o.branch_id===branch));
+ const orders=allOrders.filter(o=>(statusMode==='all'||(statusMode==='completed'?['delivered','completed'].includes(o.status):!['cancelled','delivered','completed'].includes(o.status)))&&(!branch||o.branch_id===branch));
  const orderIds=new Set(orders.map(o=>o.id));
  const lines=allItems.filter(i=>orderIds.has(i.order_id)&&i.status!=='cancelled');
  const subtotal=orders.reduce((a,o)=>a+Number(o.total_amount||0),0);
  const paid=orders.reduce((a,o)=>a+Number(o.paid_amount||0),0);
- $('total-orders').textContent=fmtNum(orders.length);
- $('total-sales').textContent=fmtMoney(subtotal);
- $('total-paid').textContent=fmtMoney(paid);
- $('total-due').textContent=fmtMoney(Math.max(0,subtotal-paid));
+ fillOverview(orders,subtotal,paid);
  const byCategory=new Map(GROUPS.map(c=>[c,{category:c,quantity:0,measure:0,revenue:0,missing:0,measureCount:0}]));
  const byProduct=new Map();
  for(const line of lines){
@@ -108,10 +105,103 @@ function compute(){
   }
  }
  products=[...byProduct.values()];
+ renderDailyChart(orders);renderCategoryChart([...byCategory.values()]);renderBranches(orders);
+
  $('categories-body').innerHTML=[...byCategory.values()].filter(x=>x.quantity).map(c=>'<tr><td class="product-name">'+esc(c.category)+'</td><td>'+esc(unit(c.category))+'</td><td class="num">'+fmtNum(c.quantity)+'</td><td class="num">'+(c.measureCount?fmtNum(c.measure):'—')+(c.missing?' <small title="Eksik ölçülü kayıt var">⚠ '+fmtNum(c.missing)+' eksik</small>':'')+'</td><td class="num"><b>'+fmtMoney(c.revenue)+'</b></td></tr>').join('')||'<tr><td colspan="5">Bu filtrede sipariş bulunamadı.</td></tr>';
  page=0;renderProducts();
  const missing=[...byCategory.values()].reduce((a,x)=>a+x.missing,0);
  feedback(orders.length+' sipariş, '+lines.length+' kalem listelendi.'+(missing?' '+missing+' kalemde ölçü eksik; bu kalemlere ölçü toplamı atanmadı.':''));
+}
+
+function trDate(d){
+ return new Date(d).toLocaleDateString('sv-SE',{timeZone:'Europe/Istanbul'});
+}
+function fillOverview(orders,subtotal,paid){
+ const today=trDate(new Date()),year=Number(today.slice(0,4)),month=Number(today.slice(5,7))-1,day=Number(today.slice(8,10));
+ const todayDate=new Date(Date.UTC(year,month,day));
+ const monday=new Date(todayDate);monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
+ const weekStart=monday.toISOString().slice(0,10);
+ const monthStart=today.slice(0,8)+'01';
+ const valueFor=from=>orders.reduce((a,o)=>a+(trDate(o.created_at)>=from&&trDate(o.created_at)<=today?Number(o.total_amount||0):0),0);
+ $('today-sales').textContent=fmtMoney(valueFor(today));
+ $('week-sales').textContent=fmtMoney(valueFor(weekStart));
+ $('month-sales').textContent=fmtMoney(valueFor(monthStart));
+ $('lifetime-paid').textContent=fmtMoney(paid);
+ $('bottom-sales').textContent=fmtMoney(subtotal);
+ $('bottom-paid').textContent=fmtMoney(paid);
+}
+function svgNode(name,attrs={},value){
+ const n=document.createElementNS('http://www.w3.org/2000/svg',name);
+ for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));
+ if(value!==undefined)n.textContent=value;
+ return n;
+}
+function clearSvg(id){const svg=$(id);svg.replaceChildren();return svg}
+function renderDailyChart(orders){
+ const svg=clearSvg('daily-chart');
+ const end=new Date();
+ const days=[];
+ for(let i=29;i>=0;i--){
+  const date=new Date(end);date.setDate(date.getDate()-i);
+  days.push({date:trDate(date),income:0,paid:0,total:0});
+ }
+ const lookup=new Map(days.map((d,i)=>[d.date,i]));
+ for(const o of orders){
+  const index=lookup.get(trDate(o.created_at));
+  if(index!==undefined){
+   days[index].income+=Number(o.total_amount||0);
+   days[index].paid+=Number(o.paid_amount||0);
+  }
+ }
+ let cumul=0;for(const d of days){cumul+=d.income;d.total=cumul}
+ const max=Math.max(1,...days.map(x=>x.total),...days.map(x=>x.income));
+ const left=57,top=18,height=198,width=527,bottom=top+height;
+ const x=i=>left+(i/(days.length-1))*width;
+ const y=v=>bottom-(v/max)*height;
+ for(let i=0;i<=4;i++){
+  const yy=top+height*i/4;
+  svg.append(svgNode('line',{x1:left,y1:yy,x2:590,y2:yy,stroke:'#e3e9e4','stroke-dasharray':'3 3'}));
+  svg.append(svgNode('text',{x:50,y:yy+4,'text-anchor':'end',fill:'#87938a','font-size':10},fmtNum(max*(1-i/4))));
+ }
+ const defs=svgNode('defs'),grad=svgNode('linearGradient',{id:'daily-fill',x1:'0',x2:'0',y1:'0',y2:'1'});
+ grad.append(svgNode('stop',{offset:'0%','stop-color':'#2889ff','stop-opacity':'.22'}),svgNode('stop',{offset:'100%','stop-color':'#2889ff','stop-opacity':'.015'}));defs.append(grad);svg.append(defs);
+ for(let i=0;i<30;i++){
+  const x0=x(i),bar=5;
+  svg.append(svgNode('rect',{x:x0-bar-1,y:y(days[i].income),width:bar,height:Math.max(0,bottom-y(days[i].income)),fill:'#277a49',rx:1}));
+  svg.append(svgNode('rect',{x:x0+1,y:y(days[i].paid),width:bar,height:Math.max(0,bottom-y(days[i].paid)),fill:'#f5b669',rx:1}));
+  if(i%5===0||i===29)svg.append(svgNode('text',{x:x0,y:244,'text-anchor':'middle',fill:'#77867c','font-size':10},days[i].date.slice(8,10)+'.'+days[i].date.slice(5,7)));
+ }
+ const path=days.map((d,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(d.total).toFixed(1)).join(' ');
+ svg.append(svgNode('path',{d:path+' L '+x(29)+' '+bottom+' L '+x(0)+' '+bottom+' Z',fill:'url(#daily-fill)'}));
+ svg.append(svgNode('path',{d:path,fill:'none',stroke:'#2386f5','stroke-width':2.5}));
+ for(let i=0;i<30;i+=3)svg.append(svgNode('circle',{cx:x(i),cy:y(days[i].total),r:2.6,fill:'#fff',stroke:'#2386f5','stroke-width':1.5}));
+}
+function renderCategoryChart(groups){
+ const svg=clearSvg('category-chart'),data=groups.filter(x=>x.quantity>0),max=Math.max(1,...data.map(x=>x.revenue));
+ const left=44,top=14,bottom=215,height=201,step=535/Math.max(1,data.length);
+ for(let i=0;i<=4;i++){
+  const yy=bottom-height*i/4;
+  svg.append(svgNode('line',{x1:left,y1:yy,x2:585,y2:yy,stroke:'#e0e6e2','stroke-dasharray':'3 3'}));
+  svg.append(svgNode('text',{x:40,y:yy+3,'text-anchor':'end','font-size':9,fill:'#7d8a80'},fmtNum(max*i/4)));
+ }
+ data.forEach((d,i)=>{
+  const bw=Math.min(62,step*.66),x=left+step*(i+.5)-bw/2,y=bottom-(d.revenue/max)*height;
+  svg.append(svgNode('rect',{x,y,width:bw,height:bottom-y,rx:5,fill:'#6256ef'}));
+  const name=d.category.split(' ');
+  const label=svgNode('text',{x:x+bw/2,y:234,'font-size':9,fill:'#596a5d','text-anchor':'middle'});
+  label.append(svgNode('tspan',{x:x+bw/2},name.slice(0,2).join(' ')));
+  if(name.length>2)label.append(svgNode('tspan',{x:x+bw/2,dy:11},name.slice(2).join(' ')));
+  svg.append(label);
+ });
+ if(!data.length)svg.append(svgNode('text',{x:300,y:130,'text-anchor':'middle',fill:'#929c95'},'Satış bulunamadı'));
+}
+function renderBranches(orders){
+ const result=new Map(branches.map(b=>[b.id,{name:b.name,revenue:0,paid:0}]));
+ for(const o of orders){
+  if(!result.has(o.branch_id))result.set(o.branch_id,{name:'Şube belirtilmedi',revenue:0,paid:0});
+  const b=result.get(o.branch_id);b.revenue+=Number(o.total_amount||0);b.paid+=Number(o.paid_amount||0);
+ }
+ $('branches-body').innerHTML=[...result.values()].filter(b=>b.revenue||b.paid).sort((a,b)=>b.revenue-a.revenue).map(b=>'<tr><td class="product-name">'+esc(b.name)+'</td><td class="num">'+fmtMoney(b.revenue)+'</td><td class="num">'+fmtMoney(b.paid)+'</td><td class="num"><span class="performance-pill">'+(b.revenue?(100*b.paid/b.revenue).toLocaleString('tr-TR',{maximumFractionDigits:1}):'0')+'%</span></td></tr>').join('')||'<tr><td colspan="4">Bu filtrede şube satışı bulunamadı.</td></tr>';
 }
 function renderProducts(){
  const q=$('search').value.trim().toLocaleLowerCase('tr-TR'),sort=$('sort').value,per=Number($('per-page').value);
@@ -122,6 +212,8 @@ function renderProducts(){
  $('page-info').textContent=data.length+' ürün · Sayfa '+(page+1)+' / '+pages;
  $('prev').disabled=page===0;$('next').disabled=page>=pages-1;
 }
+document.querySelectorAll('[data-status]').forEach(btn=>btn.addEventListener('click',()=>{statusMode=btn.dataset.status;document.querySelectorAll('[data-status]').forEach(el=>el.classList.toggle('active',el===btn));compute()}));
+$('start').onchange=reload;$('end').onchange=reload;
 $('refresh').onclick=reload;
 $('org').onchange=()=>{$('branch').value='';reload()};
 $('branch').onchange=compute;
