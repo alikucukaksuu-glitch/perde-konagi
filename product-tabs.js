@@ -88,3 +88,56 @@ async function load(){
 }
 load();
 })();
+
+/* Product image swipe support: reuses existing thumbnail click handlers.
+   Works with static product pages and galleries populated asynchronously. */
+(function(){
+ 'use strict';
+ if(window.pkGallerySwipeInstalled)return;
+ window.pkGallerySwipeInstalled=true;
+ const galleries=[
+  ['img.mainpic','#main','.thumbs button'],
+  ['#pp-window','#pp-main-image','#pp-gallery-strip button'],
+  ['#tc-photo','#tc-photo','#tc-gallery button'],
+  ['#wb-main-image','#wb-main-image','#wb-gallery button']
+ ];
+ const style=document.createElement('style');
+ style.textContent='img.mainpic,#pp-window,#tc-photo,#wb-main-image{touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}';
+ document.head.appendChild(style);
+ let start=null;
+ function groupOf(node){
+  if(!(node instanceof Element))return null;
+  for(const [surface,image,buttons] of galleries){
+   const el=node.closest(surface);
+   if(el)return {el,image,buttons};
+  }
+  return null;
+ }
+ document.addEventListener('touchstart',function(e){
+  if(e.touches.length!==1){start=null;return}
+  const group=groupOf(e.target);
+  if(!group){start=null;return}
+  start={group,x:e.touches[0].clientX,y:e.touches[0].clientY,time:Date.now()};
+ },{passive:true});
+ document.addEventListener('touchcancel',()=>{start=null},{passive:true});
+ document.addEventListener('touchend',function(e){
+  if(!start||e.changedTouches.length!==1){start=null;return}
+  const gesture=start;start=null;
+  const dx=e.changedTouches[0].clientX-gesture.x;
+  const dy=e.changedTouches[0].clientY-gesture.y;
+  if(Math.abs(dx)<45||Math.abs(dx)<Math.abs(dy)*1.3||Date.now()-gesture.time>1500)return;
+  const buttons=[...document.querySelectorAll(gesture.group.buttons)].filter(b=>!b.disabled);
+  if(buttons.length<2)return;
+  const image=document.querySelector(gesture.group.image);
+  let index=buttons.findIndex(b=>b.classList.contains('active')||b.getAttribute('aria-pressed')==='true');
+  if(index<0&&image){
+   index=buttons.findIndex(b=>{
+    const thumb=b.querySelector('img');
+    return thumb&&thumb.src===image.src;
+   });
+  }
+  if(index<0)index=0;
+  const next=index+(dx<0?1:-1);
+  if(next>=0&&next<buttons.length)buttons[next].click();
+ },{passive:true});
+})();
