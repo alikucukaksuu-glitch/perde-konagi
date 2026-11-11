@@ -6,7 +6,7 @@ const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const titles={new:'İşlemde',processing:'İşlemde',waiting:'Beklemede',workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',delivered:'Teslim Edildi',cancelled:'İptal'};
-let user=null,organizations=[],branches=[],orders=[],items=[],org='',filterStatus='',lineSeq=0,expandedOrders=new Set();
+let user=null,organizations=[],branches=[],orders=[],items=[],org='',filterStatus='',lineSeq=0,expandedOrders=new Set(),memberRole='staff';
 function show(id){['auth-panel','setup-panel','erp-panel'].forEach(n=>$(n).hidden=n!==id)}
 function msg(id,message){$(id).textContent=message||''}
 function dateTR(s){return s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString('tr-TR'):'Belirtilmedi'}
@@ -27,10 +27,12 @@ async function initialize(){
  $('logout').hidden=false;
  try{
   const members=await fetchAll('erp_members','organization_id,role',q=>q.eq('user_id',user.id));
+  window.__erpMembers=members;
   organizations=await fetchAll('erp_organizations','id,name',q=>q.in('id',members.map(m=>m.organization_id).length?members.map(m=>m.organization_id):['00000000-0000-0000-0000-000000000000']));
   if(!organizations.length){show('setup-panel');return}
   const valid=organizations.some(o=>o.id===org);
   org=valid?org:organizations[0].id;
+  memberRole=window.__erpMembers.find(m=>m.organization_id===org)?.role||'staff';
   $('organization-select').replaceChildren();
   organizations.forEach(o=>{const opt=new Option(o.name,o.id);$('organization-select').add(opt)});
   $('organization-select').value=org;
@@ -54,10 +56,10 @@ async function load(){
 }
 function branchName(id){return branches.find(b=>b.id===id)?.name||'Şube'}
 function render(){
- $('stat-total').textContent=orders.length;
+ $('stat-total').textContent=orders.filter(o=>o.status!=='cancelled').length;
  $('stat-workshop').textContent=orders.filter(o=>o.status==='workshop'||o.status==='partial_ready').length;
  $('stat-ready').textContent=orders.filter(o=>o.status==='ready').length;
- $('stat-balance').textContent=money(orders.reduce((s,o)=>s+Number(o.total_amount)-Number(o.paid_amount),0));
+ $('stat-balance').textContent=money(orders.filter(o=>o.status!=='cancelled').reduce((s,o)=>s+Number(o.total_amount)-Number(o.paid_amount),0));
  const text=$('filter-search').value.toLocaleLowerCase('tr-TR').trim();
  const branch=$('filter-branch').value,payment=$('filter-payment').value;
  const subset=orders.filter(o=>{
@@ -95,7 +97,7 @@ function render(){
    '<button class="secondary" type="button" data-print-label="'+escapeHtml(o.id)+'" '+(o.barcode_printed_at||!['processing','new'].includes(o.status)?'disabled title="Barkod yalnızca İşlemde iken bir kez basılabilir"':'')+'>▥ Barkod Yazdır</button>'+
    '<button class="secondary" type="button" data-edit="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
    '<button class="secondary" type="button" data-payment="'+escapeHtml(o.id)+'" '+(remaining<=0||o.status==='cancelled'?'disabled':'')+'>◷ Ödeme Ekle</button>'+
-   '<button class="secondary compact-delete" type="button" data-delete="'+escapeHtml(o.id)+'" '+(Number(o.paid_amount)>0||['cancelled','ready','partial_ready','delivered'].includes(o.status)?'disabled title="Tahsilatı olan veya teslim aşamasındaki sipariş silinemez"':'')+'>▤ Sil</button>'+
+   '<button class="secondary compact-delete" type="button" data-delete="'+escapeHtml(o.id)+'" '+(!['owner','manager'].includes(memberRole)||['cancelled','ready','partial_ready','delivered'].includes(o.status)?'disabled title="Silme yetkisi yöneticidedir; teslim aşamasındaki siparişler silinemez"':'')+'>▤ Sil</button>'+
   '</div></div></div>'+
   ((o.status==='processing'||o.status==='new')?
    '<div class="waiting-controls"><button type="button" class="secondary waiting-open" data-wait="'+escapeHtml(o.id)+'">⏸ Beklemeye Al</button><div class="wait-form" id="wait-form-'+escapeHtml(o.id)+'" hidden><label>Bekleme nedeni *<textarea id="wait-reason-'+escapeHtml(o.id)+'" maxlength="1500" rows="2" placeholder="Örn. Müşteriden ölçü bilgisi bekleniyor."></textarea></label><div class="wait-buttons"><button type="button" class="secondary" data-cancel-wait="'+escapeHtml(o.id)+'">Vazgeç</button><button type="button" class="primary" data-confirm-wait="'+escapeHtml(o.id)+'">Beklemeye Al</button></div></div></div>':
@@ -248,11 +250,11 @@ async function savePayment(e){
 }
 async function archiveOrder(id){
  const o=orders.find(x=>x.id===id);if(!o)return;
- if(Number(o.paid_amount)>0){msg('orders-message','Ödeme alınmış sipariş silinemez.');return}
+ if(!['owner','manager'].includes(memberRole)){msg('orders-message','Yalnızca işletme yöneticisi siparişi silebilir.');return}
  const reason=prompt('#'+o.order_number+' siparişi Silinenler bölümüne taşınacak. Silme nedenini yazın:','');
  if(reason===null)return;
  if(reason.trim().length<5){msg('orders-message','Silme nedeni en az 5 karakter olmalı.');return}
- if(!confirm('#'+o.order_number+' siparişini silmek istediğinize emin misiniz? Bu işlem kayda geçer.'))return;
+ if(!confirm('#'+o.order_number+' siparişini Silinenler bölümüne taşımak istediğinize emin misiniz? Tahsilat kayıtları korunur, otomatik ödeme iadesi yapılmaz.'))return;
  msg('orders-message','Sipariş siliniyor...');
  const {error}=await sb.rpc('erp_cancel_order',{p_org:org,p_order:id,p_reason:reason.trim()});
  if(error){msg('orders-message','Sipariş silinemedi: '+error.message);return}
@@ -269,7 +271,7 @@ function handlers(){
  $('login-form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget);msg('login-message','Giriş yapılıyor...');const {error}=await sb.auth.signInWithPassword({email:f.get('email'),password:f.get('password')});if(error)msg('login-message',error.message);else{msg('login-message','');await initialize()}};
  $('logout').onclick=async()=>{await sb.auth.signOut();user=null;org='';$('logout').hidden=true;$('session-user').textContent='';show('auth-panel')};
  $('setup-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,f=new FormData(form);msg('setup-message','İşletme oluşturuluyor...');const {error}=await sb.rpc('erp_create_organization',{p_name:f.get('organization'),p_branch:f.get('branch')});if(error)msg('setup-message','Oluşturulamadı: '+error.message);else{msg('setup-message','');await initialize()}};
- $('organization-select').onchange=async e=>{org=e.target.value;await load()};
+ $('organization-select').onchange=async e=>{org=e.target.value;memberRole=window.__erpMembers?.find(m=>m.organization_id===org)?.role||'staff';await load()};
  $('refresh').onclick=load;
  $('filter-search').oninput=render;$('filter-branch').onchange=render;$('filter-payment').onchange=render;
  $('status-filters').onclick=e=>{const b=e.target.closest('button[data-status]');if(!b)return;filterStatus=b.dataset.status;document.querySelectorAll('#status-filters button').forEach(x=>x.classList.toggle('active',x===b));render()};
