@@ -132,6 +132,18 @@
 </div>
 <div id="ps-desc" class="ps-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Ürün açıklamasını buraya yazın. Kalın, italik, başlık ve liste biçimlendirmelerini kullanabilirsiniz."></div>
 </div></section>
+<section class="ps-box" id="ps-product-guides">
+<h3>▤ &nbsp;Ürün Sayfası Rehber Sekmeleri</h3><div class="ps-box-inner">
+<p class="ps-hint">Bütün perde kategorilerinde geçerlidir. Ürün Açıklaması yukarıdaki zengin metin editöründen düzenlenir. Diğer üç rehber bu ürüne özel kaydedilir; müşteriler ilgili sekmeye tıkladığında görünür.</p>
+<div class="ps-fields-three" style="grid-template-columns:1fr">
+<div><label class="ps-label" for="ps-guide-measure">Ölçü Alma Rehberi</label><textarea class="ps-input" id="ps-guide-measure" rows="5" maxlength="12000" placeholder="Ölçü alma adımlarını buraya yazın. Satır satır yazabilirsiniz."></textarea></div>
+<div><label class="ps-label" for="ps-guide-measure-image">Ölçü Rehberi Görseli – GitHub dosya adı / HTTPS bağlantısı</label><input class="ps-input" id="ps-guide-measure-image" maxlength="500" placeholder="Örn. olcu-rehberi.png"></div>
+<div><label class="ps-label" for="ps-guide-install">Dikim ve Montaj Rehberi</label><textarea class="ps-input" id="ps-guide-install" rows="5" maxlength="12000" placeholder="Montaj ve dikim adımlarını yazın."></textarea></div>
+<div><label class="ps-label" for="ps-guide-install-image">Montaj Görseli – GitHub dosya adı / HTTPS bağlantısı</label><input class="ps-input" id="ps-guide-install-image" maxlength="500" placeholder="Örn. montaj-rehberi.png"></div>
+<div><label class="ps-label" for="ps-guide-care">Bakım ve Temizlik Talimatları</label><textarea class="ps-input" id="ps-guide-care" rows="5" maxlength="12000" placeholder="Kumaşa özel bakım ve temizlik bilgilerini yazın."></textarea></div>
+<div><label class="ps-label" for="ps-guide-care-image">Bakım Görseli – GitHub dosya adı / HTTPS bağlantısı</label><input class="ps-input" id="ps-guide-care-image" maxlength="500" placeholder="Örn. temizlik-rehberi.png"></div></div>
+<p class="ps-hint">Görselleri şimdi yüklemek zorunda değilsiniz. Sonradan bu alanlara GitHub depo kökündeki dosya adlarını yazarak ekleyebilirsiniz.</p>
+</div></section>
 <section class="ps-box" id="ps-variants"><h3>▱ &nbsp;Varyantlar</h3>
 <div class="ps-box-inner"><p class="ps-hint">Renk, desen veya koleksiyon gibi seçenekleri ekleyin. Varyantlar ürün sayfasında seçilebilir; ek fiyat uygulanmaz.</p>
 <div id="ps-variant-rows"></div><button id="ps-add-variant" class="ps-outline" type="button">＋ Varyant Grubu Ekle</button></div></section>
@@ -294,4 +306,4 @@
 </div></section>
 </main></div></div>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="admin.js?v=tul-20261109-2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=tul-lining-20261111-1"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script><script defer src="admin-orders.js?v=20261108-two-page-1"></script><script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script defer src="admin-reports.js?v=20261108-r1"></script><script defer src="admin-messages.js?v=20261108-contact-1"></script><script defer src="admin-settings.js?v=maintenance-only-20261109-3"></script></body></html>
+<script defer src="admin.js?v=tul-20261109-2"></script><script defer src="description-format.js?v=20261108-markdown-fix-1"></script><script defer src="product-studio.js?v=guides-20261111-1"></script><script defer src="campaign-manager.js?v=20261108-final-4"></script><script defer src="admin-orders.js?v=20261108-two-page-1"></script><script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script defer src="admin-reports.js?v=20261108-r1"></script><script defer src="admin-messages.js?v=20261108-contact-1"></script><script defer src="admin-settings.js?v=maintenance-only-20261109-3"></script></body></html>
