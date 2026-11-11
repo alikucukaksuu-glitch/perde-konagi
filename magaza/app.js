@@ -272,7 +272,7 @@ function qrMessage(value){$('qr-scan-message').textContent=value||''}
 function validateQrText(raw){
  let url;
  try{url=new URL(String(raw||'').trim())}catch(e){throw Error('QR içeriği geçerli bir bağlantı değil.')}
- if(url.origin!==location.origin||!/^\/magaza\/receive\.html$/.test(url.pathname))throw Error('Bu QR KONAK ERP ürün kabul kodu değil.');
+ if(url.protocol!=='https:'||!['perdekonagi.com','www.perdekonagi.com'].includes(url.hostname)||!/^\/magaza\/receive\.html$/.test(url.pathname))throw Error('Bu QR KONAK ERP ürün kabul kodu değil.');
  const qrOrg=url.searchParams.get('org'),item=url.searchParams.get('item'),code=url.searchParams.get('code');
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  if(!uuid.test(qrOrg||'')||!uuid.test(item||'')||!code||code.length>128)throw Error('QR kodunun ürün bilgileri eksik.');
