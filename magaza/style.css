@@ -63,3 +63,21 @@
 .wait-current p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:#795f3e;margin:4px 0 0}
 .waiting-controls.is-waiting{background:#fff8ea;border:1px solid #efddbb;border-radius:9px;padding:12px}
 @media(max-width:520px){.waiting-controls.is-waiting{align-items:stretch;flex-direction:column}.wait-buttons button{flex:1}}
+
+/* Payment form and live order controls */
+.finance-modal-backdrop{position:fixed;inset:0;background:#071c1499;z-index:500;display:flex;justify-content:center;align-items:center;padding:18px}
+.finance-modal-backdrop[hidden]{display:none!important}
+.finance-modal{background:#fff;width:min(460px,100%);padding:22px;border-radius:17px;box-shadow:0 14px 42px #0002;display:grid;gap:15px}
+.finance-modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.finance-modal-head h2{font-size:19px;margin:0}
+.finance-modal-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.finance-modal-stats>div{display:grid;gap:5px;padding:10px;border:1px solid #e7e8e3;background:#f7faf8;border-radius:9px;min-width:0}
+.finance-modal-stats small{font-size:10px;color:#707b70}
+.finance-modal-stats strong{font-size:14px;white-space:nowrap}
+.finance-modal label{display:grid;gap:6px;font-size:12px;font-weight:600}
+.finance-modal textarea{min-height:72px}
+.finance-modal-actions{display:flex;gap:8px;justify-content:flex-end}
+#payment-message{font-size:12px;color:#ad542f;margin:0;min-height:0}
+.compact-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+.compact-actions button{min-height:35px}
+@media(max-width:500px){.finance-modal{padding:16px}.finance-modal-stats strong{font-size:11px}}
