@@ -91,15 +91,60 @@ function render(){
    '<div><small>Kalan</small><strong class="'+(remaining>0?'debt':'')+'">'+money(remaining)+'</strong></div>'+
   '</div><div class="compact-actions">'+
    '<button class="secondary" type="button" disabled title="A4 yazdırma sonraki aşamada">▣ Yazdır (yakında)</button>'+
-   '<button class="secondary" type="button" data-detail="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
+   '<button class="secondary" type="button" data-edit="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
    '<button class="secondary" type="button" disabled title="Tahsilat ekleme sonraki aşamada">◷ Ödeme Ekle (yakında)</button>'+
    '<button class="secondary compact-delete" type="button" disabled title="Güvenli silme akışı sonraki aşamada">▤ Sil (yakında)</button>'+
   '</div></div></div>'+
   '<button type="button" class="compact-expand" data-expand="'+escapeHtml(o.id)+'" aria-expanded="'+expanded+'"><span>'+(expanded?'⌃ Detayı Gizle':'⌄ Detayı Göster')+'</span></button>'+
-  (expanded?'<div class="compact-expanded"><div class="compact-expanded-head"><b>Ürünler ('+rows.length+')</b><span>'+status+'</span></div>'+orderItems+'<div class="compact-order-note"><b>Genel Sipariş Notu</b><p>'+escapeHtml(o.customer_note||'Not girilmemiş.')+'</p></div></div>':'')+
+  (expanded?'<div class="compact-expanded"><div class="compact-expanded-head"><b>Ürünler ('+rows.length+')</b><span>'+status+'</span></div>'+orderItems+'<div class="compact-order-note"><b>Genel Sipariş Notu</b><p>'+escapeHtml(o.customer_note||'Not girilmemiş.')+'</p></div><div class="compact-audit"><b>Değişiklik Geçmişi</b><div id="audit-'+escapeHtml(o.id)+'" class="audit-list">Yükleniyor...</div></div></div>':'')+
   '</article>';
  }).join('');
  if(!subset.length&&orders.length)msg('orders-message','Seçilen filtrelerde sipariş bulunamadı.');else if(orders.length)msg('orders-message','');
+}
+const auditLabels={customer_name:'Müşteri Adı',customer_phone:'Telefon',delivery_date:'Teslim Tarihi',customer_note:'Sipariş Notu',branch_id:'Şube',order_type:'Sipariş Tipi',payment_method:'Ödeme Şekli',total_amount:'Genel Toplam',subtotal_amount:'Ara Toplam',discount_percent:'İskonto %',discount_amount:'İskonto ₺',paid_amount:'Ödenen Tutar',status:'Sipariş Durumu',category:'Kategori',product_name:'Ürün',width_cm:'En',height_cm:'Boy',unit_price:'Ürün Fiyatı',production_note:'Üretim Notu'};
+const ignoredAuditFields=new Set(['updated_at','created_at','id','order_id','organization_id','created_by','barcode','arrived_at','arrived_by','quantity','slot_key']);
+function auditValue(field,value){
+ if(value===null||value===undefined||value==='')return '—';
+ if(field==='branch_id')return branchName(value);
+ if(['subtotal_amount','total_amount','paid_amount','discount_amount','unit_price'].includes(field))return money(value);
+ if(field==='status')return titles[value]||value;
+ if(field==='delivery_date')return dateTR(value);
+ return String(value);
+}
+async function loadHistory(orderId){
+ const target=$('audit-'+orderId);if(!target)return;
+ try{
+  const [{data:records,error:logError},{data:team,error:teamError}]=await Promise.all([
+   sb.from('erp_order_audit').select('id,action,actor_id,changed_at,old_data,new_data,item_id').eq('organization_id',org).eq('order_id',orderId).order('changed_at',{ascending:false}).order('id',{ascending:false}).limit(100),
+   sb.rpc('erp_list_team',{p_org:org})
+  ]);
+  if(logError)throw logError;
+  const names=new Map((teamError?[]:team||[]).map(x=>[x.user_id,x.email]));
+  if(!records?.length){target.textContent='Bu sipariş için henüz kayıtlı bir değişiklik bulunmuyor. Geçmiş kayıtlar sistem etkinleştirildikten sonra tutulur.';return}
+  target.replaceChildren();
+  for(const record of records){
+   const prev=record.old_data||{},next=record.new_data||{};
+   const fields=Object.keys({...prev,...next}).filter(k=>!ignoredAuditFields.has(k)&&JSON.stringify(prev[k]??null)!==JSON.stringify(next[k]??null));
+   const wrapper=document.createElement('div');wrapper.className='audit-entry';
+   const heading=document.createElement('div');heading.className='audit-heading';
+   const when=new Date(record.changed_at).toLocaleString('tr-TR');
+   const who=names.get(record.actor_id)||('Kullanıcı '+String(record.actor_id||'bilinmiyor').slice(0,8));
+   const type=record.action==='item_insert'?'Yeni ürün eklendi':record.action==='item_delete'?'Ürün kaldırıldı':record.action==='order_insert'?'Sipariş oluşturuldu':'Düzenleme yapıldı';
+   heading.textContent=who+' · '+when+' · '+type;wrapper.append(heading);
+   const body=document.createElement('div');body.className='audit-changes';
+   if(fields.length===0){body.textContent='Ürün veya sipariş kaydı güncellendi.'}
+   else for(const field of fields){
+    const line=document.createElement('div');line.className='audit-change';
+    const label=document.createElement('strong');label.textContent=auditLabels[field]||field;
+    const detail=document.createElement('span');
+    if(record.action.endsWith('insert'))detail.textContent=auditValue(field,next[field]);
+    else if(record.action.endsWith('delete'))detail.textContent=auditValue(field,prev[field])+' (kaldırıldı)';
+    else detail.textContent=auditValue(field,prev[field])+' → '+auditValue(field,next[field]);
+    line.append(label,detail);body.append(line);
+   }
+   wrapper.append(body);target.append(wrapper);
+  }
+ }catch(e){target.textContent='Değişiklik geçmişi alınamadı: '+e.message}
 }
 function addLine(){
  lineSeq++;
@@ -176,7 +221,7 @@ function handlers(){
  $('close-detail').onclick=()=>$('order-detail').hidden=true;
  $('add-item').onclick=addLine;
  $('order-form').onsubmit=saveOrder;
- $('orders-list').onclick=e=>{const expand=e.target.closest('[data-expand]');if(expand){const id=expand.dataset.expand;if(expandedOrders.has(id))expandedOrders.delete(id);else expandedOrders.add(id);render();return}const button=e.target.closest('[data-detail]');if(button)openDetail(button.dataset.detail)};
+ $('orders-list').onclick=e=>{const expand=e.target.closest('[data-expand]');if(expand){const id=expand.dataset.expand;if(expandedOrders.has(id))expandedOrders.delete(id);else expandedOrders.add(id);render();if(expandedOrders.has(id))loadHistory(id);return}const edit=e.target.closest('[data-edit]');if(edit){location.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(edit.dataset.edit);return}const button=e.target.closest('[data-detail]');if(button)openDetail(button.dataset.detail)};
  $('export-csv').onclick=exportCSV;
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('order-editor').hidden=true;$('order-detail').hidden=true}});
 }
