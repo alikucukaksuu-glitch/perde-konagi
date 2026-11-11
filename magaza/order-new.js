@@ -14,6 +14,15 @@ const priceFromBase=(base,pile)=>rounded(Number(base)*pileFactor(pile));
 const storCaseColors={open:[],classic:['Beyaz','Krem'],colored:['Gri','Antrasit','Kahve']};
 let catalogCache=[],catalogOrg=null,catalogRequest=null,manualPrice=false;
 function isStor(){return $('product-category').value==='STOR PERDE'}
+function isPlise(){return $('product-category').value==='PLİSE PERDE'}
+function plisePrice(base,w,h){
+ const width=Math.ceil(Number(w)-1e-9),height=Math.ceil(Number(h)-1e-9);
+ return rounded(Math.max(1,width*height/10000)*Number(base));
+}
+function validPliseMeasure(v){
+ const n=Number(v);
+ return String(v).trim()!==''&&Number.isFinite(n)&&n>0&&Math.abs(n*10-Math.round(n*10))<1e-7;
+}
 function storSettings(){
  return {caseType:$('stor-case').value,color:$('stor-color').value,chain:$('stor-chain').value,side:$('stor-side').value,tube:$('stor-tube').value,foot:$('stor-foot').value}
 }
@@ -52,12 +61,12 @@ function syncStorColor(value){
 const pileControlRow=document.getElementById('pile-selection-row');
 const pileControlSelect=document.getElementById('product-pile');
 function syncCategoryUI(){
- const stor=isStor();
+ const stor=isStor(),plise=isPlise();
  $('stor-options').hidden=!stor;
  // Remove the pile field from the DOM for stor products, not just visually hide it.
  // Restore the exact same field when switching back to tulle/fon/other categories.
  const pileRow=pileControlRow,unitRow=$('unit-options-row');
- if(stor){
+ if(stor||plise){
   pileRow.hidden=true;
   pileRow.remove();
   pileControlSelect.disabled=true;
@@ -67,9 +76,10 @@ function syncCategoryUI(){
   pileRow.hidden=false;
   pileControlSelect.disabled=false;
  }
- unitRow.classList.toggle('stor-price-only',stor);
- $('product-price').closest('label').firstChild.textContent=stor?'m² Birim Fiyatı (₺) *':'Temel Birim Fiyat (₺) *';
- $('product-width').required=stor;$('product-height').required=stor;
+ unitRow.classList.toggle('stor-price-only',stor||plise);
+ $('product-price').closest('label').firstChild.textContent=(stor||plise)?'m² Birim Fiyatı (₺) *':'Temel Birim Fiyat (₺) *';
+ $('product-width').required=stor||plise;$('product-height').required=stor||plise;
+ $('product-width').step=plise?'0.1':'0.01';$('product-height').step=plise?'0.1':'0.01';
  if(stor)syncStorColor($('stor-case').value);
 }
 async function fetchCatalog(){
@@ -92,7 +102,7 @@ function showCatalog(){
  const list=$('catalog-results');list.replaceChildren();
  for(const p of matches.slice(0,150)){
   const button=newElement('button','catalog-choice');button.type='button';button.setAttribute('role','option');
-  button.append(newElement('span','',p.name),newElement('strong','',fmt(p.unit_price)+(category==='STOR PERDE'?' / m²':'')));
+  button.append(newElement('span','',p.name),newElement('strong','',fmt(p.unit_price)+(['STOR PERDE','PLİSE PERDE'].includes(category)?' / m²':'')));
   button.onclick=()=>{
    $('product-name').value=p.name;$('catalog-search').value=p.name;
    $('product-price').value=p.unit_price;manualPrice=false;list.hidden=true;calculateItemTotal();
@@ -217,7 +227,7 @@ function openItem(category,index){
  $('product-price').value=value?(value.basePrice??value.price):'';
  $('product-quantity').value=value?.qty??1;
  pileControlSelect.value=value?.pile||'';
- $('product-spec').value=category==='STOR PERDE'?stripStorOptions(value?.spec||''):value?.spec||'';
+ $('product-spec').value=category==='STOR PERDE'?stripStorOptions(value?.spec||''):category==='PLİSE PERDE'?String(value?.spec||'').replace(/(?:^|;\s*)Hesap (?:En|Boy):\s*[^;]*/g,'').replace(/^;\s*|;\s*$/g,''):value?.spec||'';
  if(category==='STOR PERDE'){
   const cfg=value?.stor||parseStorSpecs(value?.spec||'');
   $('stor-case').value=cfg.caseType;syncStorColor(cfg.caseType);
@@ -249,6 +259,14 @@ function calculateItemTotal(){
   $('product-total').textContent=fmt(unit*qty);
   $('pile-price-hint').textContent='Fiyat: '+fmt(unit)+' × '+qty+' adet = '+fmt(unit*qty);
   $('stor-calculation').textContent='Gerçek ölçü: '+(width||'—')+' × '+(height||'—')+' cm · Fiyat hesabı: '+effectiveWidth+' × '+effectiveHeight+' cm ('+(effectiveWidth*effectiveHeight/10000).toLocaleString('tr-TR')+' m²) · Kasa / mekanizma farkları dahil: '+fmt(unit)+' / adet';
+ }else if(isPlise()){
+  const w=$('product-width').value,h=$('product-height').value;
+  const valid=validPliseMeasure(w)&&validPliseMeasure(h);
+  const roundedWidth=valid?Math.ceil(Number(w)-1e-9):0,roundedHeight=valid?Math.ceil(Number(h)-1e-9):0;
+  const area=valid?Math.max(1,roundedWidth*roundedHeight/10000):0;
+  const price=valid?plisePrice(base,w,h):0;
+  $('product-total').textContent=valid?fmt(price*qty):'—';
+  $('pile-price-hint').textContent=valid?'Gerçek ölçü: '+w+' × '+h+' cm · Fiyatlandırılan ölçü: '+roundedWidth+' × '+roundedHeight+' cm · '+area.toLocaleString('tr-TR',{maximumFractionDigits:4})+' m² (min. 1 m²) × '+fmt(base)+' × '+qty+' adet = '+fmt(price*qty):'Plise perde için en ve boyu 0,1 cm hassasiyetle girin.';
  }else{
   const p=pileControlSelect.value,factor=pileFactor(p);
   $('product-total').textContent=fmt(priceFromBase(base,p)*qty);
@@ -257,11 +275,12 @@ function calculateItemTotal(){
 }
 function storeItem(e){
  e.preventDefault();
- const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=isStor()?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):priceFromBase(basePrice,pile);
+ const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise())?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):priceFromBase(basePrice,pile);
  const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value;
  if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(basePrice)||basePrice<0||!Number.isFinite(price)||price<0||price>99999999){$('product-status-message').textContent='Ürün adı, fiyatı veya adedi geçersiz.';return}
  if((width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))||(height!==''&&(!Number.isFinite(Number(height))||Number(height)<0))){$('product-status-message').textContent='En ve boy negatif olamaz.';return}
  if(category==='STOR PERDE'&&(!Number.isFinite(Number(width))||Number(width)<=0||!Number.isFinite(Number(height))||Number(height)<=0)){$('product-status-message').textContent='Stor perdede gerçek en ve boy ölçüsü sıfırdan büyük olmalı.';return}
+ if(category==='PLİSE PERDE'&&(!validPliseMeasure(width)||!validPliseMeasure(height))){$('product-status-message').textContent='Plise perde en ve boy ölçüleri pozitif ve 0,1 cm hassasiyetinde olmalıdır (örn. 80,1 cm).';return}
  const oldKey=key(active.category,active.index),old=products.get(oldKey);
  if(old&&['ready','delivered'].includes(old.status)){ $('product-status-message').textContent='Teslim alınmış ürün üretim bilgilerinde değişiklik yapılamaz.';return }
  const group=categories.find(c=>c.name===category);
@@ -274,7 +293,7 @@ function storeItem(e){
  const totalBefore=[...products.values()].reduce((n,p)=>n+p.qty,0)-(old?.qty||0);
  if(totalBefore+qty>60){$('product-status-message').textContent='Bir siparişte en fazla 60 fiziksel parça eklenebilir.';return}
  const cfg=category==='STOR PERDE'?storSettings():null;
- const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
+ const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):category==='PLİSE PERDE'?['Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
  const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||'processing'};
  products.delete(oldKey);products.set(key(category,index),record);
  closeItem();drawSlots();
