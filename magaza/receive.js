@@ -1,13 +1,19 @@
 (()=>{'use strict';
 const sb=window.supabase?.createClient('https://rwylhxrtggsicieuyjrm.supabase.co','sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA');
-const q=new URLSearchParams(location.search),org=q.get('org'),item=q.get('item'),code=q.get('code'),$=s=>document.getElementById(s);
+const q=new URLSearchParams(location.search);let org=q.get('org'),item=q.get('item'),code=q.get('code');const token=q.get('t'),$=s=>document.getElementById(s);
 let order=null,record=null,ready=false;
 function message(txt,type=''){const n=$('message');n.textContent=txt;n.className=type}
 function visible(){ $('details').hidden=false; $('login').hidden=true}
 async function init(){
- if(!sb||!org||!item||!code){message('QR kod eksik veya geçersiz.','error');return}
+ if(!sb||(!token&&(!org||!item||!code))){message('QR kod eksik veya geçersiz.','error');return}
  const {data:u,error:authError}=await sb.auth.getUser();
  if(authError||!u?.user){message('Personel girişi gerekli.','error');$('login').hidden=false;return}
+ if(token){
+  if(!/^[0-9a-f]{24}$/i.test(token)){message('QR kod biçimi geçersiz.','error');return}
+  const {data:result,error:tokenError}=await sb.rpc('erp_resolve_item_receive_token',{p_token:token});
+  if(tokenError||!result?.length){message('QR kodu geçersiz veya işletme erişiminiz yok.','error');return}
+  org=result[0].organization_id;item=result[0].item_id;code=result[0].barcode;
+ }
  const {data:m,error:memErr}=await sb.from('erp_members').select('organization_id').eq('organization_id',org).eq('user_id',u.user.id).maybeSingle();
  if(memErr||!m){message('Bu işletmenin ürününü kabul etmeye yetkiniz yok.','error');return}
  const {data:i,error:e1}=await sb.from('erp_order_items').select('id,order_id,organization_id,category,product_name,width_cm,height_cm,status,barcode').eq('id',item).eq('organization_id',org).single();
