@@ -1,0 +1,33 @@
+(()=>{'use strict';
+const page=location.pathname.split('/').pop()||'index.html';
+if(page==='index.html'||page==='admin.html')return;
+function ready(){
+ if(document.getElementById('pk-global-header'))return;
+ const original=document.querySelector('body > header');
+ if(original)original.style.setProperty('display','none','important');
+ document.querySelectorAll('body > .top,body > .announcement,body > .top-line').forEach(el=>el.style.setProperty('display','none','important'));
+ const st=document.createElement('style');st.textContent="#pk-global-header,#pk-global-header *{box-sizing:border-box}#pk-global-header{position:relative;z-index:85;color:#fff;font-family:Arial,sans-serif}#pk-global-header a{color:inherit;text-decoration:none}#pk-global-header .ticker{height:34px;overflow:hidden;background:#292623;display:flex;align-items:center;white-space:nowrap;font-size:11px;font-weight:700}#pk-global-header .track{display:flex;width:max-content;animation:pkmove 38s linear infinite}#pk-global-header .group{display:flex;align-items:center;gap:27px;padding:0 14px;flex-shrink:0}#pk-global-header .star{color:#c8a581}@keyframes pkmove{to{transform:translateX(-50%)}}#pk-global-header .navigation{min-height:104px;background:linear-gradient(110deg,#3c352e,#66554a);display:flex;align-items:center}#pk-global-header .inner{max-width:1390px;width:100%;margin:auto;padding:10px 22px;display:flex;align-items:center;justify-content:center;gap:23px}#pk-global-header .links{display:flex;gap:19px;align-items:center;white-space:nowrap}#pk-global-header .links a{font-size:12px;font-weight:700}#pk-global-header .links a[aria-current=page]{border-bottom:2px solid #c5a06f;padding-bottom:7px}#pk-global-header .brand{display:flex;align-items:center;gap:10px;flex-shrink:0}#pk-global-header .brand svg{width:48px;height:48px;stroke:#dfc8a4;fill:none;stroke-width:2}#pk-global-header .brand strong{display:block;font:700 26px/1.1 Georgia,serif;letter-spacing:.7px;white-space:nowrap}#pk-global-header .brand small{display:block;font:700 9px Arial,sans-serif;letter-spacing:2.4px;margin-top:5px;white-space:nowrap}#pk-global-header .icons{display:flex;gap:14px;align-items:center}#pk-global-header .icons a{width:24px;height:30px;position:relative}#pk-global-header .icons svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}#pk-global-header #pgh-cart-count{position:absolute;right:-10px;top:-7px;background:#af8855;color:#fff;border-radius:12px;padding:2px 5px;font-size:10px}#pk-global-header #pgh-cart-count[hidden]{display:none}#pk-global-header .toggle{display:none;background:transparent;border:1px solid #d0b695;border-radius:5px;color:#fff;font-size:20px;padding:5px 9px;cursor:pointer}#pk-global-header #pgh-mobile{background:#39322c;padding:10px 20px}#pk-global-header #pgh-mobile[hidden]{display:none}#pk-global-header #pgh-mobile a{display:block;border-bottom:1px solid #ffffff26;padding:11px;font-size:14px}@media(max-width:1200px){#pk-global-header .inner{gap:12px}#pk-global-header .links{gap:10px}#pk-global-header .links a{font-size:11px}#pk-global-header .brand strong{font-size:20px}#pk-global-header .brand svg{width:37px}}@media(max-width:920px){#pk-global-header .navigation{min-height:76px}#pk-global-header .inner{justify-content:space-between;padding:9px 16px}#pk-global-header .links{display:none}#pk-global-header .toggle{display:block}#pk-global-header .brand strong{font-size:clamp(16px,4vw,22px)}#pk-global-header .brand small{font-size:7px;letter-spacing:1.3px}#pk-global-header .brand svg{width:33px}}@media(prefers-reduced-motion:reduce){#pk-global-header .track{animation:none}}";document.head.append(st);
+ const links=[['index.html','Ana Sayfa'],['zebra-perde.html','Zebra Perde'],['stor-perde.html','Stor Perde'],['plise-perde.html','Plise Perde'],['ahsap-jaluzi.html','Ahşap Jaluzi'],['tul-perde.html','Tül Perde'],['iletisim.html','İletişim']];
+ const nav=arr=>arr.map(([href,label])=>'<a href="'+href+'"'+(page===href?' aria-current="page"':'')+'>'+label+'</a>').join('');
+ const notices=['🚚 3.000 TL ve Üzeri Kargo Bedava','🔒 Kolay ve Güvenli Alışveriş','📦 Özenli Paketleme ve Güvenli Teslimat','📏 Ölçünüze Özel Üretim','💬 WhatsApp Destek Hattı'];
+ const g='<span class="group">'+notices.map(x=>'<span>'+x+'</span><span class="star">✦</span>').join('')+'</span>';
+ const el=document.createElement('div');el.id='pk-global-header';
+ el.innerHTML='<div class="ticker"><div class="track">'+g+g+'</div></div>'+
+ '<div class="navigation"><div class="inner">'+
+ '<button type="button" class="toggle" aria-expanded="false" aria-controls="pgh-mobile" aria-label="Menüyü aç">☰</button>'+
+ '<nav class="links">'+nav(links.slice(0,3))+'</nav>'+
+ '<a class="brand" href="index.html" aria-label="Perde Konağı ana sayfa"><svg viewBox="0 0 66 58"><path d="M5 27L32 5l29 22M13 25v29M52 25v29M26 31h14v23M26 42h14M18 34h4M45 34h4"/></svg><span><strong>PERDE KONAĞI</strong><small>MEKANİK PERDE SİSTEMLERİ</small></span></a>'+
+ '<nav class="links">'+nav(links.slice(3))+'</nav>'+
+ '<div class="icons"><a href="hesabim.html" aria-label="Hesabım"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4.5 21c0-5 3.2-8 7.5-8s7.5 3 7.5 8"/></svg></a><a href="sepet.html" aria-label="Sepetim"><svg viewBox="0 0 24 24"><path d="M2 3h3l2.5 12h12l2-9H6"/><circle cx="9" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/></svg><span id="pgh-cart-count" hidden></span></a></div></div></div>'+
+ '<nav id="pgh-mobile" hidden>'+nav(links)+'<a href="hesabim.html">Hesabım</a><a href="sepet.html">Sepetim</a></nav>';
+ document.body.insertBefore(el,document.body.firstChild);
+ const toggle=el.querySelector('.toggle'),mobile=el.querySelector('#pgh-mobile');
+ toggle.addEventListener('click',()=>{mobile.hidden=!mobile.hidden;toggle.setAttribute('aria-expanded',String(!mobile.hidden))});
+ const badges=['#cart-count','#cart-badge','#pp-cart-badge','#tc-cart-count','#wb-cart-badge','.cart-pill'].map(s=>document.querySelector(s)).filter(Boolean);
+ const badge=el.querySelector('#pgh-cart-count');
+ const update=()=>{const nums=badges.map(x=>parseInt(x.textContent,10)).filter(Number.isFinite);const n=nums.length?Math.max(...nums):0;badge.textContent=n>0?String(n):'';badge.hidden=n<=0};
+ update();
+ if(badges.length){const observer=new MutationObserver(update);badges.forEach(x=>observer.observe(x,{childList:true,characterData:true,subtree:true}))}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready,{once:true});else ready();
+})();
