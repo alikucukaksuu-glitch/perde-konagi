@@ -1,8 +1,8 @@
-<!doctype html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Yeni Sipariş | KONAK ERP</title><link rel="stylesheet" href="./style.css?v=account-2"><link rel="stylesheet" href="./order-new.css?v=wood-half-cm-1"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="./order-new.js?v=wood-half-cm-1"></script></head>
+<!doctype html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Yeni Sipariş | KONAK ERP</title><link rel="stylesheet" href="./style.css?v=account-2"><link rel="stylesheet" href="./order-new.css?v=whatsapp-workflow-1"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="./order-new.js?v=whatsapp-workflow-1"></script></head>
 <body>
 <header class="topbar"><div class="shell navline"><a href="./" class="brand"><b>KONAK<span> ERP</span></b><small>Perde Mağazası Yönetimi</small></a><nav class="navigation"><a href="./">Siparişler</a><a href="./missing.html" class="secondary" style="padding:9px 12px;border-radius:9px;font-size:12px">Eksik Ürünler</a><a href="./hub.html?tab=products">Ürünler</a><a href="./hub.html?tab=workshop">Atölye</a><a href="./hub.html?tab=customers">Müşteriler</a></nav><div class="user-panel"><details class="account-menu"><summary>☻ &nbsp; Hesabım ▾</summary><div class="account-dropdown"><div id="order-user-email" class="account-identity">Hesabım</div><a href="./company.html#account">Hesap Bilgileri</a><a href="./missing.html">Eksik Ürünler</a><a href="./company.html#company-profile">Şirket Ayarları</a><a href="./company.html#branches">Şubeler</a><button type="button" id="order-logout">Çıkış Yap</button></div></details></div></div></header>
 <main class="order-shell">
-<section class="order-topline"><div><a href="./" class="back-link">‹ Siparişler</a><h1>Yeni Sipariş</h1><p>Önce müşteri ve teslimat bilgileri, ardından ürünleri seçin.</p></div><div class="order-top-actions"><button type="button" id="editor-print-a4" class="secondary" hidden>▣ A4 Yazdır</button><button type="button" id="editor-print-label" class="secondary" hidden>▥ Barkod Yazdır</button><div class="step-tag" id="step-label">1 / 2 · Müşteri Bilgileri</div></div></section>
+<section class="order-topline"><div><a href="./" class="back-link">‹ Siparişler</a><h1>Yeni Sipariş</h1><p>Önce müşteri ve teslimat bilgileri, ardından ürünleri seçin.</p></div><div class="order-top-actions"><button type="button" id="editor-print-a4" class="secondary" hidden>▣ A4 Yazdır</button><button type="button" id="editor-print-label" class="secondary" hidden>▥ Barkod Yazdır</button><button type="button" id="editor-whatsapp" class="whatsapp-dispatch" hidden>◉ WhatsApp’tan Gönder</button><div class="step-tag" id="step-label">1 / 2 · Müşteri Bilgileri</div></div></section>
 <div id="order-alert" class="order-alert" role="status" hidden></div>
 <section id="auth-warning" class="card notice-panel" hidden><h2>Mağaza Girişi Gerekli</h2><p>Yeni sipariş oluşturmak için KONAK ERP hesabınıza giriş yapın.</p><a class="primary anchor-button" href="./">Giriş Ekranına Git</a></section>
 <section id="stage1" class="on-form card" hidden>
@@ -60,4 +60,19 @@
 <div class="sheet-actions"><button type="submit" class="primary" id="save-product">Kaydet</button><button type="button" id="delete-product" class="secondary" hidden>Satırı Sil</button></div>
 <p id="product-status-message" role="status" class="sheet-message"></p>
 </form></aside></div>
-<footer class="shell foot">KONAK ERP · Siparişler</footer></body></html>
+<footer class="shell foot">KONAK ERP · Siparişler</footer><div id="whatsapp-overlay" class="whatsapp-overlay" hidden>
+ <section class="whatsapp-dialog" role="dialog" aria-modal="true" aria-labelledby="whatsapp-title">
+  <div class="whatsapp-dialog-top"><div><small>STOR · PLİSE · AHŞAP JALUZİ</small><h2 id="whatsapp-title">WhatsApp Üretim Siparişi</h2></div><button id="whatsapp-close" type="button" class="secondary">Kapat</button></div>
+  <p>Kaydedilmiş siparişten yalnızca bu üç kategoriye ait ürünler hazırlanır. Mesajı WhatsApp grubuna personel gönderir.</p>
+  <textarea id="whatsapp-message" rows="13" aria-label="WhatsApp sipariş mesajı"></textarea>
+  <div id="whatsapp-result" role="status"></div>
+  <div class="whatsapp-buttons">
+   <button type="button" id="whatsapp-copy" class="secondary">Mesajı Kopyala</button>
+   <button type="button" id="whatsapp-group" class="secondary">Grubu Aç</button>
+   <button type="button" id="whatsapp-share" class="whatsapp-dispatch">WhatsApp’ta Paylaş</button>
+  </div>
+  <div class="whatsapp-confirm"><p>Gönderme işlemini WhatsApp'ta tamamladıktan sonra onaylayın. Bu onay siparişin durumunu değiştirmez ve işlemi personel adıyla kaydeder.</p>
+  <button type="button" id="whatsapp-confirm" class="secondary">WhatsApp'ta Gönderdim · Kaydet</button></div>
+ </section>
+</div>
+</body></html>
