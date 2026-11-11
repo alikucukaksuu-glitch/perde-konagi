@@ -32,3 +32,5 @@
 .slot-list .slot-record .slot-controls{align-self:end}
 @media(max-width:700px){.three-inputs{gap:6px}.slot-grid .slot-record{min-height:118px}.slot-controls{justify-content:flex-start}.slot-record-detail strong{font-size:10px}.slot-record-detail small{font-size:9px}}
 @media(max-width:420px){.three-inputs{grid-template-columns:1fr 1fr}.three-inputs label:first-child{grid-column:1/-1}}
+
+.pile-price-hint{grid-column:1/-1;margin:-10px 0 1px;color:#4a7258;font-size:11px;font-weight:600;line-height:1.45}.status-helper{display:block;font-size:11px;color:#886a3d;margin-top:6px;line-height:1.4}.product-sheet select:not(:disabled){cursor:pointer}
