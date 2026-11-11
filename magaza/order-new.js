@@ -69,7 +69,7 @@ function drawSlots(){
      select.add(option);
     }
     select.value=record.status||'processing';
-    if(record.status==='ready'||record.status==='delivered'||editing.status==='delivered'||editing.status==='cancelled')select.disabled=true;
+    if(record.status==='ready'||record.status==='delivered'||editing.status==='delivered'||editing.status==='cancelled'||editing.status==='waiting')select.disabled=true;
     select.onchange=async()=>{const prev=record.status;select.disabled=true;
       try{await updateItemStatus(record,select.value);record.status=select.value;drawSlots();}
       catch(e){record.status=prev;drawSlots();alertText('Satır durumu değiştirilemedi: '+e.message);}
