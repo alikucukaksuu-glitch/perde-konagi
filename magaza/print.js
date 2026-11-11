@@ -134,8 +134,8 @@ function makeLabel(item){
  txt(box,'h3','',item.category+' · '+item.product_name);
  const split=el('div','qr-label-mid'),left=el('div','qr-label-info'),right=el('div','qr-label-code');
  const specs=el('div','label-specs');
- const isStor=item.category==='STOR PERDE',isPlise=item.category==='PLİSE PERDE';
- const meta=(isStor||isPlise)?String(item.production_note||'').split(/\r?\n/)[0]:''; 
+ const isStor=item.category==='STOR PERDE',isPlise=item.category==='PLİSE PERDE',isWood=item.category==='AHŞAP JALUZİ';
+ const meta=(isStor||isPlise||isWood)?String(item.production_note||'').split(/\r?\n/)[0]:''; 
  const option=(label)=>meta.match(new RegExp('(?:^|;\\s*)'+label+':\\s*([^;]+)'))?.[1]?.trim()||'';
  const lines=['Adet: 1','En: '+(item.width_cm??'—')+' cm','Boy: '+(item.height_cm??'—')+' cm'];
  if(isStor){
@@ -145,6 +145,9 @@ function makeLabel(item){
  }else if(isPlise){
   if(option('Montaj'))lines.push('Montaj: '+option('Montaj'));
   if(option('Kasa Rengi'))lines.push('Kasa: '+option('Kasa Rengi'));
+ }else if(isWood){
+  lines.push('Kurdela: '+(option('Kurdela')||'Yok'));
+  if(option('Mekanizma'))lines.push('Mekanizma: '+option('Mekanizma'));
  }else lines.push('Pile: '+(details.pile||'—'));
  for(const x of lines)txt(specs,'span','',x);
  left.append(specs);
