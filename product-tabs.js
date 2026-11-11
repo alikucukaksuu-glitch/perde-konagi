@@ -1,3 +1,47 @@
+/* Unified per-product preparation and handover estimate (all storefront categories). */
+(function(){
+ 'use strict';
+ const path=location.pathname.split('/').pop()||'';
+ const query=new URLSearchParams(location.search);
+ if(['plise-perde.html','ahsap-jaluzi.html','tul-perde.html'].includes(path)&&!query.has('slug'))return;
+ if(path==='urun.html'&&!query.has('slug'))return;
+ const slug=query.get('slug')||path.replace(/\.html$/,'');
+ if(!slug||slug==='index')return;
+ const anchors=[
+  '.pp-product-intro .pp-price-explain',
+  '.pp-product-intro .pp-price-live',
+  '.customizer .unit'
+ ];
+ const anchor=anchors.map(s=>document.querySelector(s)).find(Boolean);
+ if(!anchor||document.getElementById('pk-production-estimate'))return;
+ const style=document.createElement('style');
+ style.textContent='#pk-production-estimate{display:flex;align-items:center;gap:13px;margin:16px 0;padding:13px 15px;background:#fff9ef;border:1px solid #cc9d5c;border-radius:9px;color:#3b2d23;font-family:Arial,Helvetica,sans-serif;box-shadow:0 2px 9px rgba(86,59,29,.05)}#pk-production-estimate .pk-production-clock{font-size:24px;line-height:1;flex-shrink:0;color:#956a32}#pk-production-estimate .pk-production-title{display:block;font-size:13px;font-weight:700;margin-bottom:5px}#pk-production-estimate .pk-production-body{display:block;font-size:12px;line-height:1.5;color:#655545}';
+ document.head.append(style);
+ const box=document.createElement('div');box.id='pk-production-estimate';box.setAttribute('role','status');
+ const clock=document.createElement('span');clock.className='pk-production-clock';clock.setAttribute('aria-hidden','true');clock.textContent='◷';
+ const content=document.createElement('span');
+ const title=document.createElement('strong');title.className='pk-production-title';title.textContent='Tahmini Üretim Süresi';
+ const body=document.createElement('span');body.className='pk-production-body';body.textContent='Hazırlanma ve kargoya verilme süresi sipariş öncesinde teyit edilir.';
+ content.append(title,body);box.append(clock,content);
+ anchor.insertAdjacentElement('afterend',box);
+ async function load(){
+  try{
+   const base='https://rwylhxrtggsicieuyjrm.supabase.co';
+   const key='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
+   const url=base+'/rest/v1/shop_product_details?select=production_min_days,production_max_days&slug=eq.'+encodeURIComponent(slug)+'&limit=1';
+   const response=await fetch(url,{headers:{apikey:key},cache:'no-store'});
+   if(!response.ok)return;
+   const records=await response.json();const record=records[0];if(!record)return;
+   const a=record.production_min_days,b=record.production_max_days;
+   if(Number.isInteger(a)&&Number.isInteger(b)&&a>=1&&b>=a&&b<=90){
+    const days=a===b?a+' iş günü':a+'–'+b+' iş günü';
+    body.textContent='Siparişiniz '+days+' içinde hazırlanarak kargoya verilir.';
+   }
+  }catch(_){/* Default noncommittal estimate remains visible. */}
+ }
+ load();
+})();
+
 (()=>{'use strict';
 if(document.getElementById('pk-product-tab-system'))return;
 const path=location.pathname.split('/').pop()||'';
