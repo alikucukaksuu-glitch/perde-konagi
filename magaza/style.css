@@ -37,3 +37,14 @@
 .compact-order-note p{white-space:pre-wrap;overflow-wrap:anywhere;margin:5px 0 0;color:#5d665f}
 @media(max-width:820px){.compact-main{grid-template-columns:1fr}.compact-title .chip{margin-left:0}.compact-right{gap:9px}.compact-money{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:470px){.compact-person{gap:5px}.compact-person strong{font-size:11px}.compact-money strong{font-size:10px}.compact-money small{font-size:9px}.compact-actions button{font-size:10px}.compact-item{grid-template-columns:16px 1fr}.compact-item .chip{grid-column:2;justify-self:start}}
+
+.compact-audit{border-top:1px solid #e3eae4;padding-top:12px;margin-top:4px;display:grid;gap:8px}
+.compact-audit>b{font-size:13px;color:#273b30}
+.audit-list{display:grid;gap:8px;font-size:12px;color:#6d756e}
+.audit-entry{border:1px solid #dfe7df;background:#fff;border-radius:9px;padding:11px;display:grid;gap:8px}
+.audit-heading{font-size:11px;font-weight:700;color:#355d43}
+.audit-changes{display:grid;gap:5px}
+.audit-change{display:grid;grid-template-columns:minmax(100px,150px) minmax(0,1fr);gap:8px;border-bottom:1px solid #f0f2ee;padding-bottom:5px}
+.audit-change strong{font-size:11px;color:#444d45}
+.audit-change span{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}
+@media(max-width:480px){.audit-change{grid-template-columns:1fr;gap:2px}}
