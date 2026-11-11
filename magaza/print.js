@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY),$=id=>document.getElementById(id);
-const q=new URLSearchParams(location.search),id=q.get('id'),orgId=q.get('org'),mode=q.get('type')==='label'?'label':'a4',reprint=q.get('reprint')==='1';
+const q=new URLSearchParams(location.search),id=q.get('id'),orgId=q.get('org'),mode=q.get('type')==='bulk'?'bulk':q.get('type')==='label'?'label':'a4',reprint=q.get('reprint')==='1';
 let order=null,company=null,branch=null,items=[],printedRequested=false;
 const fmt=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const date=s=>s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString('tr-TR'):'—';
@@ -274,7 +274,116 @@ function addLabels(){
  for(const item of labels)page.append(makeLabel(item));
  if(!labels.length)fail('Yazdırılacak etkin ürün bulunamadı');
 }
+
+async function bulkSelect(table,columns,apply){
+ const result=[];
+ for(let start=0;start<10000;start+=500){
+  const {data,error}=await apply(sb.from(table).select(columns)).range(start,start+499);
+  if(error)throw error;
+  result.push(...(data||[]));
+  if(!data||data.length<500)return result;
+ }
+ throw Error('Çok sayıda sipariş var; toplu yazdırma sınırı aşıldı.');
+}
+async function startBulk(){
+ $('print-title').textContent='İşlemdeki Siparişlerin Üretim Etiketleri';
+ $('back').href='./';
+ $('print-btn').disabled=true;
+ $('confirm-label').hidden=true;
+ if(!sb||!orgId){fail('İşletme bilgisi eksik.');return}
+ const {data:session,error:sessionError}=await sb.auth.getUser();
+ if(sessionError||!session?.user){fail('Etiket yazdırmak için giriş yapın.');return}
+ try{
+  const {data:membership,error:membershipError}=await sb.from('erp_members').select('role').eq('organization_id',orgId).eq('user_id',session.user.id).maybeSingle();
+  if(membershipError||!membership){fail('Bu işletme için etiket yazdırma yetkiniz yok.');return}
+  const [orders,branchList,{data:organization,error:companyError}]=await Promise.all([
+   bulkSelect('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_note,status,barcode_printed_at,created_at',
+    query=>query.eq('organization_id',orgId).in('status',['processing','new']).is('barcode_printed_at',null).order('created_at',{ascending:true})),
+   bulkSelect('erp_branches','id,name',query=>query.eq('organization_id',orgId)),
+   sb.from('erp_organizations').select('id,name,logo_url').eq('id',orgId).single()
+  ]);
+  if(companyError)throw companyError;
+  if(!orders.length){fail('Yazdırılmamış İşlemde siparişi bulunamadı.');return}
+  company=organization;
+  const orderIds=orders.map(o=>o.id),allItems=[];
+  for(let start=0;start<orderIds.length;start+=100){
+   const chunk=orderIds.slice(start,start+100);
+   const batch=await bulkSelect('erp_order_items','id,order_id,category,product_name,width_cm,height_cm,unit_price,production_note,barcode,status',
+    query=>query.eq('organization_id',orgId).in('order_id',chunk).order('created_at'));
+   allItems.push(...batch);
+  }
+  const byOrder=new Map();
+  allItems.forEach(item=>{
+   if(!byOrder.has(item.order_id))byOrder.set(item.order_id,[]);
+   byOrder.get(item.order_id).push(item);
+  });
+  const byBranch=new Map(branchList.map(b=>[b.id,b]));
+  const eligible=[],excluded=[];
+  for(const o of orders){
+   const group=byOrder.get(o.id)||[],active=group.filter(i=>i.status!=='cancelled');
+   if(!active.length||active.some(i=>i.status!=='processing')||!byBranch.has(o.branch_id)){
+    excluded.push('#'+o.order_number);continue;
+   }
+   eligible.push({order:o,branch:byBranch.get(o.branch_id),items:active});
+  }
+  if(!eligible.length){fail('Toplu baskıya uygun İşlemde ürünü bulunamadı. Durumları kontrol edin.');return}
+  // Tokens remain stable per item, so scanning the printed label still uses the existing receive workflow.
+  const all=eligible.flatMap(e=>e.items);
+  for(let start=0;start<all.length;start+=10){
+   const chunk=all.slice(start,start+10);
+   const results=await Promise.all(chunk.map(item=>sb.rpc('erp_get_item_receive_token',{p_org:orgId,p_item:item.id})));
+   for(let index=0;index<chunk.length;index++){
+    if(results[index].error||!results[index].data)throw results[index].error||Error('Ürüne QR kodu atanamadı.');
+    chunk[index].receiveToken=results[index].data;
+   }
+  }
+  document.body.classList.add('label-mode','bulk-label-mode');
+  const sheet=document.createElement('style');sheet.textContent='@media print{@page{size:80mm 50mm;margin:0}}';document.head.append(sheet);
+  const page=$('page');page.replaceChildren();
+  for(const group of eligible){
+   order=group.order;branch=group.branch;
+   for(const item of group.items)page.append(makeLabel(item));
+  }
+  if($('warning').textContent&&$('warning').textContent.includes('QR oluşturulamadı'))return;
+  $('warning').textContent=eligible.length+' sipariş, '+all.length+' etiket baskıya hazır.'+
+   (excluded.length?' '+excluded.length+' sipariş ürün durumları nedeniyle hariç tutuldu.':'');
+  $('print-hint').textContent='Tüm uygun etiketler tek baskı işinde açılır. Yazıcıdan çıktıyı kontrol ettikten sonra toplu onay verin. Baskı ekranını açmak tek başına sipariş durumunu değiştirmez.';
+  const flow=$('label-flow');flow.hidden=false;
+  flow.querySelector('h2').textContent='Toplu Baskı Akışı';
+  flow.querySelector('#label-order-no').textContent=String(eligible.length)+' sipariş';
+  flow.querySelector('#label-count').textContent=String(all.length);
+  $('print-btn').disabled=false;
+  $('print-btn').onclick=()=>{
+   printedRequested=true;
+   $('confirm-label').hidden=false;
+   $('confirm-label').disabled=false;
+   window.print();
+  };
+  $('confirm-label').textContent='Yazdırıldı · Seçili Siparişleri Atölyeye Gönder';
+  $('confirm-label').onclick=async()=>{
+   if(!printedRequested)return;
+   if(!confirm(eligible.length+' siparişin '+all.length+' etiketi gerçekten basıldı mı? Onay, uygun siparişleri Atölyede durumuna geçirir ve tekrar ilk baskıyı engeller.'))return;
+   $('confirm-label').disabled=true;$('print-btn').disabled=true;
+   let ok=0;const failures=[];
+   for(const group of eligible){
+    const {error}=await sb.rpc('erp_mark_barcode_printed',{p_org:orgId,p_order:group.order.id});
+    if(error)failures.push('#'+group.order.order_number+': '+error.message);
+    else ok++;
+   }
+   if(failures.length){
+    $('warning').textContent=ok+' sipariş Atölyede durumuna geçirildi; '+failures.length+' sipariş güncellenemedi. '+failures.slice(0,4).join(' | ')+'. Sayfayı yenileyerek kalanları kontrol edin.';
+    $('print-hint').textContent='Tekrar baskıya geçmeden önce güncellenmeyen siparişleri kontrol edin. Baskı onayı verilmiş etiketlerin yeniden basılması yönetici yetkisi gerektirir.';
+   }else{
+    $('warning').textContent=ok+' siparişin etiket baskısı onaylandı. Siparişler Atölyede.';
+    $('print-hint').textContent='Toplu baskı tamamlandı. Siparişler sayfasına dönebilirsiniz.';
+   }
+   $('confirm-label').hidden=true;
+  };
+ }catch(e){fail('Toplu baskı hazırlanamadı: '+e.message)}
+}
+
 async function start(){
+ if(mode==='bulk'){await startBulk();return}
  $('print-title').textContent=mode==='label'?'Üretim Barkod Etiketleri':'A4 Müşteri Çıktısı';
  $('back').href='./order-new.html?org='+encodeURIComponent(orgId||'')+'&edit='+encodeURIComponent(id||'');
  if(!sb||!id||!orgId){fail('Eksik bağlantı veya giriş bilgisi');return}
