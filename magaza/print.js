@@ -48,19 +48,45 @@ function addA4(){
  }page.append(totals);
  txt(page,'div','a4-footer','ÖZEL SİPARİŞ YAPILAN TÜLLERDE DEĞİŞİM YAPILMAMAKTADIR. MÜŞTERİ KAYNAKLI HATALI ÖLÇÜLERDE ÜCRET ALINIR.');
 }
+function parseProductionInfo(note){
+ const source=String(note||'');
+ const lines=source.split(/\r?\n/);
+ const first=lines[0]||'';
+ const prefix=/^Özellikler:\s*/i.test(first);
+ const metadata=prefix?first.replace(/^Özellikler:\s*/i,''):'';
+ const parts=metadata.split(/\s*;\s*/).filter(Boolean);
+ const pilePart=parts.find(part=>/^Pile:\s*/i.test(part));
+ const pile=pilePart?pilePart.replace(/^Pile:\s*/i,'').trim():'';
+ const extra=parts.filter(part=>!/^(Pile|Baz Fiyat):\s*/i.test(part)).join('; ');
+ const noteLines=prefix?lines.slice(1):lines;
+ const cleanNote=noteLines.join('\n').replace(/(?:^|[;\n]\s*)Baz Fiyat:\s*[\d.,]+/gi,'').trim();
+ return {pile,detail:[extra,cleanNote].filter(Boolean).join(' · ')};
+}
 function makeLabel(item){
  const box=el('article','thermal-label');
- const top=el('div','label-top');txt(top,'span','','#'+order.order_number+' · '+order.customer_name);txt(top,'span','',branch.name);box.append(top);
+ const info=parseProductionInfo(item.production_note);
+ const head=el('div','label-top');
+ txt(head,'strong','','#'+order.order_number+' · '+order.customer_name);
+ txt(head,'span','',branch.name);
+ box.append(head);
  txt(box,'h3','',item.category+' · '+item.product_name);
- txt(box,'p','','Adet: 1 · En: '+(item.width_cm??'—')+' cm · Boy: '+(item.height_cm??'—')+' cm');
- if(item.production_note)txt(box,'p','label-note','Ürün Notu: '+item.production_note);
+ const specs=el('div','label-specs');
+ txt(specs,'span','','Adet: 1');
+ txt(specs,'span','','En: '+(item.width_cm??'—')+' cm');
+ txt(specs,'span','','Boy: '+(item.height_cm??'—')+' cm');
+ txt(specs,'span','','Pile: '+(info.pile||'Belirtilmedi'));
+ box.append(specs);
+ if(info.detail)txt(box,'p','label-note','Üretim Notu: '+info.detail);
  if(order.customer_note)txt(box,'p','label-note','Sipariş Notu: '+order.customer_note);
- const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('barcode-graphic');
- box.append(svg);
- txt(box,'div','barcode-text',item.barcode);
+ const graphic=el('div','label-barcode');
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ svg.classList.add('barcode-graphic');graphic.append(svg);
+ txt(graphic,'div','barcode-text',item.barcode);
+ box.append(graphic);
  try{
   if(!window.JsBarcode)throw Error('Barkod kütüphanesi yüklenemedi');
-  window.JsBarcode(svg,item.barcode,{format:'CODE128',displayValue:false,margin:0,height:40,width:1.4});
+  if(!item.barcode)throw Error('Ürün barkod değeri bulunamadı');
+  window.JsBarcode(svg,item.barcode,{format:'CODE128',displayValue:false,margin:0,height:40,width:1.2});
  }catch(e){fail('Barkod çizimi başarısız: '+e.message)}
  return box;
 }
@@ -96,6 +122,8 @@ async function start(){
   addLabels();
   if($('warning').textContent)return;
   $('print-hint').textContent='Baskıyı başlatın. Çıktının gerçekten alındığını kontrol ettikten sonra “Yazdırıldı · Atölyeye Gönder” düğmesine basın. Bu onay barkodu kilitler ve siparişi Atölyede durumuna geçirir.';
+  const flow=$('label-flow');
+  if(flow){flow.hidden=false;flow.querySelector('#label-order-no').textContent='#'+order.order_number;flow.querySelector('#label-count').textContent=String(items.filter(i=>i.status!=='cancelled').length);}
  }else{
   addA4();$('print-hint').textContent='A4 müşteri formu. Üretim barkodlarını ayrıca Barkod Yazdır üzerinden alın.';
  }
