@@ -7,6 +7,10 @@ const asNum=v=>Number(v)||0;
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let user=null,org=null,branches=[],existingCustomers=[],products=new Map(),active=null,saving=false,editing=null;
 const key=(category,index)=>category+'|'+index;
+const pileFactors={'1.0x':1,'2.0x':2,'3.0x':3,'3.5x':3.5,'4.5x':4.5,'Özel':1,'':1};
+const pileFactor=(pile)=>pileFactors[pile]??1;
+const rounded=(n)=>Math.round((Number(n)+Number.EPSILON)*100)/100;
+const priceFromBase=(base,pile)=>rounded(Number(base)*pileFactor(pile));
 function alertText(text){$('order-alert').textContent=text;$('order-alert').hidden=!text;window.scrollTo({top:0,behavior:'smooth'})}
 function setDate(days){
  const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+days);
@@ -113,7 +117,7 @@ function openItem(category,index){
  $('product-name').value=value?.name||'';
  $('product-width').value=value?.width??'';
  $('product-height').value=value?.height??'';
- $('product-price').value=value?.price??'';
+ $('product-price').value=value?(value.basePrice??value.price):'';
  $('product-quantity').value=value?.qty??1;
  $('product-pile').value=value?.pile||'';
  $('product-spec').value=value?.spec||'';
@@ -131,12 +135,12 @@ function openItem(category,index){
  $('product-name').focus();
 }
 function closeItem(){$('product-overlay').hidden=true;active=null}
-function calculateItemTotal(){$('product-total').textContent=fmt(asNum($('product-price').value)*asNum($('product-quantity').value))}
+function calculateItemTotal(){const p=$('product-pile').value,factor=pileFactor(p),base=asNum($('product-price').value),qty=asNum($('product-quantity').value);$('product-total').textContent=fmt(priceFromBase(base,p)*qty);$('pile-price-hint').textContent='Hesap: '+fmt(base)+' × '+String(factor).replace('.',',')+' (pile) × '+qty+' adet = '+fmt(priceFromBase(base,p)*qty)+(p==='Özel'?' · Özel pile için temel fiyat doğrudan kullanılır.':'');}
 function storeItem(e){
  e.preventDefault();
- const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),price=Number($('product-price').value);
+ const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=$('product-pile').value,price=priceFromBase(basePrice,pile);
  const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value;
- if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(price)||price<0||price>99999999){$('product-status-message').textContent='Ürün adı, fiyatı veya adedi geçersiz.';return}
+ if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(basePrice)||basePrice<0||!Number.isFinite(price)||price<0||price>99999999){$('product-status-message').textContent='Ürün adı, fiyatı veya adedi geçersiz.';return}
  if((width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))||(height!==''&&(!Number.isFinite(Number(height))||Number(height)<0))){$('product-status-message').textContent='En ve boy negatif olamaz.';return}
  const oldKey=key(active.category,active.index),old=products.get(oldKey);
  if(old&&['ready','delivered'].includes(old.status)){ $('product-status-message').textContent='Teslim alınmış ürün üretim bilgilerinde değişiklik yapılamaz.';return }
@@ -149,7 +153,7 @@ function storeItem(e){
  }
  const totalBefore=[...products.values()].reduce((n,p)=>n+p.qty,0)-(old?.qty||0);
  if(totalBefore+qty>60){$('product-status-message').textContent='Bir siparişte en fazla 60 fiziksel parça eklenebilir.';return}
- const record={name,qty,price,width,height,pile:$('product-pile').value,spec:$('product-spec').value.trim(),note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||'processing'};
+ const record={name,qty,price,basePrice,width,height,pile,spec:$('product-spec').value.trim(),note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||'processing'};
  products.delete(oldKey);products.set(key(category,index),record);
  closeItem();drawSlots();
 }
@@ -178,6 +182,7 @@ function stage(next){
  $('step-label').textContent=next===1?'1 / 2 · Müşteri Bilgileri':'2 / 2 · Sipariş ve Ürünler';
  if(next===2){
   $('order-status-display').value=editing?.status==='new'?'processing':editing?.status||'processing';
+  syncOrderStatusOptions();
   $('summary-customer').textContent=$('customer-name').value.trim();
   $('summary-phone').textContent=$('customer-phone').value.trim()||'—';
   $('summary-delivery').textContent=$('delivery-date').value?new Date($('delivery-date').value+'T12:00:00').toLocaleDateString('tr-TR'):'—';
@@ -246,7 +251,12 @@ async function loadForEdit(orderId,orgId){
    const notes=line.production_note||'';
    const spec=notes.startsWith('Özellikler: ')?notes.split('\n')[0].replace('Özellikler: ',''):'';
    const specParts=spec.match(/^Pile:\s*([^;]+)(?:;\s*(.*))?$/);
-   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:specParts?.[1]||'',spec:specParts?.[2]||(!specParts?spec:''),status:line.status||'processing',note:spec?notes.split('\n').slice(1).join('\n'):notes});
+   const baseMatch=spec.match(/(?:^|;\s*)Baz Fiyat:\s*(\d+(?:\.\d+)?)/);
+   const parsedPile=specParts?.[1]||'';
+   const legacyBase=Number(line.unit_price)/pileFactor(parsedPile);
+   const basePrice=baseMatch?Number(baseMatch[1]):rounded(legacyBase);
+   const detailedSpec=(specParts?.[2]||(!specParts?spec:''))?.replace(/(?:^|;\s*)Baz Fiyat:\s*\d+(?:\.\d+)?/,'').trim().replace(/^;\s*|;\s*$/g,'');
+   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,status:line.status||'processing',note:spec?notes.split('\n').slice(1).join('\n'):notes});
   }
   $('store-select').value=order.branch_id;
   $('customer-name').value=order.customer_name;
@@ -276,7 +286,7 @@ async function submit(){
  if(!$('delivery-copy').value||!org||!branches.some(b=>b.id===$('store-select').value)){alertText('Teslim tarihini ve şubeyi kontrol edin.');return}
  const payload=[];
  for(const [slot,p] of products){
-  const category=slot.split('|')[0],spec=[p.pile&&'Pile: '+p.pile,p.spec].filter(Boolean).join('; '),fullNote=[spec&&'Özellikler: '+spec,p.note].filter(Boolean).join('\n');
+  const category=slot.split('|')[0],spec=[p.pile&&'Pile: '+p.pile, 'Baz Fiyat: '+(p.basePrice??p.price),p.spec].filter(Boolean).join('; '),fullNote=[spec&&'Özellikler: '+spec,p.note].filter(Boolean).join('\n');
   for(let i=0;i<p.qty;i++)payload.push({id:p.id||null,slot_key:key(category,Number(slot.split('|')[1]))+(p.qty>1?'-'+i:''),category,product_name:p.name,width_cm:p.width||null,height_cm:p.height||null,unit_price:p.price,production_note:fullNote});
  }
  saving=true;$('submit-order').disabled=true;$('save-message').textContent='Kaydediliyor...';
@@ -306,6 +316,37 @@ $('delivery-copy').onchange=()=>{$('delivery-date').value=$('delivery-copy').val
 $('type-copy').onchange=()=>{$('order-type').value=$('type-copy').value};
 $('note-copy').oninput=()=>{$('order-note').value=$('note-copy').value};
 $('product-form').onsubmit=storeItem;
+$('order-status-display').onchange=async()=>{
+ const select=$('order-status-display'),previous=editing?.status||'processing',next=select.value;
+ if(!editing){select.value='processing';return}
+ if(previous===next)return;
+ if(!((previous==='processing'&&next==='waiting')||(previous==='waiting'&&next==='processing'))){
+  select.value=previous;$('order-status-help').textContent='Atölyeye geçiş barkod baskısıyla, mağaza kabulü barkod okutularak yapılır.';return;
+ }
+ let reason=null;
+ if(next==='waiting'){
+  reason=prompt('Sipariş neden Beklemede? Müşteriden beklenen bilgiyi yazın:','');
+  if(reason===null||reason.trim().length<3){select.value=previous;$('order-status-help').textContent='En az 3 karakterlik bekleme nedeni zorunlu.';return}
+ }
+ select.disabled=true;$('order-status-help').textContent='Durum kaydediliyor...';
+ try{
+  const {error}=await sb.rpc('erp_set_order_waiting',{p_org:org.id,p_order_id:editing.id,p_action:next==='waiting'?'wait':'resume',p_reason:reason?.trim()||null});
+  if(error)throw error;
+  const {data,error:readError}=await sb.from('erp_orders').select('updated_at,status,waiting_reason').eq('organization_id',org.id).eq('id',editing.id).single();
+  if(readError)throw readError;
+  Object.assign(editing,data);
+  $('order-status-help').textContent=next==='waiting'?'Beklemede: '+data.waiting_reason:'Sipariş İşlemde durumuna alındı.';
+  drawSlots();
+ }catch(e){select.value=previous;$('order-status-help').textContent='Durum değiştirilemedi: '+e.message}
+ finally{select.disabled=false;syncOrderStatusOptions()}
+};
+function syncOrderStatusOptions(){
+ const select=$('order-status-display'),current=editing?.status||'processing';
+ for(const option of select.options){
+  option.disabled=editing?!((current==='processing'||current==='waiting')&&(option.value==='processing'||option.value==='waiting')||option.value===current):option.value!=='processing';
+ }
+ select.disabled=!editing||!['processing','waiting'].includes(current);
+}
 $('product-status').onchange=async()=>{
  if(!active)return;
  const item=products.get(key(active.category,active.index)),select=$('product-status');
@@ -327,6 +368,7 @@ $('product-status').onchange=async()=>{
 $('delete-product').onclick=()=>{if(!active)return;removeItem(active.category,active.index)};
 $('product-shade').onclick=$('close-product').onclick=closeItem;
 ['product-price','product-quantity'].forEach(id=>$(id).oninput=calculateItemTotal);
+$('product-pile').onchange=calculateItemTotal;
 ['discount-percent','discount-amount','paid-value'].forEach(id=>$(id).oninput=updateMoney);
 $('submit-order').onclick=submit;
 $('order-logout').onclick=async()=>{await sb.auth.signOut();location.href='./'};
