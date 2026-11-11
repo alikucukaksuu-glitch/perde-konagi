@@ -130,8 +130,8 @@ function makeLabel(item){
  txt(companyText,'small','','#'+order.order_number+' · '+branch.name);
  heading.append(companyText);head.append(heading);
  box.append(head);
- txt(box,'div','qr-customer',order.customer_name);
- txt(box,'h3','',item.category+' · '+item.product_name);
+ txt(box,'div','qr-customer','MÜŞTERİ: '+(order.customer_name||'—'));
+ txt(box,'h3','','ÜRÜN: '+item.product_name);
  const split=el('div','qr-label-mid'),left=el('div','qr-label-info'),right=el('div','qr-label-code');
  const specs=el('div','label-specs');
  const isStor=item.category==='STOR PERDE',isPlise=item.category==='PLİSE PERDE',isWood=item.category==='AHŞAP JALUZİ';
