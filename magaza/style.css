@@ -81,3 +81,21 @@
 .compact-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
 .compact-actions button{min-height:35px}
 @media(max-width:500px){.finance-modal{padding:16px}.finance-modal-stats strong{font-size:11px}}
+
+/* QR camera scanning — KONAK ERP */
+.qr-main-btn{font-weight:700!important;border-color:#9eb3a6!important;background:#fff!important;color:#1c3e2a!important}
+.qr-scan-backdrop{position:fixed;inset:0;background:#0b211ac7;z-index:750;display:flex;align-items:center;justify-content:center;padding:12px;overflow-y:auto}
+.qr-scan-backdrop[hidden]{display:none!important}
+.qr-scan-dialog{width:min(450px,100%);background:#fff;border-radius:15px;padding:19px;box-shadow:0 15px 40px #0003;display:grid;gap:12px}
+.qr-scan-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.qr-scan-head small{color:#96753f;font-size:10px;letter-spacing:1px;font-weight:800}
+.qr-scan-head h2{margin:4px 0;font-size:22px}
+.qr-scan-dialog p{font-size:12px;line-height:1.5;color:#617468;margin:0}
+.qr-camera{width:100%;min-height:220px;background:#14241d;border-radius:10px;overflow:hidden;color:white}
+.qr-camera video{width:100%;height:auto}
+.qr-scan-message{font-size:12px;min-height:18px;color:#a05c17!important;font-weight:600}
+.qr-paste-label{font-size:12px;font-weight:700;display:grid;gap:7px}
+.qr-paste-label input{width:100%;font-size:12px;min-width:0}
+.qr-scan-actions{display:flex;gap:9px;justify-content:flex-end}
+.qr-scan-actions button{min-height:39px}
+@media(max-width:600px){.qr-scan-dialog{padding:15px}.qr-camera{min-height:180px}.qr-main-btn{flex-basis:100%}}
