@@ -50,9 +50,24 @@ function mount(){
  render();
  button.addEventListener('click',async()=>{
   if(busy)return;
-  if(!user){location.href='hesabim.html';return}
   busy=true;button.disabled=true;
   try{
+   // Recheck current auth on click: the earlier background check may still be pending.
+   const auth=await sb.auth.getUser();
+   if(auth.error)throw auth.error;
+   user=auth.data?.user||null;
+   if(!user){
+    const notice=document.getElementById('pk-fav-auth-notice')||document.createElement('div');
+    notice.id='pk-fav-auth-notice';
+    notice.setAttribute('role','status');
+    notice.style.cssText='position:fixed;z-index:9999;bottom:22px;left:50%;transform:translateX(-50%);max-width:min(92vw,440px);width:max-content;background:#2c332b;color:#fff;padding:14px 18px;border-radius:12px;box-shadow:0 6px 24px #0003;font:13px/1.5 Arial,sans-serif;text-align:center';
+    notice.replaceChildren();
+    const label=document.createElement('span');label.textContent='Favorileri hesabınızda saklamak için giriş yapmanız gerekiyor. ';
+    const link=document.createElement('a');link.href='hesabim.html';link.textContent='Giriş yap';link.style.cssText='color:#ffdb9d;text-decoration:underline;font-weight:bold;white-space:nowrap';
+    notice.append(label,link);document.body.append(notice);
+    clearTimeout(notice.pkTimeout);notice.pkTimeout=setTimeout(()=>notice.remove(),6500);
+    return;
+   }
    const response=stored
     ?await sb.from('customer_favorites').delete().eq('user_id',user.id).eq('product_slug',slug)
     :await sb.from('customer_favorites').insert({user_id:user.id,product_slug:slug});
