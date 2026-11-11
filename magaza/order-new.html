@@ -1,4 +1,4 @@
-<!doctype html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Yeni Sipariş | KONAK ERP</title><link rel="stylesheet" href="./style.css?v=account-2"><link rel="stylesheet" href="./order-new.css?v=stor-options-fix-2"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="./order-new.js?v=plise-rounding-1"></script></head>
+<!doctype html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Yeni Sipariş | KONAK ERP</title><link rel="stylesheet" href="./style.css?v=account-2"><link rel="stylesheet" href="./order-new.css?v=plise-options-20261111"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="./order-new.js?v=plise-options-20261111"></script></head>
 <body>
 <header class="topbar"><div class="shell navline"><a href="./" class="brand"><b>KONAK<span> ERP</span></b><small>Perde Mağazası Yönetimi</small></a><nav class="navigation"><a href="./">Siparişler</a><a href="./missing.html" class="secondary" style="padding:9px 12px;border-radius:9px;font-size:12px">Eksik Ürünler</a><a href="./hub.html?tab=products">Ürünler</a><a href="./hub.html?tab=workshop">Atölye</a><a href="./hub.html?tab=customers">Müşteriler</a></nav><div class="user-panel"><details class="account-menu"><summary>☻ &nbsp; Hesabım ▾</summary><div class="account-dropdown"><div id="order-user-email" class="account-identity">Hesabım</div><a href="./company.html#account">Hesap Bilgileri</a><a href="./missing.html">Eksik Ürünler</a><a href="./company.html#company-profile">Şirket Ayarları</a><a href="./company.html#branches">Şubeler</a><button type="button" id="order-logout">Çıkış Yap</button></div></details></div></div></header>
 <main class="order-shell">
@@ -31,6 +31,22 @@
 <div class="three-inputs"><label>Adet<input id="product-quantity" type="number" min="1" max="20" step="1" value="1" required></label><label>En (cm)<input id="product-width" type="number" min="0" step=".01"></label><label>Boy (cm)<input id="product-height" type="number" min="0" step=".01"></label></div>
 <div class="two" id="unit-options-row"><label id="pile-selection-row">Pile Sıklığı / Dikim<select id="product-pile"><option value="">Seçiniz</option><option value="1.0x">1.0x · Düz Dikim</option><option value="2.0x">2.0x · Normal Pile</option><option value="3.0x">3.0x · Sık Pile</option><option value="3.5x">3,5x · Ekstra Sık Pile</option><option value="4.5x">4,5x · Ekstra Sık Pile</option><option value="Özel">Özel</option></select></label><label>Temel Birim Fiyat (₺) *<input id="product-price" type="number" min="0" step=".01" required></label></div>
 <section id="stor-options" class="stor-options" hidden><div class="stor-head"><strong>Stor Perde Özelleştirmeleri</strong><span>Minimum fiyatlandırma: En 100 cm · Boy 200 cm</span></div><label class="stor-option-title">Kasa Seçeneği<select id="stor-case"><option value="open">Açık Kasa – Ücretsiz</option><option value="classic">Kapalı Kasa Klasik – +140 TL/metre</option><option value="colored">Kapalı Kasa Renkli – +170 TL/metre</option></select></label><label id="stor-color-row" hidden>Kasa Rengi<select id="stor-color"></select></label><div class="stor-two"><label>Zincir Tipi<select id="stor-chain"><option value="plastic">Plastik Zincir – Ücretsiz</option><option value="metal">Metal Zincir – +105 TL</option></select></label><label>Zincir Yönü<select id="stor-side"><option value="left">Sol</option><option value="right">Sağ</option></select></label><label>Boru Tipi<select id="stor-tube"><option value="32">32'lik Standart Boru – Ücretsiz</option><option value="38">38'lik Jumbo Boru – +200 TL/metre</option></select></label><label>Yan Ayak<select id="stor-foot"><option value="plastic">Plastik Yan Ayak</option><option value="metal">Metal Yan Ayak</option></select></label></div><div id="stor-calculation" class="stor-calculation">En ve boy ölçülerini girin.</div></section>
+<section id="plise-options" class="stor-options" hidden>
+ <div class="stor-head"><strong>Plise Perde Özelleştirmeleri</strong><span>0,1 cm hassasiyet · Fiyatta üst tam santimetre · Minimum 1 m²</span></div>
+ <label>Montaj Şekli
+  <select id="plise-mount">
+   <option value="Vidalı Montaj">Vidalı Montaj</option>
+   <option value="Yapışkanlı Montaj">Yapışkanlı Montaj</option>
+   <option value="Pratik Montaj">Pratik Montaj</option>
+   <option value="Askılı Montaj">Askılı Montaj</option>
+  </select>
+ </label>
+ <label>Kasa Rengi
+  <select id="plise-case-color">
+   <option>Beyaz</option><option>Krem</option><option>Siyah</option><option>Antrasit</option><option>Vizon</option><option>Gri</option>
+  </select>
+ </label>
+</section>
 <p id="pile-price-hint" class="pile-price-hint">Pile seçildiğinde fiyat otomatik hesaplanır.</p><label>Ek Dikim / Mekanizma Bilgisi<input id="product-spec" maxlength="500" placeholder="Örn. Korniş düğmeli veya mekanizma rengi"></label>
 <label id="product-status-wrapper">Satır Durumu<select id="product-status"><option value="processing">İşlemde</option><option value="workshop">Atölyede</option><option value="ready" disabled>Mağazada – Teslime Hazır (barkodla)</option><option value="delivered" disabled>Teslim Edildi</option><option value="cancelled">İptal</option></select></label>
 <label>Ürüne Özel Satır Notu<textarea id="product-note" rows="3" maxlength="950" placeholder="Ürün barkodunda görünecek üretim notu"></textarea></label>
