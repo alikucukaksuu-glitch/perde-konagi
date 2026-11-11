@@ -119,13 +119,13 @@ function openItem(category,index){
  $('product-spec').value=value?.spec||'';
  $('product-note').value=value?.note||'';
  $('product-status').value=value?.status||'processing';
- $('product-status').disabled=!!value?.id||!editing;
- $('product-status-wrapper').title=value?.id?'Kayıtlı ürünün durumunu kutucuk üzerindeki menüden değiştirin.':'Sipariş kaydedilince ürün İşlemde durumunda başlar.';
+ $('product-status').disabled=!value?.id||['ready','delivered'].includes(value.status)||['waiting','delivered','cancelled'].includes(editing?.status);
+ $('product-status-wrapper').title=value?.id?'Durum değişikliği seçildiğinde anında kaydedilir.':'Sipariş kaydedilince ürün İşlemde durumunda başlar.';
  $('delete-product').hidden=!value;
  $('delete-product').disabled=!!value&&['ready','delivered'].includes(value.status);
  $('product-quantity').disabled=!!value?.id;
  if(value?.id)$('product-quantity').value='1';
- $('product-status-message').textContent=value?.id?'Durum değişiklikleri doğrudan kutucuk üzerindeki menüden kaydedilir.':'';
+ $('product-status-message').textContent=value?.id?'Satır durumu seçildiğinde hemen kaydedilir. Ürün bilgileri için ayrıca Kaydet butonuna basın.':'';
  $('product-overlay').hidden=false;
  calculateItemTotal();
  $('product-name').focus();
@@ -306,6 +306,24 @@ $('delivery-copy').onchange=()=>{$('delivery-date').value=$('delivery-copy').val
 $('type-copy').onchange=()=>{$('order-type').value=$('type-copy').value};
 $('note-copy').oninput=()=>{$('order-note').value=$('note-copy').value};
 $('product-form').onsubmit=storeItem;
+$('product-status').onchange=async()=>{
+ if(!active)return;
+ const item=products.get(key(active.category,active.index)),select=$('product-status');
+ if(!item?.id)return;
+ const before=item.status,next=select.value;
+ select.disabled=true;$('product-status-message').textContent='Durum kaydediliyor...';
+ try{
+  await updateItemStatus(item,next);
+  item.status=next;
+  $('product-status-message').textContent='Satır durumu kaydedildi: '+statusNames[next]+'.';
+  drawSlots();
+ }catch(err){
+  select.value=before;
+  $('product-status-message').textContent='Durum değiştirilemedi: '+err.message;
+ }finally{
+  select.disabled=['ready','delivered'].includes(item.status)||['waiting','delivered','cancelled'].includes(editing?.status);
+ }
+};
 $('delete-product').onclick=()=>{if(!active)return;removeItem(active.category,active.index)};
 $('product-shade').onclick=$('close-product').onclick=closeItem;
 ['product-price','product-quantity'].forEach(id=>$(id).oninput=calculateItemTotal);
