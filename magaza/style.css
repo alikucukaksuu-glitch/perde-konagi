@@ -48,3 +48,18 @@
 .audit-change strong{font-size:11px;color:#444d45}
 .audit-change span{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}
 @media(max-width:480px){.audit-change{grid-template-columns:1fr;gap:2px}}
+
+/* Processing / waiting workflow */
+.chip.processing,.chip.new{background:#e8f0ff;color:#255996}
+.chip.waiting{background:#fff0d9;color:#915c13}
+.waiting-controls{border-top:1px solid #e6ebe6;margin-top:11px;padding:11px 1px 0;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.waiting-controls .waiting-open{font-size:12px}
+.wait-form{flex-basis:100%;padding:13px;background:#fffaf0;border:1px solid #f0debe;border-radius:10px;display:grid;gap:9px}
+.wait-form[hidden]{display:none!important}
+.wait-form textarea{min-height:64px;resize:vertical}
+.wait-buttons{display:flex;justify-content:flex-end;gap:8px}
+.wait-current{flex:1;min-width:180px}
+.wait-current b{font-size:12px;color:#926119}
+.wait-current p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:#795f3e;margin:4px 0 0}
+.waiting-controls.is-waiting{background:#fff8ea;border:1px solid #efddbb;border-radius:9px;padding:12px}
+@media(max-width:520px){.waiting-controls.is-waiting{align-items:stretch;flex-direction:column}.wait-buttons button{flex:1}}
