@@ -103,6 +103,8 @@ function render(){
   '</div><div class="compact-actions">'+
    '<button class="secondary" type="button" data-print-a4="'+escapeHtml(o.id)+'">▣ A4 Yazdır</button>'+ 
    '<button class="secondary" type="button" data-print-label="'+escapeHtml(o.id)+'" '+(o.barcode_printed_at?!['owner','manager'].includes(memberRole)?'disabled title="Tekrar baskı yalnızca yönetici yetkisiyle yapılabilir"':'':!['processing','new'].includes(o.status)?'disabled title="Barkod ilk kez yalnızca İşlemde durumunda basılabilir"':'')+'>'+(o.barcode_printed_at?'▥ QR Etiketi Tekrar Yazdır':'▥ Barkod Yazdır')+'</button>'+
+   (rows.some(i=>['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ'].includes(i.category)&&i.status!=='cancelled')&&o.status!=='cancelled'?
+   '<button class="secondary" type="button" data-whatsapp-order="'+escapeHtml(o.id)+'">◉ WhatsApp’tan Gönder</button>':'')+
    '<button class="secondary" type="button" data-edit="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
    '<button class="secondary" type="button" data-payment="'+escapeHtml(o.id)+'" '+(remaining<=0||o.status==='cancelled'?'disabled':'')+'>◷ Ödeme Ekle</button>'+
    '<button class="secondary compact-delete" type="button" data-delete="'+escapeHtml(o.id)+'" '+(!['owner','manager'].includes(memberRole)||['cancelled','ready','partial_ready','delivered'].includes(o.status)?'disabled title="Silme yetkisi yöneticidedir; teslim aşamasındaki siparişler silinemez"':'')+'>▤ Sil</button>'+
@@ -370,6 +372,8 @@ $('orders-list').onclick=e=>{
  if(confirmWait){setWaiting(confirmWait.dataset.confirmWait,'wait');return;}
  const resume=e.target.closest('[data-resume]');
  if(resume){setWaiting(resume.dataset.resume,'resume');return;}
+ const whatsappOrder=e.target.closest('[data-whatsapp-order]');
+ if(whatsappOrder){location.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(whatsappOrder.dataset.whatsappOrder)+'&whatsapp=1';return;}
  const printA4=e.target.closest('[data-print-a4]');if(printA4){openPrint(printA4.dataset.printA4,'a4');return;}
  const printLabel=e.target.closest('[data-print-label]');if(printLabel){openPrint(printLabel.dataset.printLabel,'label');return;}
  const payment=e.target.closest('[data-payment]');if(payment){addPayment(payment.dataset.payment);return;}
