@@ -62,7 +62,44 @@ function render(){
  $('page-caption').textContent=filtered.length+' kayıt · Sayfa '+(page+1)+' / '+totalPages;
  $('prev').disabled=page===0;$('next').disabled=page===totalPages-1;
  renderMethods();renderTrend(visible);renderRecent();renderBranches();
+ renderDailyCard();
  feedback(filtered.length+' kayıt listelendi. Kasa neti filtrelenmiş dönem yerine tüm kayıtlı hareketlerden hesaplanır.');
+}
+
+function renderDailyCard(){
+ const select=$('daily-branch'),day=$('daily-date').value;
+ if(!select||!day)return;
+ const branch=select.value;
+ const items=rows.filter(r=>r.branch_id===branch&&localDate(r.date)===day).sort((a,b)=>new Date(a.date)-new Date(b.date));
+ const incomes=items.filter(r=>r.direction==='income'),expenses=items.filter(r=>r.direction==='expense');
+ const byMethod=method=>incomes.filter(r=>r.method===method).reduce((total,r)=>total+Number(r.amount||0),0);
+ const income=incomes.reduce((total,r)=>total+Number(r.amount||0),0);
+ const expense=expenses.reduce((total,r)=>total+Number(r.amount||0),0);
+ const sales=orders.filter(o=>o.branch_id===branch&&o.status!=='cancelled'&&localDate(o.created_at)===day).reduce((total,o)=>total+Number(o.total_amount||0),0);
+ const b=branches.find(x=>x.id===branch);
+ $('daily-print-subtitle').textContent=(b?.name||'Şube seçilmedi')+' · '+day.split('-').reverse().join('.');
+ $('daily-cash').textContent=money(byMethod('cash'));
+ $('daily-card-amount').textContent=money(byMethod('card'));
+ $('daily-transfer').textContent=money(byMethod('transfer'));
+ $('daily-income').textContent=money(income);
+ $('daily-sales').textContent=money(sales);
+ $('daily-expenses').textContent='−'+money(expense);
+ $('daily-net').textContent=money(income-expense);
+ $('daily-count').textContent=items.length+' işlem';
+ const orderMap=new Map(orders.map(o=>[o.id,o]));
+ $('daily-entries').innerHTML=items.map(r=>{
+  const order=orderMap.get(r.order_id);
+  const clock=new Date(r.date).toLocaleTimeString('tr-TR',{timeZone:'Europe/Istanbul',hour:'2-digit',minute:'2-digit'});
+  return '<tr><td>'+esc(clock)+'</td><td><span class="type '+r.direction+'">'+(r.direction==='income'?'Tahsilat':'Gider')+'</span></td><td>'+esc(r.description)+(r.initial?' <small>(eski kayıt)</small>':'')+'</td><td>'+esc([r.customer,order?'#'+order.order_number:''].filter(Boolean).join(' · ')||'—')+'</td><td>'+esc(methodLabel[r.method]||r.method)+'</td><td class="amount '+r.direction+'">'+(r.direction==='expense'?'−':'')+money(r.amount)+'</td></tr>'
+ }).join('')||'<tr><td colspan="6">Bu şube ve tarihte kasa hareketi bulunamadı.</td></tr>';
+}
+function syncDailyBranches(){
+ const preferred=$('daily-branch').value;
+ $('daily-branch').innerHTML=branches.map(b=>'<option value="'+esc(b.id)+'">'+esc(b.name)+'</option>').join('');
+ if(branches.some(b=>b.id===preferred))$('daily-branch').value=preferred;
+ else if(branches.some(b=>b.id===$('branch').value))$('daily-branch').value=$('branch').value;
+ $('daily-print').disabled=!branches.length;
+ renderDailyCard();
 }
 function renderMethods(){
  const sums={card:0,cash:0,transfer:0};
@@ -121,7 +158,7 @@ async function load(){
   const old=$('branch').value;
   $('branch').innerHTML='<option value="">Tüm Şubeler</option>'+branches.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');
   if(branches.some(b=>b.id===old))$('branch').value=old;
-  apply();
+  apply();syncDailyBranches();
  }catch(e){feedback('Veriler yüklenemedi: '+e.message,true)}
  finally{loading=false}
 }
@@ -198,6 +235,13 @@ function exportPdf(){
  if(!printed){doc.setTextColor(130,140,130);doc.text('Secili filtrede kayit bulunamadi.',13,46)}
  doc.save('KONAK_ERP_Kasa_'+localDate(new Date())+'.pdf');
 }
+$('daily-date').value=localDate(new Date());
+$('daily-date').onchange=renderDailyCard;
+$('daily-branch').onchange=renderDailyCard;
+$('daily-print').onclick=()=>{
+ if(!$('daily-branch').value||!$('daily-date').value){feedback('Yazdırmak için şube ve tarih seçin.',true);return}
+ window.print();
+};
 $('org').onchange=()=>{$('branch').value='';load()};
 $('branch').onchange=apply;$('apply').onclick=apply;
 $('reset').onclick=()=>{$('branch').value='';$('start').value='';$('end').value='';$('method').value='';$('search').value='';apply()};
