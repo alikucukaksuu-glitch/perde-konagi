@@ -101,6 +101,14 @@ document.addEventListener('click',event=>{
 });
 for(const link of document.querySelectorAll('[data-view]'))link.addEventListener('pointerenter',()=>{if(allowed[link.dataset.view]!==false)ensureFrame(link.dataset.view)},{passive:true});
 window.addEventListener('popstate',()=>{const view=new URLSearchParams(location.search).get('view')||'orders';navigate(view,false)});
+let sessionRefreshTimer;
+window.addEventListener('storage',event=>{
+ if(event.key&&event.key.includes('auth-token')){
+  clearTimeout(sessionRefreshTimer);
+  sessionRefreshTimer=setTimeout(()=>initialize(),120);
+ }
+});
+window.addEventListener('message',event=>{if(event.origin===location.origin&&event.data?.type==='konak-erp-members-changed')initialize()});
 ensureFrame('orders');
 initialize();
 })();
