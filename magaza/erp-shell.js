@@ -42,7 +42,8 @@ function ensureFrame(view){
   try{
    const url=new URL(frame.contentWindow.location.href);
    if(url.pathname==='/magaza/'||url.pathname.endsWith('/index.html')){
-    frame.src=iframeAddress('orders');return;
+    if(view==='orders'){frame.src=iframeAddress('orders');return}
+    frame.remove();frames.delete(view);navigate('orders',true);return;
    }
   }catch(e){}
   hideEmbeddedChrome(frame);record.loaded=true;
