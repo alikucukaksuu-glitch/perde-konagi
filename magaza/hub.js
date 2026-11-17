@@ -187,7 +187,7 @@ function renderCustomers(){
  if(!list.children.length)put(list,'p','hub-muted','Müşteri kaydı bulunamadı. Bu ekran sipariş veren müşterilerden otomatik oluşur.');
 }
 function render(){if(tab==='products')renderProducts();else if(tab==='workshop')renderWorkshop();else renderCustomers()}
-$('hub-org').onchange=async e=>{org=e.target.value;qs.set('org',org);history.replaceState(null,'',location.pathname+'?'+qs);expanded.clear();await refresh()};
+$('hub-org').onchange=async e=>{org=e.target.value;qs.set('org',org);history.replaceState(null,'',location.pathname+'?'+qs);if(window.parent!==window)window.parent.postMessage({type:'konak-erp-org-changed',org},location.origin);expanded.clear();await refresh()};
 $('hub-refresh').onclick=refresh;
 $('hub-search').oninput=render;
 $('hub-category').onchange=()=>{if($('hub-category').value)expanded.add($('hub-category').value);render()};
