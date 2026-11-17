@@ -3,7 +3,7 @@ const sb=window.supabase?.createClient('https://rwylhxrtggsicieuyjrm.supabase.co
 const $=id=>document.getElementById(id),el=(tag,cls,txt)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(txt!=null)x.textContent=String(txt);return x};
 let rows=[],role='',loading=false,initialized=false;
 async function load(){
- if(loading||!sb)return;loading=true;const feedback=$('cm-feedback');feedback.textContent='Mesajlar yükleniyor…';
+ if(loading||!sb)return;loading=true;const feedback=$('contact-message-feedback');feedback.textContent='Mesajlar yükleniyor…';
  try{
   const auth=await sb.auth.getUser();const user=auth.data?.user;if(!user)throw Error('Yönetici hesabıyla giriş yapın.');
   const access=await sb.from('admin_access').select('role').eq('user_id',user.id).maybeSingle();if(access.error)throw access.error;
