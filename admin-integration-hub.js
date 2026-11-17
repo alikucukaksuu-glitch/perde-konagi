@@ -30,35 +30,112 @@ hub.innerHTML=`<div class="pk-hub-heading"><span class="pk-hub-gear" aria-hidden
 view.insertBefore(hub,grid);
 grid.classList.add('pk-hub-legacy');
 const detail=hub.querySelector('#pk-hub-detail'),target=hub.querySelector('#pk-hub-detail-content');
-const groups={qnb:[],invoice:[],shipping:[],general:[]};
 const nodes=Array.from(grid.children);
-for(const node of nodes){
- const title=(node.querySelector('h3')?.textContent||'').toLocaleLowerCase('tr-TR');
- const id=node.id||'';
- let type='general';
- if(title.includes('qnb')||title.includes('ödeme hareketleri')||title.includes('iade hareketleri'))type='qnb';
- else if(id==='pk-fulfillment-settings')type='general';
- else if(title.includes('fatura')||title.includes('kargo')||title.includes('entegrasyon işlem kuyruğu'))type='general';
- groups[type].push(node);
-}
-const shared=nodes.find(n=>n.id==='pk-fulfillment-settings');
-if(shared){groups.general=groups.general.filter(n=>n!==shared);const selectors=[['invoice','pk-invoice-provider'],['shipping','pk-shipping-provider']];for(const [type] of selectors){const copy=document.createElement('div');copy.className='pk-hub-shared-placeholder';copy.textContent='Fatura ve kargo sağlayıcısı ile ücret tarifesi ayarları aşağıdaki ortak ayarlar bölümündedir.';groups[type].push(copy)}}
+const sections={
+ qnb:[
+ ['QNB Pay Entegrasyon Bilgileri','Bağlantı kontrolü ve güvenli API yapılandırması','qnb-check'],
+ ['Ödeme Ayarları','3D Secure, para birimi ve işlem kuralları','qnb-payment'],
+ ['Kasa ve Tahsilat Ayarları','Ödeme hareketleri ve tahsilat geçmişi','qnb-transactions'],
+ ['Ödeme Bildirimleri','Ödeme durumlarına bağlı bildirim hazırlığı','qnb-notifications'],
+ ['İade ve İptal Ayarları','İade hareketleri ve iptal süreci','qnb-refunds']],
+ invoice:[
+ ['Fatura Entegrasyon Ayarları','e-Fatura / e-Arşiv sağlayıcısı seçimi','invoice-provider'],
+ ['Fatura Türleri','e-Fatura alıcı doğrulaması ve e-Arşiv ayrımı','invoice-kinds'],
+ ['Firma ve Vergi Bilgileri','Ünvan, vergi dairesi, VKN/TCKN ve adres','invoice-company'],
+ ['Fatura Kuralları','KDV, otomatik kesim ve işlem hazırlığı','invoice-rules'],
+ ['Fatura Şablonları','Belge görünümü ve şablon hazırlığı','invoice-templates']],
+ shipping:[
+ ['Kargo Firması Ayarları','Yurtiçi Kargo ve alternatif taşıyıcılar','shipping-provider'],
+ ['Kargo Ücretleri ve Politikası','2.000 TL ücretsiz kargo sınırı ve altı ücret','shipping-pricing'],
+ ['Desi ve Paketleme Kuralları','Kutu ölçüleri ve desi hesaplama','shipping-desi'],
+ ['Kargo Etiketi ve Gönderi','Gönderi etiketi ve hazırlık kayıtları','shipping-label'],
+ ['Kargo Takip ve Bildirimler','Takip numarası, teslimat ve bildirimler','shipping-tracking']]
+};
 const titles={qnb:['QNB Pay ve Kasa','Ödeme, tahsilat ve iade kayıtları'],invoice:['Fatura Bölümü','Fatura sağlayıcısı ve e-belge hazırlık kayıtları'],shipping:['Kargo Bölümü','Kargo firması, ücretler ve gönderi kayıtları'],general:['Genel Site Ayarları','Bakım modu ve yönetici hesabı']};
-let current=null;
-function show(type){
+const owned=new Map();
+function findById(id){return nodes.find(n=>n.id===id||n.querySelector('#'+id))}
+function findByTitle(t){return nodes.find(n=>(n.querySelector('h3')?.textContent||'').toLocaleLowerCase('tr-TR').includes(t))}
+const assigned={
+ 'qnb-check':[findById('pk-qnb-check')],
+ 'qnb-transactions':[findById('pk-qnb-transactions-refresh')],
+ 'qnb-refunds':[findById('pk-qnb-refunds-refresh')],
+ 'invoice-rules':[findById('pk-fulfillment-readiness-refresh'),findById('pk-fulfillment-jobs-refresh')],
+ 'shipping-label':[findById('pk-fulfillment-records-refresh')]
+};
+for(const [key,list] of Object.entries(assigned))for(const node of list)if(node)owned.set(node,key);
+const shared=findById('pk-fulfillment-settings');
+if(shared)owned.set(shared,'invoice-provider');
+const defaultNotes={
+ 'qnb-payment':'3D Secure ve ödeme kuralları QNB Pay sözleşmesi doğrulanınca yapılandırılacaktır. Canlı ödeme kapalıdır.',
+ 'qnb-notifications':'Ödeme başarılı/başarısız bildirimleri, doğrulanmış ödeme sonucu geldikten sonra etkinleştirilecektir.',
+ 'invoice-kinds':'e-Fatura mükellef sorgusu olmadan belge türü otomatik seçilmez. Alıcı doğrulaması zorunludur.',
+ 'invoice-company':'Firma vergi bilgileri henüz bu ekrandan kaydedilmiyor. Entegratör bağlantısı ve güvenli firma kartı tamamlanmalıdır.',
+ 'invoice-templates':'Belge şablonu sağlayıcı özelliklerine bağlıdır. Henüz canlı belge veya PDF üretilmez.',
+ 'shipping-desi':'Paketleme kuralları henüz otomatik gönderiye bağlanmadı. Gerçek desi ve ağırlık bilgisi olmadan kargo etiketi oluşturulmaz.',
+ 'shipping-tracking':'Takip numarası ve teslimat bilgisi kargo API bağlantısı sonrasında otomatik güncellenecektir.'
+};
+let current=null,active=null;
+function note(message){const p=document.createElement('p');p.className='pk-hub-section-note';p.textContent=message;return p}
+function sectionFor(type,item){
+ const [name,desc,key]=item;
+ const section=document.createElement('section');section.className='pk-hub-subsection';section.dataset.subsection=key;
+ const heading=document.createElement('button');heading.type='button';heading.className='pk-hub-subsection-heading';heading.setAttribute('aria-expanded','false');
+ const label=document.createElement('span'),strong=document.createElement('strong'),small=document.createElement('small');strong.textContent=name;small.textContent=desc;label.append(strong,small);
+ const arrow=document.createElement('span');arrow.textContent='⌄';heading.append(label,arrow);
+ const body=document.createElement('div');body.className='pk-hub-subsection-body';body.hidden=true;
+ for(const node of assigned[key]||[])if(node)body.appendChild(node);
+ if(key==='invoice-provider'||key==='shipping-provider'||key==='shipping-pricing'){
+  if(shared&&!body.contains(shared)){
+   if(key==='invoice-provider')body.appendChild(shared);
+   else {
+    const jump=document.createElement('button');jump.type='button';jump.className='pk-hub-jump';jump.textContent='Sağlayıcı ve kargo tarifesi ayarlarını aç';
+    jump.addEventListener('click',()=>{show('invoice','invoice-provider');});
+    body.appendChild(jump);
+   }
+  }
+ }
+ if(key==='invoice-provider')body.appendChild(note('Bu ortak formda fatura ve kargo sağlayıcısı ile kargo ücret tarifesi birlikte kaydedilir. API bilgileri tarayıcıya girilmez.'));
+ if(defaultNotes[key])body.appendChild(note(defaultNotes[key]));
+ if(!body.children.length)body.appendChild(note('Bu alanın gerçek işlem kontrolleri API ve iş kuralları tamamlandığında etkinleştirilecektir.'));
+ heading.addEventListener('click',()=>toggle(section));
+ section.append(heading,body);return section;
+}
+function toggle(section){
+ const open=section.querySelector('.pk-hub-subsection-body').hidden;
+ target.querySelectorAll('.pk-hub-subsection').forEach(s=>{s.querySelector('.pk-hub-subsection-body').hidden=true;s.querySelector('button').setAttribute('aria-expanded','false')});
+ if(open){section.querySelector('.pk-hub-subsection-body').hidden=false;section.querySelector('button').setAttribute('aria-expanded','true');}
+}
+function show(type,key){
  if(!titles[type])return;
  current=type;target.replaceChildren();
- for(const node of groups[type])target.appendChild(node);
- if(type==='invoice'||type==='shipping'){
-  if(shared)target.appendChild(shared);
-  for(const node of groups.general)target.appendChild(node);
+ if(type==='general'){
+  for(const node of nodes)if(!owned.has(node))target.appendChild(node);
+ }else{
+  const items=sections[type];for(const item of items)target.appendChild(sectionFor(type,item));
+  if(type==='invoice'){
+   const extra=document.createElement('div');extra.className='pk-hub-additional';extra.appendChild(note('Fatura ve kargo hareketleri, işlem kuyruğu ve hazırlık kontrolü aşağıdaki ilgili panellerde görüntülenir.'));
+   target.appendChild(extra);
+  }
  }
  hub.querySelector('#pk-hub-detail-title').textContent=titles[type][0];
  hub.querySelector('#pk-hub-detail-desc').textContent=titles[type][1];
  hub.querySelector('.pk-hub-cards').hidden=true;hub.querySelector('.pk-hub-tip').hidden=true;hub.querySelector('#pk-hub-general-open').hidden=true;
- detail.hidden=false;detail.scrollIntoView({block:'start',behavior:'smooth'});
+ detail.hidden=false;
+ const openKey=key||sections[type]?.[0]?.[2];
+ const initial=target.querySelector('[data-subsection="'+openKey+'"]');
+ if(initial)toggle(initial);
+ detail.scrollIntoView({block:'start',behavior:'smooth'});
 }
-function back(){current=null;detail.hidden=true;hub.querySelector('.pk-hub-cards').hidden=false;hub.querySelector('.pk-hub-tip').hidden=false;hub.querySelector('#pk-hub-general-open').hidden=false;for(const node of nodes)grid.appendChild(node);hub.scrollIntoView({block:'start',behavior:'smooth'});}
-hub.querySelectorAll('[data-hub-open]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.hubOpen)));
-hub.querySelector('#pk-hub-back').addEventListener('click',back);hub.querySelector('#pk-hub-general-open').addEventListener('click',()=>show('general'));
+function back(){
+ current=null;detail.hidden=true;hub.querySelector('.pk-hub-cards').hidden=false;hub.querySelector('.pk-hub-tip').hidden=false;hub.querySelector('#pk-hub-general-open').hidden=false;
+ for(const node of nodes)grid.appendChild(node);
+ hub.scrollIntoView({block:'start',behavior:'smooth'});
+}
+hub.querySelectorAll('[data-hub-open]').forEach(b=>b.addEventListener('click',()=>{
+ const type=b.dataset.hubOpen;
+ const key=b.classList.contains('pk-hub-link')?sections[type]?.[Array.from(b.parentNode.querySelectorAll('.pk-hub-link')).indexOf(b)]?.[2]:null;
+ show(type,key);
+}));
+hub.querySelector('#pk-hub-back').addEventListener('click',back);
+hub.querySelector('#pk-hub-general-open').addEventListener('click',()=>show('general'));
 })();
