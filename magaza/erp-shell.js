@@ -102,7 +102,6 @@ document.addEventListener('click',event=>{
  const view=link.dataset.view||routeFromUrl(link.href);
  if(view){event.preventDefault();navigate(view,true)}
 });
-for(const link of document.querySelectorAll('[data-view]'))link.addEventListener('pointerenter',()=>{if(allowed[link.dataset.view]!==false)ensureFrame(link.dataset.view)},{passive:true});
 window.addEventListener('popstate',()=>{const view=new URLSearchParams(location.search).get('view')||'orders';navigate(view,false)});
 let sessionRefreshTimer;
 window.addEventListener('storage',event=>{
