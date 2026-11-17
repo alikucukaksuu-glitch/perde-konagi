@@ -4,11 +4,11 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>KONAK ERP | Mağaza Yönetimi</title>
-<link rel="stylesheet" href="./style.css?v=qr-scanner-1">
+<link rel="stylesheet" href="./style.css?v=mobile-1">
 <style>
 html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-family:Arial,sans-serif}
-.erp-shell-guest .erp-shell-nav,.erp-shell-guest .erp-shell-account-wrap,.erp-shell-account-wrap[hidden]{display:none!important}
-.erp-shell-top{height:76px;background:#fff;border-bottom:1px solid #e0e6e1;display:flex;align-items:center;justify-content:center}
+.erp-shell-guest .erp-shell-nav,.erp-shell-guest .erp-mobile-toggle,.erp-shell-guest .erp-shell-account-wrap,.erp-shell-account-wrap[hidden]{display:none!important}
+.erp-shell-top{position:relative;z-index:50;height:76px;background:#fff;border-bottom:1px solid #e0e6e1;display:flex;align-items:center;justify-content:center}
 .erp-shell-bar{width:min(1300px,calc(100% - 32px));display:flex;align-items:center;gap:26px}
 .erp-shell-brand{flex-shrink:0;text-decoration:none;color:#203d32;font-size:22px;font-weight:800;line-height:1.1}
 .erp-shell-brand span{color:#a87538}
@@ -25,20 +25,36 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
 .erp-shell-account-menu[hidden]{display:none}
 .erp-shell-account-menu a,.erp-shell-account-menu button{display:block;width:100%;box-sizing:border-box;text-align:left;border:0;border-radius:8px;padding:11px 12px;background:#fff;color:#203a30;font:600 13px Arial,sans-serif;text-decoration:none;cursor:pointer}
 .erp-shell-account-menu a:hover,.erp-shell-account-menu button:hover,.erp-shell-account-menu a:focus-visible,.erp-shell-account-menu button:focus-visible{background:#ecf3ee}
+.erp-mobile-toggle{display:none;border:1px solid #dce5de;border-radius:10px;background:white;color:#203a30;font-size:21px;line-height:1;padding:9px 11px;cursor:pointer}
 .erp-shell-stage{position:relative;height:calc(100dvh - 76px);background:#f5f7f6}
 .erp-shell-page{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;background:#f5f7f6}
 .erp-shell-page.active{display:block}
 .erp-shell-notice{position:absolute;top:12px;right:20px;z-index:5;background:#fff;border:1px solid #dce5de;border-radius:10px;padding:9px 14px;font-size:12px;color:#3b5145;box-shadow:0 4px 12px #00000012}
 .erp-shell-error{margin:80px auto;max-width:450px;background:#fff;padding:30px;border-radius:16px;text-align:center}
 @media(max-width:900px){.erp-shell-top{height:66px}.erp-shell-bar{width:calc(100% - 18px);gap:8px}.erp-shell-brand{font-size:16px}.erp-shell-brand small{font-size:7px}.erp-shell-nav a{font-size:11px;padding:11px}.erp-shell-account{font-size:11px;padding:9px}.erp-shell-stage{height:calc(100dvh - 66px)}}
+@media(max-width:760px){
+ .erp-shell-top{height:62px}
+ .erp-shell-bar{width:calc(100% - 24px);gap:8px}
+ .erp-shell-brand{font-size:18px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+ .erp-shell-brand small{font-size:7px;letter-spacing:.6px}
+ .erp-mobile-toggle{display:block;margin-left:auto;flex-shrink:0}
+ .erp-shell-account{font-size:12px;padding:10px 11px}
+ .erp-shell-nav{display:none!important;position:absolute;left:0;right:0;top:100%;background:#fff;border-top:1px solid #e4eae5;box-shadow:0 14px 24px #11291a22;padding:12px;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:min(65dvh,480px);overflow-y:auto}
+ .erp-shell-nav.open{display:grid!important}
+ .erp-shell-nav a{font-size:13px;text-align:center;padding:13px 7px;min-width:0}
+ .erp-shell-account-menu{min-width:168px}
+ .erp-shell-stage{height:calc(100dvh - 62px)}
+}
+@media(max-width:380px){.erp-shell-brand{font-size:16px}.erp-shell-brand small{font-size:6px}.erp-shell-account{padding:9px 7px;font-size:11px}}
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="./erp-shell.js?v=12"></script>
+<script defer src="./erp-shell.js?v=13"></script>
 </head>
 <body class="erp-shell-guest">
 <header class="erp-shell-top"><div class="erp-shell-bar">
 <a class="erp-shell-brand" href="../erp/">KONAK <span>ERP</span><small>Perde Mağazası Yönetimi</small></a>
-<nav class="erp-shell-nav" aria-label="KONAK ERP menüsü" style="visibility:hidden">
+<button type="button" class="erp-mobile-toggle" aria-controls="erp-mobile-navigation" aria-expanded="false" aria-label="Menüyü aç">☰</button>
+<nav id="erp-mobile-navigation" class="erp-shell-nav" aria-label="KONAK ERP menüsü" style="visibility:hidden">
 <a data-view="orders" href="./?view=orders">Siparişler</a>
 <a data-view="missing" href="./?view=missing">Eksik Ürünler</a>
 <a data-view="products" href="./?view=products">Ürünler</a>
