@@ -49,3 +49,19 @@
 @media(max-width:720px){.pk-hub-cards{grid-template-columns:1fr}.pk-hub-card-top{min-height:148px}.pk-hub-heading h2{font-size:26px}.pk-hub-tip{display:block;padding:16px}.pk-hub-tip strong{display:block;margin-bottom:6px}.pk-hub-card-content{padding:14px}.pk-hub-detail{padding:15px}}
 
 .pk-hub-general-button{display:block;margin:18px auto 0;border:1px solid #d9deea;border-radius:9px;background:#fff;color:#46506a;font-weight:700;padding:11px 18px;cursor:pointer}.pk-hub-general-button[hidden]{display:none!important}.pk-hub-general-button:hover{background:#f4f6fa}
+
+/* Functional, mobile-first category detail panels */
+.pk-hub-subsection{background:#fff;border:1px solid #e2e6ed;border-radius:13px;overflow:hidden;margin-bottom:13px;box-shadow:0 3px 12px #1c2b5009}
+.pk-hub-subsection-heading{width:100%;border:0;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 20px;cursor:pointer;text-align:left;color:#182138;font:inherit}
+.pk-hub-subsection-heading:hover,.pk-hub-subsection-heading:focus-visible{background:#f6f8fc}
+.pk-hub-subsection-heading strong{display:block;font-size:16px;font-weight:750}
+.pk-hub-subsection-heading small{display:block;font-size:12px;color:#727c8c;margin-top:4px;line-height:1.4}
+.pk-hub-subsection-heading>span:last-child{font-size:25px;color:#707a91;transition:transform .2s}
+.pk-hub-subsection-heading[aria-expanded=true]>span:last-child{transform:rotate(180deg)}
+.pk-hub-subsection-body{padding:17px 18px 20px;border-top:1px solid #edf0f4}
+.pk-hub-subsection-body[hidden]{display:none!important}
+.pk-hub-subsection-body>.pk-settings-card{margin:0 0 15px!important;box-shadow:none}
+.pk-hub-section-note{font-size:13px;line-height:1.6;color:#56627b;background:#f4f6fb;padding:14px;border-radius:10px;margin:9px 0}
+.pk-hub-jump{background:#f2f3fa;border:1px solid #dce0eb;color:#3c4481;border-radius:9px;padding:13px 16px;font-weight:700;cursor:pointer}
+.pk-hub-additional{margin-top:14px}
+@media(max-width:720px){.pk-hub-subsection-heading{padding:15px 13px}.pk-hub-subsection-body{padding:12px}.pk-hub-subsection-heading strong{font-size:15px}.pk-hub-subsection-body input,.pk-hub-subsection-body select{max-width:100%;min-width:0}}
