@@ -30,8 +30,11 @@ async function load(){
 refresh.addEventListener('click',load);
 save.addEventListener('click',async()=>{
  if(!ready)return;
- const threshold=Number($(ids.threshold).value),raw=$(ids.fee).value.trim(),fee=raw===''?null:Number(raw);
- if(!Number.isFinite(threshold)||threshold<0||threshold>1000000||Math.round(threshold*100)!==threshold*100||fee!==null&&(!Number.isFinite(fee)||fee<0||fee>100000||Math.round(fee*100)!==fee*100)){msg.textContent='Geçerli bir TL tutarı girin (en fazla iki ondalık).';return}
+ const thresholdField=$(ids.threshold),feeField=$(ids.fee);
+ if(!thresholdField.checkValidity()||!feeField.checkValidity()){
+  msg.textContent='Geçerli bir TL tutarı girin (en fazla iki ondalık).';return;
+ }
+ const threshold=thresholdField.valueAsNumber,fee=feeField.value===''?null:feeField.valueAsNumber;
  save.disabled=true;msg.textContent='Kaydediliyor…';
  try{
   await authorized();

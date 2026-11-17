@@ -29,7 +29,7 @@ function show(){
  const top=document.createElement('div');top.className='item-main';
  const img=document.createElement('img');img.className='item-image';img.src=line.productImage||(line.type==='tul'?'tul-perde-placeholder.svg':line.type==='wood-blind'?'wood-jaluzi-product.svg':line.type==='plise'?'plise-product.svg':(q.slug.startsWith('mat-stor-')?q.slug+'-1.webp':q.slug.replace('-zebra-perde','')+'-1.'+(q.slug.includes('siyah')?'png':'webp')));img.alt=q.title;img.loading='lazy';img.onerror=()=>img.style.visibility='hidden';
  const block=document.createElement('div');block.className='item-info';
- const productLink=document.createElement('a');productLink.href=line.type==='tul'?'tul-perde.html?slug='+encodeURIComponent(q.slug):line.type==='wood-blind'?'ahsap-jaluzi.html?slug='+encodeURIComponent(q.slug):line.type==='plise'?'plise-perde.html?slug='+encodeURIComponent(q.slug):(q.slug.startsWith('mat-stor-')||q.slug.startsWith('bambu-'))?q.slug+'.html':'urun.html?slug='+encodeURIComponent(q.slug);productLink.append(text('h2',q.title));
+ const productLink=document.createElement('a');productLink.href=window.pkProductPageUrl(q.slug,line.type);productLink.append(text('h2',q.title));
  const sub=text('p',line.type==='tul'?(q.fabric_only?'Dikimsiz kumaş · '+q.used_fabric_m+' metre · %'+q.discount_percent+' indirim':q.width_cm+' × '+q.height_cm+' cm · '+o.pleat+' · '+o.sewing+(q.lining_color?' · '+q.lining_color+' Saten Güneşlik':'')):line.type==='wood-blind'?q.width_cm+' × '+q.height_cm+' cm · '+o.color+' · '+o.system+' · '+o.surface:line.type==='plise'?q.width_cm+' × '+q.height_cm+' cm · '+o.fabric+' Kumaş · '+o.profile+' Profil · '+o.surface+' · '+o.mounting:q.width_cm+' × '+q.height_cm+' cm · '+kasaName(o.kasaTip)+(o.kasaRenk?' ('+o.kasaRenk+')':'')+' · '+tr(o.zincir)+' Zincir · '+tr(o.boru)+' Boru · '+tr(o.yon)+' Yön','item-subtitle');
  const bottom=document.createElement('div');bottom.className='item-bottom';const price=text('strong',money(lineTotal),'price');
  if(Number(q.discount_amount)>0){const before=text('s',money(Number(q.original_unit_total)*line.quantity));before.style.cssText='display:block;color:#9e8e7d;font-size:12px;margin-bottom:4px;font-weight:400';block.append(before);const promo=text('p','✓ '+(q.campaign_badge||'Kampanya')+' · '+money(Number(q.discount_amount)*line.quantity)+' avantaj');promo.style.cssText='font-size:12px;color:#3c824e;font-weight:700;margin:7px 0';block.append(promo)}const controls=document.createElement('div');controls.className='qty';
@@ -53,12 +53,12 @@ function show(){
  const savings=cart.reduce((n,l)=>n+Math.max(0,Number(l.quote?.discount_amount)||0)*l.quantity,0);
  const savingsEl=document.getElementById('coupon-savings');if(savingsEl){savingsEl.hidden=savings<=0;document.getElementById('coupon-savings-value').textContent='−'+money(savings)}
 }
-function change(id,n){verified=false;if(n>20){status.textContent='Bir üründen en fazla 20 adet ekleyebilirsiniz.';return}if(n<1)cart=cart.filter(x=>x.id!==id);else cart=cart.map(x=>x.id===id?{...x,quantity:n}:x);save();show()}
+function change(id,n){if(n>20){status.textContent='Bir üründen en fazla 20 adet ekleyebilirsiniz.';return}verified=false;if(n<1)cart=cart.filter(x=>x.id!==id);else cart=cart.map(x=>x.id===id?{...x,quantity:n}:x);save();show();verify()}
 async function verify(){
- verified=false;const t=++version;if(!sb){status.textContent='Fiyat servisine bağlanılamadı. Sepet fiyatları doğrulanamadı.';document.getElementById('checkout-prep').disabled=true;return}
- if(!cart.length){status.textContent='Sepetiniz boş.';show();return}
+ verified=false;const t=++version;const prep=document.getElementById('checkout-prep');prep.disabled=true;const applyBtn=document.getElementById('coupon-apply');if(!sb){status.textContent='Fiyat servisine bağlanılamadı. Sepet fiyatları doğrulanamadı.';document.getElementById('checkout-prep').disabled=true;return}
+ if(!cart.length){if(applyBtn)applyBtn.disabled=false;status.textContent='Sepetiniz boş.';show();return}
  const next=[];let rejected=0,validCouponUses=0;
- const applyBtn=document.getElementById('coupon-apply');if(applyBtn)applyBtn.disabled=true;
+ if(applyBtn)applyBtn.disabled=true;
  for(const line of cart.slice(0,50)){
   try{
    const isTul=line.type==='tul';const isWood=line.type==='wood-blind';const isPlise=line.type==='plise'||line.options?.p_slug==='plise-perde';const {data:normal,error:normalError}=isTul?await sb.rpc('tul_quote_product',{p_slug:line.options.p_slug,p_width_cm:line.options.p_width_cm,p_height_cm:line.options.p_height_cm,p_pleat:line.options.p_pleat,p_sewing:line.options.p_sewing,p_fabric_only:line.options.p_fabric_only===true,p_fabric_m:line.options.p_fabric_only===true?line.options.p_fabric_m:null,p_lining_color:line.options.p_lining_color||null}):isWood?await sb.rpc('wood_blind_quote_product',{p_slug:line.options.p_slug,p_width_cm:line.options.p_width_cm,p_height_cm:line.options.p_height_cm,p_color:line.options.p_color,p_system:line.options.p_system,p_surface:line.options.p_surface}):isPlise?await sb.rpc('plise_quote_product',{p_slug:line.options.p_slug,p_width_cm:line.options.p_width_cm,p_height_cm:line.options.p_height_cm,p_fabric:line.options.p_fabric,p_profile:line.options.p_profile,p_surface:line.options.p_surface,p_mounting:line.options.p_mounting}):await sb.rpc('shop_quote_with_promo',line.options);
@@ -72,10 +72,17 @@ async function verify(){
   }catch{rejected++}
  }
  if(t!==version)return;
+ if(rejected){
+  show();total.textContent='—';
+  status.textContent='Fiyat doğrulanamadı. Sepetiniz korundu. ';
+  const retry=text('button','Tekrar dene');retry.type='button';retry.onclick=verify;status.append(retry);
+  if(applyBtn)applyBtn.disabled=false;
+  return;
+ }
  if(couponCode&&validCouponUses===0){couponMsg.textContent='Kupon geçersiz, süresi dolmuş veya sepetinizdeki ürünlere uygulanamıyor.';couponCode='';couponInput.value='';localStorage.removeItem('pkCouponCode')}
  else if(couponCode){couponMsg.textContent='✓ '+couponCode+' kuponu doğrulandı. Uygun ürünlerde avantaj hesaplandı.';localStorage.setItem('pkCouponCode',couponCode)}
  else couponMsg.textContent='';
- cart=next;verified=rejected===0;save();show();status.textContent=rejected?rejected+' üründe fiyat doğrulanamadı ve ürün sepetten çıkarıldı.':'✓ Ürün ve kampanya fiyatları güncel katalog üzerinden doğrulandı.';
+ cart=next;verified=true;save();show();status.textContent='✓ Ürün ve kampanya fiyatları güncel katalog üzerinden doğrulandı.';
  if(applyBtn)applyBtn.disabled=false;
 }
 document.getElementById('coupon-form')?.addEventListener('submit',e=>{

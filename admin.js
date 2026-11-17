@@ -83,7 +83,7 @@ function renderProducts(){
  const list=products.filter(p=>p.title.toLocaleLowerCase('tr-TR').includes(term)||p.slug.toLocaleLowerCase('tr-TR').includes(term));
  const rows=list.map(p=>{
   const tr=document.createElement('tr'),td=document.createElement('td'),a=document.createElement('a');
-  a.href=p.collection==='tul'?'tul-perde.html?slug='+encodeURIComponent(p.slug):p.collection==='ahsap-jaluzi'?'ahsap-jaluzi.html?slug='+encodeURIComponent(p.slug):p.collection==='plise'?'plise-perde.html?slug='+encodeURIComponent(p.slug):(['bambu-bej-zebra-perde','bambu-beyaz-zebra-perde','bambu-gri-zebra-perde','bambu-kahve-zebra-perde','bambu-siyah-zebra-perde','bambu-siyah-gecisli-zebra-perde','mat-stor-krem','mat-stor-kirik-beyaz','mat-stor-gri','mat-stor-antrasit','mat-stor-kahve','mat-stor-mavi','mat-stor-siyah','mat-stor-turuncu'].includes(p.slug)?p.slug+'.html':'urun.html?slug='+encodeURIComponent(p.slug));a.target='_blank';a.rel='noopener';a.className='order-link';a.textContent=p.title;td.append(a);tr.append(td,node('td',p.collection==='tul'?'Tül Perde':p.collection==='ahsap-jaluzi'?'Ahşap Jaluzi Perde':p.collection==='plise'?'Plise Perde':p.collection==='zebra'?'Zebra Perde':'Mat Stor'),node('td',money(p.price_per_sqm)));
+  a.href=window.pkProductPageUrl(p.slug,p.collection);a.target='_blank';a.rel='noopener';a.className='order-link';a.textContent=p.title;td.append(a);tr.append(td,node('td',p.collection==='tul'?'Tül Perde':p.collection==='ahsap-jaluzi'?'Ahşap Jaluzi Perde':p.collection==='plise'?'Plise Perde':p.collection==='zebra'?'Zebra Perde':'Mat Stor'),node('td',money(p.price_per_sqm)));
   const state=document.createElement('td'),status=node('span',p.visibility==='draft'?'Taslak':(p.is_active?'Satışta':'Satışa Kapalı'),'catalog-status '+(p.is_active?'yes':'no'));state.append(status);tr.append(state);
   const actions=document.createElement('td'),edit=node('button','Düzenle','catalog-edit');edit.type='button';edit.disabled=!['owner','admin'].includes(role);edit.addEventListener('click',()=>{if(['plise','ahsap-jaluzi','tul'].includes(p.collection)&&window.pkStudio?.open)window.pkStudio.open(p.slug);else openProductEditor(p)});actions.append(edit);tr.append(actions);
   return tr;
@@ -123,8 +123,16 @@ target.append(svg);if(!points.some(Boolean))target.append(node('p','Henüz öden
 function renderReports(s){const holder=el('report-stats');holder.replaceChildren();[['Toplam Sipariş',orders.length],['Onaylı Ödeme',s.real.length],['Bugünkü Satış',money(s.totalDay)],['Aylık Ciro',money(s.totalMonth)]].forEach(([label,value])=>{const card=node('div','','stat-card');const body=node('div','','stat-body');body.append(node('span',label),node('strong',value));card.append(body);holder.append(card)});renderChart('sales-chart');renderChart('reports-chart')}
 async function loadData(){message('Güncel bilgiler yükleniyor…');const queries=await Promise.all([client.from('shop_orders').select('id,customer_id,status,total_amount,created_at').order('created_at',{ascending:false}).limit(500),client.from('shop_order_items').select('order_id,product_slug,product_title,quantity,line_total').limit(1000),client.from('shop_products').select('slug,title,collection,price_per_sqm,is_active,visibility').order('title'),client.from('product_reviews').select('id,display_name,product_slug,rating,comment,status,created_at').order('created_at',{ascending:false}).limit(500)]);
 const names=['siparişler','sipariş kalemleri','ürünler','yorumlar'];let errors=queries.map((q,i)=>q.error?names[i]+': '+q.error.message:'').filter(Boolean);[orders,orderItems,products,reviews]=queries.map(q=>q.data||[]);renderOrders();renderProduction();renderProducts();renderReviews();renderTopProducts();renderCustomers();renderReports(stats());message(errors.length?'Bazı veriler yüklenemedi: '+errors.join(' · '):'Gerçek verilerle güncellendi. Ödeme sistemi açılana kadar satış rakamları sıfır olabilir.')}
-function searchText(t){const q=t.toLocaleLowerCase('tr-TR').trim();document.querySelectorAll('#product-list tr,#all-orders tr').forEach(row=>{row.hidden=Boolean(q&&!row.textContent.toLocaleLowerCase('tr-TR').includes(q))})}
-el('global-search').addEventListener('input',e=>{searchText(e.target.value);if(e.target.value&&view!=='orders'&&view!=='products')sidebarGo('products')});
+el('global-search').addEventListener('input',event=>{
+ const term=event.target.value;
+ if(view!=='orders'&&view!=='products'){
+  if(!term)return;
+  sidebarGo('products');
+ }
+ const field=el(view==='orders'?'od-search':'product-search');
+ field.value=term;
+ field.dispatchEvent(new Event('input',{bubbles:true}));
+});
 async function boot(){
 if(!client){setText('login-status','Giriş servisine bağlanılamadı.');return}
 try{const {data,error}=await client.auth.getUser();if(error||!data?.user){el('login-screen').hidden=false;return}
