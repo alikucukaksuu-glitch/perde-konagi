@@ -1,5 +1,6 @@
 (()=>{'use strict';
-const sb=window.supabase?.createClient('https://rwylhxrtggsicieuyjrm.supabase.co','sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA');
+const sb=window.__konakErpClient||(window.__konakErpClient=window.supabase?.createClient('https://rwylhxrtggsicieuyjrm.supabase.co','sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA'));
+window.__erpLoadMembers=uid=>{const cached=window.__erpMemberCache;if(cached?.uid===uid)return cached.promise;const promise=sb.from('erp_members').select('organization_id,role').eq('user_id',uid).then(({data,error})=>{if(error)throw error;return data||[]});window.__erpMemberCache={uid,promise};return promise};
 const $=id=>document.getElementById(id);
 const qs=new URLSearchParams(location.search);
 const tab=['products','workshop','customers'].includes(qs.get('tab'))?qs.get('tab'):'products';
@@ -28,19 +29,19 @@ function settings(){
  $('stat-label-b').textContent=tab==='products'?'Aktif Ürün':tab==='workshop'?'Atölyede Ürün':'Sipariş';
 }
 async function initialize(){
- if(!sb){$('hub-auth').hidden=false;return}
- const {data,error}=await sb.auth.getUser();
- user=error?null:data?.user;
- if(!user){$('hub-auth').hidden=false;return}
+ if(!sb){$('hub-loading').hidden=true;$('hub-auth').hidden=false;return}
+ const {data,error}=await sb.auth.getSession();
+ user=error?null:data?.session?.user;
+ if(!user){$('hub-loading').hidden=true;$('hub-auth').hidden=false;return}
  $('session-user').textContent=user.email||'Personel';
- members=await get('erp_members','organization_id,role',q=>q.eq('user_id',user.id));
- if(!members.length){$('hub-auth').hidden=false;return}
+ members=await window.__erpLoadMembers(user.id);
+ if(!members.length){$('hub-loading').hidden=true;$('hub-auth').hidden=false;return}
  orgs=await get('erp_organizations','id,name',q=>q.in('id',members.map(m=>m.organization_id)));
- if(!orgs.length){$('hub-auth').hidden=false;return}
+ if(!orgs.length){$('hub-loading').hidden=true;$('hub-auth').hidden=false;return}
  org=orgs.some(x=>x.id===qs.get('org'))?qs.get('org'):orgs[0].id;
  const select=$('hub-org');
  select.replaceChildren(...orgs.map(o=>new Option(o.name,o.id)));select.value=org;
- $('hub-content').hidden=false;
+ $('hub-content').hidden=false;$('hub-loading').hidden=true;
  await refresh();
 }
 async function refresh(){
@@ -197,5 +198,5 @@ $('product-close').onclick=$('product-cancel').onclick=closeProduct;
 $('product-modal').addEventListener('click',e=>{if(e.target===$('product-modal'))closeProduct()});
 $('logout').onclick=async()=>{await sb.auth.signOut();location.href='./'};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeProduct()});
-initialize().catch(e=>{message('Giriş yapılamadı: '+e.message);$('hub-auth').hidden=false});
+initialize().catch(e=>{$('hub-loading').hidden=true;message('Giriş yapılamadı: '+e.message);$('hub-auth').hidden=false});
 })();
