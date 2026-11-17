@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co';
 const KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
-const sb=window.supabase?.createClient(API,KEY);
+const sb=window.__konakErpClient||(window.__konakErpClient=window.supabase?.createClient(API,KEY));
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -18,6 +18,7 @@ async function fetchAll(table,select,query){
  if(error)throw error;
  return data||[];
 }
+window.__erpLoadMembers=uid=>{const cached=window.__erpMemberCache;if(cached?.uid===uid)return cached.promise;const promise=fetchAll('erp_members','organization_id,role',q=>q.eq('user_id',uid));window.__erpMemberCache={uid,promise};return promise};
 async function initialize(){
  if(!sb){show('auth-panel');msg('login-message','Bağlantı kütüphanesi yüklenemedi. Sayfayı yenileyin.');return}
  const {data,error}=await sb.auth.getSession();
@@ -26,7 +27,7 @@ async function initialize(){
  $('session-user').textContent=user.email||'Oturum açık';
  $('logout').hidden=false;
  try{
-  const members=await fetchAll('erp_members','organization_id,role',q=>q.eq('user_id',user.id));
+  const members=await window.__erpLoadMembers(user.id);
   window.__erpMembers=members;
   organizations=await fetchAll('erp_organizations','id,name',q=>q.in('id',members.map(m=>m.organization_id).length?members.map(m=>m.organization_id):['00000000-0000-0000-0000-000000000000']));
   if(!organizations.length){show('setup-panel');return}
@@ -349,12 +350,26 @@ async function onQrRead(raw){
  await stopQr();
  location.href=destination;
 }
+let qrScriptPromise=null;
+function ensureQrScript(){
+ if(window.Html5Qrcode)return Promise.resolve();
+ if(qrScriptPromise)return qrScriptPromise;
+ qrScriptPromise=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');
+  script.src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+  script.onload=()=>window.Html5Qrcode?resolve():reject(new Error('QR okuyucu yüklenemedi'));
+  script.onerror=()=>reject(new Error('QR okuyucu indirilemedi'));
+  document.head.append(script);
+ }).catch(error=>{qrScriptPromise=null;throw error});
+ return qrScriptPromise;
+}
 async function openQr(){
  if(!user||!org){msg('orders-message','Önce işletme hesabıyla giriş yapın.');return}
  if(!$('qr-scan-modal').hidden)return;
  qrNavigating=false;$('qr-paste').value='';$('qr-retry').hidden=true;qrMessage('Kamera başlatılıyor...');
  $('qr-scan-modal').hidden=false;
- if(!window.Html5Qrcode){qrMessage('Kamera okuyucusu yüklenemedi. QR bağlantısını aşağıya yapıştırabilirsiniz.');return}
+ try{await ensureQrScript()}catch(error){qrMessage('Kamera okuyucusu yüklenemedi. QR bağlantısını aşağıya yapıştırabilirsiniz.');return}
+ if($('qr-scan-modal').hidden)return;
  qrStarting=true;
  try{
   const scanner=new window.Html5Qrcode('qr-camera',{formatsToSupport:[window.Html5QrcodeSupportedFormats.QR_CODE],verbose:false});
