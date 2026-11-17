@@ -3,7 +3,8 @@ const API='https://rwylhxrtggsicieuyjrm.supabase.co';
 const KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY);
 const $=id=>document.getElementById(id);
-let user=null,organizations=[],members=[],branches=[],current=null,role='';
+let user=null,organizations=[],members=[],branches=[],current=null,role='',permissionRows=[],branchAssignments=[],editingMember=null;
+const staffMenuItems=[['orders','Siparişler'],['products','Ürünler ve Eksik Ürünler'],['workshop','Atölye'],['customers','Müşteriler'],['cash','Kasa'],['reports','Raporlar'],['calendar','Takvim'],['team','Personel Yönetimi'],['company','Şirket ve Şubeler'],['create_company','Yeni İşletme Oluştur']];
 const safeText=(el,value)=>{el.textContent=String(value??'')};
 function message(id,value){safeText($(id),value||'')}
 function showAuth(){ $('company-auth').hidden=false;$('company-dashboard').hidden=true;$('reset-password-setup').hidden=true}
@@ -62,19 +63,27 @@ async function reloadOrganizations(preferred){
   safeText($('quick-members'),0);safeText($('quick-branches'),0);
   safeText($('hero-branches'),0);safeText($('hero-members'),0);
   ['company-profile','team','branches'].forEach(id=>$(id).hidden=true);
-  document.querySelector('#new-company').scrollIntoView({block:'start',behavior:'auto'});
+  const canCreate=ownMembers.length===0||ownMembers.some(m=>m.role==='owner');
+  $('new-company').hidden=!canCreate;$('open-create-company').hidden=!canCreate;
+  if(canCreate)document.querySelector('#new-company').scrollIntoView({block:'start',behavior:'auto'});
  }
 }
 async function reloadCurrent(){
  if(!current)return;
- const [teamResponse,branchRows]=await Promise.all([
+ const [teamResponse,branchRows,permissionResponse,assignmentResponse]=await Promise.all([
   sb.rpc('erp_list_team',{p_org:current.id}),
-  getRows('erp_branches','id,name,code,phone,address,created_at',q=>q.eq('organization_id',current.id).order('created_at'))
+  getRows('erp_branches','id,name,code,phone,address,created_at',q=>q.eq('organization_id',current.id).order('created_at')),
+  getRows('erp_member_permissions','user_id,menu_key,can_view,can_edit',q=>q.eq('organization_id',current.id)),
+  getRows('erp_member_branch_access','user_id,branch_id',q=>q.eq('organization_id',current.id))
  ]);
  if(teamResponse.error)throw teamResponse.error;
  members=teamResponse.data||[];
- branches=branchRows;
+ branches=branchRows;permissionRows=permissionResponse;branchAssignments=assignmentResponse;
+ $('staff-permission-panel').hidden=true;
  ['company-profile','team','branches'].forEach(id=>$(id).hidden=false);
+ $('team').hidden=!(isManager()||permissionRows.some(p=>p.user_id===user.id&&p.menu_key==='team'&&p.can_view));
+ $('new-company').hidden=role!=='owner';$('open-create-company').hidden=role!=='owner';
+ document.querySelectorAll('a[href="#new-company"]').forEach(a=>a.hidden=role!=='owner');
  safeText($('quick-company'),current.name);
  safeText($('quick-members'),members.length);safeText($('hero-members'),members.length);
  safeText($('quick-branches'),branches.length);safeText($('hero-branches'),branches.length);
@@ -108,11 +117,62 @@ function renderMembers(){
     if(confirm((m.email||'Kullanıcı')+' işletmeden çıkarılsın mı?'))manageTeam('remove',m.user_id);
    };
    actions.append(choose,remove);
+   if(role==='owner'&&m.role==='staff'){
+    const permissionsButton=el('button','secondary small','Yetkiler');permissionsButton.type='button';permissionsButton.onclick=()=>openStaffPermissions(m);actions.prepend(permissionsButton);
+   }
   }
   row.append(left,actions);area.append(row);
  });
  if(!members.length)area.append(el('p','fine','Henüz kullanıcı bulunmuyor.'));
 }
+function openStaffPermissions(member){
+ if(role!=='owner'||member.role!=='staff')return;
+ editingMember=member;
+ $('staff-permission-target').textContent=member.email||'Personel';
+ const area=$('staff-permission-rows');area.replaceChildren();
+ for(const [key,label] of staffMenuItems){
+  const saved=permissionRows.find(p=>p.user_id===member.user_id&&p.menu_key===key);
+  const defaults={orders:[true,true],products:[true,false],workshop:[true,true],customers:[true,true],cash:[false,false],reports:[false,false],calendar:[true,true],team:[false,false],company:[false,false],create_company:[false,false]};
+  const view=saved?saved.can_view:defaults[key][0],edit=saved?saved.can_edit:defaults[key][1];
+  const row=el('div','staff-actions');row.style.cssText='display:grid;grid-template-columns:1fr 85px 90px;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #e3ebe6';
+  const title=el('strong','',label);
+  const viewLabel=el('label');viewLabel.style.cssText='display:flex;align-items:center;gap:5px;font-size:12px';
+  const viewCheck=el('input');viewCheck.type='checkbox';viewCheck.dataset.permissionView=key;viewCheck.checked=view;viewCheck.disabled=key==='create_company';
+  viewLabel.append(viewCheck,document.createTextNode('Gör'));
+  const editLabel=el('label');editLabel.style.cssText='display:flex;align-items:center;gap:5px;font-size:12px';
+  const editCheck=el('input');editCheck.type='checkbox';editCheck.dataset.permissionEdit=key;editCheck.checked=edit;editCheck.disabled=key==='create_company'||!view;
+  viewCheck.onchange=()=>{editCheck.disabled=!viewCheck.checked;if(!viewCheck.checked)editCheck.checked=false;};
+  editLabel.append(editCheck,document.createTextNode('İşlem'));
+  row.append(title,viewLabel,editLabel);area.append(row);
+ }
+ const areaBranches=$('staff-permission-branches');areaBranches.replaceChildren();
+ const restricted=branchAssignments.filter(x=>x.user_id===member.user_id).map(x=>x.branch_id);
+ for(const b of branches){
+  const label=el('label');label.style.cssText='display:flex;align-items:center;gap:5px;font-size:13px';
+  const check=el('input');check.type='checkbox';check.value=b.id;check.dataset.staffBranch='1';check.checked=restricted.includes(b.id);
+  label.append(check,document.createTextNode(b.name));areaBranches.append(label);
+ }
+ $('staff-permission-panel').hidden=false;message('staff-permission-message','');
+ $('staff-permission-panel').scrollIntoView({block:'start',behavior:'smooth'});
+}
+$('staff-permission-close').onclick=()=>{$('staff-permission-panel').hidden=true;editingMember=null};
+$('staff-permission-save').onclick=async()=>{
+ if(!current||role!=='owner'||!editingMember)return;
+ const permissions={};
+ for(const [key] of staffMenuItems){
+  permissions[key]={view:!!document.querySelector('[data-permission-view="'+key+'"]')?.checked,
+  edit:!!document.querySelector('[data-permission-edit="'+key+'"]')?.checked};
+ }
+ permissions.create_company={view:false,edit:false};
+ const selected=[...document.querySelectorAll('[data-staff-branch]:checked')].map(el=>el.value);
+ const button=$('staff-permission-save');button.disabled=true;message('staff-permission-message','Yetkiler kaydediliyor...');
+ try{
+  const {error}=await sb.rpc('erp_save_staff_permissions',{p_org:current.id,p_user:editingMember.user_id,p_permissions:permissions,p_branch_ids:selected});
+  if(error)throw error;
+  await reloadCurrent();message('team-message','Personel yetkileri kaydedildi.');
+ }catch(err){message('staff-permission-message','Kaydedilemedi: '+err.message)}
+ finally{button.disabled=false}
+};
 async function manageTeam(action,memberId=null,email=null,nextRole='staff'){
  message('team-message','İşlem kaydediliyor...');
  try{
@@ -143,6 +203,7 @@ function renderBranches(){
 }
 async function createCompany(e){
  e.preventDefault();
+ if(role!=='owner'&&organizations.length){message('create-company-message','Yalnız işletme sahibi yeni işletme oluşturabilir.');return}
  const form=e.currentTarget,submit=form.querySelector('button[type=submit]');
  const data=new FormData(form);message('create-company-message','İşletme oluşturuluyor...');
  submit.disabled=true;
@@ -246,7 +307,7 @@ $('profile-form').onsubmit=saveProfile;
 $('branch-form').onsubmit=createBranch;
 $('toggle-branch-form').onclick=()=>{if(isManager())openBranchEditor(null)};
 $('cancel-branch').onclick=()=>{$('branch-form').hidden=true};
-$('open-create-company').onclick=()=>document.querySelector('#new-company').scrollIntoView({behavior:'smooth',block:'start'});
+$('open-create-company').onclick=()=>{if(role==='owner')document.querySelector('#new-company').scrollIntoView({behavior:'smooth',block:'start'})};
 
 $('toggle-staff-form').onclick=()=>{if(isManager()){$('staff-form').hidden=false;$('staff-form').scrollIntoView({behavior:'smooth',block:'nearest'})}};
 $('cancel-staff').onclick=()=>{$('staff-form').hidden=true};
