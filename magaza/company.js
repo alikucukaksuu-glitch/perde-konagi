@@ -24,8 +24,14 @@ async function init(){
   user=response.error?null:response.data?.user;
   if(!user){showAuth();return}
   $('current-email').textContent=user.email||'Oturum açık';$('logout-company').hidden=false;
+  const accept=await sb.rpc('erp_accept_team_invitations');
+  if(accept.error)throw accept.error;
   await reloadOrganizations();
   showDashboard();
+  if(new URLSearchParams(location.search).has('invite')){
+   $('invite-setup').hidden=false;
+   $('invite-setup').scrollIntoView({block:'start'});
+  }
  }catch(err){showAuth();message('company-login-message','Şirket bilgileri yüklenemedi: '+err.message)}
 }
 async function reloadOrganizations(preferred){
@@ -201,7 +207,17 @@ $('staff-form').onsubmit=async e=>{
  e.preventDefault();if(!current||!isManager())return;
  const form=e.currentTarget,fd=new FormData(form),button=form.querySelector('[type=submit]');
  button.disabled=true;
- try{await manageTeam('add',null,String(fd.get('email')||'').trim(),String(fd.get('role')||'staff'));if(!$('team-message').textContent.startsWith('İşlem başarısız')){form.reset();form.hidden=true}}
+ try{
+  const email=String(fd.get('email')||'').trim(),nextRole=String(fd.get('role')||'staff');
+  message('team-message','Kullanıcı kontrol ediliyor...');
+  const direct=await sb.rpc('erp_manage_team',{p_org:current.id,p_action:'add',p_member:null,p_email:email,p_role:nextRole});
+  if(!direct.error){await reloadCurrent();message('team-message','Kayıtlı personel işletmeye eklendi.');form.reset();form.hidden=true;return;}
+  if(!/kayıtlı hesap bulunamadı/i.test(direct.error.message))throw direct.error;
+  message('team-message','Personel davet e-postası gönderiliyor...');
+  const invited=await sb.functions.invoke('erp-invite-staff',{body:{org:current.id,email,role:nextRole}});
+  if(invited.error||invited.data?.error)throw Error(invited.data?.error||invited.error?.message||'Davet gönderilemedi');
+  form.reset();form.hidden=true;message('team-message','Davet gönderildi: '+email+'. Personel e-postasındaki bağlantıdan şifresini oluşturunca erişim kazanacak.');
+ }catch(error){message('team-message','İşlem başarısız: '+error.message)}
  finally{button.disabled=false}
 };
 $('password-form').onsubmit=async e=>{
@@ -233,5 +249,12 @@ $('company-logo-upload').onchange=async e=>{
  }catch(error){message('profile-message','Logo yüklenemedi: '+error.message)}
 };
 
+$('invite-password-form').onsubmit=async e=>{
+ e.preventDefault();const form=e.currentTarget,fd=new FormData(form),password=String(fd.get('password')||''),repeat=String(fd.get('repeat')||'');
+ if(password.length<8||password!==repeat){message('invite-password-message','Şifre en az 8 karakter olmalı ve iki alan eşleşmeli.');return}
+ const button=form.querySelector('button[type=submit]');button.disabled=true;
+ try{const {error}=await sb.auth.updateUser({password});if(error)throw error;message('invite-password-message','Şifreniz kaydedildi. Davet edilen işletmeye erişiminiz açıldı.');$('invite-setup').hidden=true;history.replaceState(null,'',location.pathname+location.hash);await init()}
+ catch(error){message('invite-password-message','Şifre kaydedilemedi: '+error.message)}finally{button.disabled=false}
+};
 init();
 })();
