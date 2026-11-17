@@ -97,6 +97,7 @@ async function initialize(){
  navigation.style.visibility=authenticated?'visible':'hidden';
  document.querySelector('.erp-shell-account-wrap').hidden=!authenticated;
  document.body.classList.toggle('erp-shell-guest',!authenticated);
+ document.querySelector('.erp-shell-brand').href=authenticated?'./?view=orders':'../erp/';
  if(!authenticated)closeAccountMenu();
  const requested=new URLSearchParams(location.search).get('view')||'orders';
  const fallback=Object.keys(menus).find(key=>allowed[key])||'orders';
