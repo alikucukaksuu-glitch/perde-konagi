@@ -22,6 +22,12 @@ jobs:
     steps:
       - name: Checkout site
         uses: actions/checkout@v4
+      - name: Validate JavaScript syntax
+        run: |
+          find . -type f -name '*.js' -not -path './node_modules/*' -print0 | while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --check "$file" || exit 1
+          done
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload static site
