@@ -211,7 +211,7 @@ function drawSlots(){
      select.add(option);
     }
     select.value=record.status||'processing';
-    if(record.status==='ready'||record.status==='delivered'||editing.status==='delivered'||editing.status==='cancelled'||editing.status==='waiting')select.disabled=true;
+    if(record.status==='ready'||record.status==='delivered'||editing.status==='delivered'||editing.status==='cancelled'||(editing.status==='waiting'&&record.status!=='waiting'))select.disabled=true;
     select.onchange=async()=>{const prev=record.status;select.disabled=true;
       try{await updateItemStatus(record,select.value);record.status=select.value;drawSlots();}
       catch(e){record.status=prev;drawSlots();alertText('Satır durumu değiştirilemedi: '+e.message);}
@@ -297,7 +297,7 @@ function openItem(category,index){
  fetchCatalog().then(()=>{if(active?.category===category)showCatalog()});
  $('product-note').value=value?.note||'';
  $('product-status').value=value?.status||'processing';
- $('product-status').disabled=!value?.id||['ready','delivered'].includes(value.status)||['waiting','delivered','cancelled'].includes(editing?.status);
+ $('product-status').disabled=!value?.id||['ready','delivered'].includes(value.status)||(editing?.status==='waiting'&&value?.status!=='waiting'||['delivered','cancelled'].includes(editing?.status));
  for(const option of $('product-status').options){if(option.value==='processing'&&(value?.status!=='processing'&&value?.status!=='waiting'||Boolean(editing?.barcode_printed_at)))option.disabled=true;else if(option.value==='waiting')option.disabled=value?.status!=='processing'||Boolean(editing?.barcode_printed_at);else if(value?.status==='waiting')option.disabled=option.value!=='waiting'&&option.value!=='processing';else option.disabled=false;}
  $('product-status-wrapper').title=value?.id?'Durum değişikliği seçildiğinde anında kaydedilir.':'Sipariş kaydedilince ürün İşlemde durumunda başlar.';
  $('delete-product').hidden=!value;
@@ -590,7 +590,7 @@ $('product-status').onchange=async()=>{
   select.value=before;
   $('product-status-message').textContent='Durum değiştirilemedi: '+err.message;
  }finally{
-  select.disabled=['ready','delivered'].includes(item.status)||['waiting','delivered','cancelled'].includes(editing?.status);
+  select.disabled=['ready','delivered'].includes(item.status)||(editing?.status==='waiting'&&item.status!=='waiting'||['delivered','cancelled'].includes(editing?.status));
  }
 };
 $('delete-product').onclick=()=>{if(!active)return;removeItem(active.category,active.index)};
