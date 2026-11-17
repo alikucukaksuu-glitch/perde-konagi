@@ -79,6 +79,7 @@ async function initialize(){
      if(permissionError)throw permissionError;
      for(const row of rows||[])allowed[row.menu_key]=!!row.can_view;
      allowed.missing=allowed.workshop;
+     allowed.company=true;
     }
    }else Object.keys(allowed).forEach(key=>allowed[key]=key==='orders');
   }else Object.keys(allowed).forEach(key=>allowed[key]=key==='orders');
@@ -90,7 +91,8 @@ async function initialize(){
  navigation.style.visibility='visible';
  document.querySelector('.erp-shell-account').hidden=false;
  const requested=new URLSearchParams(location.search).get('view')||'orders';
- navigate(allowed[requested]===false?'orders':requested,false);
+ const fallback=Object.keys(menus).find(key=>allowed[key])||'orders';
+ navigate(allowed[requested]===false?fallback:requested,false);
 }
 document.addEventListener('click',event=>{
  const link=event.target.closest?.('a[href]');if(!link||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
@@ -99,5 +101,6 @@ document.addEventListener('click',event=>{
 });
 for(const link of document.querySelectorAll('[data-view]'))link.addEventListener('pointerenter',()=>{if(allowed[link.dataset.view]!==false)ensureFrame(link.dataset.view)},{passive:true});
 window.addEventListener('popstate',()=>{const view=new URLSearchParams(location.search).get('view')||'orders';navigate(view,false)});
+ensureFrame('orders');
 initialize();
 })();
