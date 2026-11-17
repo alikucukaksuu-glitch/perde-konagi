@@ -84,9 +84,14 @@ function sectionFor(type,item){
  const arrow=document.createElement('span');arrow.textContent='⌄';heading.append(label,arrow);
  const body=document.createElement('div');body.className='pk-hub-subsection-body';body.hidden=true;
  for(const node of assigned[key]||[])if(node)body.appendChild(node);
- if(key==='invoice-provider'||key==='shipping-provider'||key==='shipping-pricing'){
-  if(shared&&!body.contains(shared)){
-   if(key==='invoice-provider')body.appendChild(shared);
+ if((key==='invoice-provider'||key==='shipping-provider'||key==='shipping-pricing')&&shared){
+  if(key==='invoice-provider'||key==='shipping-provider')body.appendChild(shared);
+  else{
+   const jump=document.createElement('button');jump.type='button';jump.className='pk-hub-jump';jump.textContent='Kargo ücret tarifesini düzenle';
+   jump.addEventListener('click',()=>show('shipping','shipping-provider'));body.appendChild(jump);
+  }
+ }
+ if(key==='invoice-provider')body.appendChild(shared);
    else {
     const jump=document.createElement('button');jump.type='button';jump.className='pk-hub-jump';jump.textContent='Sağlayıcı ve kargo tarifesi ayarlarını aç';
     jump.addEventListener('click',()=>{show('invoice','invoice-provider');});
@@ -94,7 +99,7 @@ function sectionFor(type,item){
    }
   }
  }
- if(key==='invoice-provider')body.appendChild(note('Bu ortak formda fatura ve kargo sağlayıcısı ile kargo ücret tarifesi birlikte kaydedilir. API bilgileri tarayıcıya girilmez.'));
+ if(key==='invoice-provider'||key==='shipping-provider')body.appendChild(note('Bu ortak formda fatura ve kargo sağlayıcısı ile kargo ücret tarifesi birlikte kaydedilir. API bilgileri tarayıcıya girilmez.'));
  if(defaultNotes[key])body.appendChild(note(defaultNotes[key]));
  if(!body.children.length)body.appendChild(note('Bu alanın gerçek işlem kontrolleri API ve iş kuralları tamamlandığında etkinleştirilecektir.'));
  heading.addEventListener('click',()=>toggle(section));
