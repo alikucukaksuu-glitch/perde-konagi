@@ -26,7 +26,7 @@ hub.innerHTML=`<div class="pk-hub-heading"><span class="pk-hub-gear" aria-hidden
 <button class="pk-hub-link" data-hub-open="shipping"><span class="pk-hub-list-icon">♧</span><span><b>Kargo Takip ve Bildirimler</b><small>Takip numarası, teslimat durumu ve müşteri bildirimi</small></span><i>›</i></button>
 <button class="pk-hub-cta" data-hub-open="shipping">⚙ &nbsp; Kargo Ayarlarını Yönet <span>›</span></button></div></article>
 </div><div class="pk-hub-tip"><strong>ⓘ &nbsp; Bilgi</strong><span>Entegrasyonlar API bilgileri girilmeden canlıya alınmaz. Bağlantı testleri tamamlanmadan otomatik ödeme, fatura veya kargo gönderimi başlatılmaz.</span></div>
-<div class="pk-hub-detail" id="pk-hub-detail" hidden><div class="pk-hub-detail-heading"><button type="button" id="pk-hub-back">‹ &nbsp; Entegrasyon Ayarları</button><h3 id="pk-hub-detail-title"></h3><p id="pk-hub-detail-desc"></p></div><div id="pk-hub-detail-content"></div></div>`;
+<button class="pk-hub-general-button" type="button" id="pk-hub-general-open">⚙ &nbsp; Genel Site Ayarları ve Bakım Modu</button><div class="pk-hub-detail" id="pk-hub-detail" hidden><div class="pk-hub-detail-heading"><button type="button" id="pk-hub-back">‹ &nbsp; Entegrasyon Ayarları</button><h3 id="pk-hub-detail-title"></h3><p id="pk-hub-detail-desc"></p></div><div id="pk-hub-detail-content"></div></div>`;
 view.insertBefore(hub,grid);
 grid.classList.add('pk-hub-legacy');
 const detail=hub.querySelector('#pk-hub-detail'),target=hub.querySelector('#pk-hub-detail-content');
@@ -43,7 +43,7 @@ for(const node of nodes){
 }
 const shared=nodes.find(n=>n.id==='pk-fulfillment-settings');
 if(shared){groups.general=groups.general.filter(n=>n!==shared);const selectors=[['invoice','pk-invoice-provider'],['shipping','pk-shipping-provider']];for(const [type] of selectors){const copy=document.createElement('div');copy.className='pk-hub-shared-placeholder';copy.textContent='Fatura ve kargo sağlayıcısı ile ücret tarifesi ayarları aşağıdaki ortak ayarlar bölümündedir.';groups[type].push(copy)}}
-const titles={qnb:['QNB Pay ve Kasa','Ödeme, tahsilat ve iade kayıtları'],invoice:['Fatura Bölümü','Fatura sağlayıcısı ve e-belge hazırlık kayıtları'],shipping:['Kargo Bölümü','Kargo firması, ücretler ve gönderi kayıtları']};
+const titles={qnb:['QNB Pay ve Kasa','Ödeme, tahsilat ve iade kayıtları'],invoice:['Fatura Bölümü','Fatura sağlayıcısı ve e-belge hazırlık kayıtları'],shipping:['Kargo Bölümü','Kargo firması, ücretler ve gönderi kayıtları'],general:['Genel Site Ayarları','Bakım modu ve yönetici hesabı']};
 let current=null;
 function show(type){
  if(!titles[type])return;
@@ -55,10 +55,10 @@ function show(type){
  }
  hub.querySelector('#pk-hub-detail-title').textContent=titles[type][0];
  hub.querySelector('#pk-hub-detail-desc').textContent=titles[type][1];
- hub.querySelector('.pk-hub-cards').hidden=true;hub.querySelector('.pk-hub-tip').hidden=true;
+ hub.querySelector('.pk-hub-cards').hidden=true;hub.querySelector('.pk-hub-tip').hidden=true;hub.querySelector('#pk-hub-general-open').hidden=true;
  detail.hidden=false;detail.scrollIntoView({block:'start',behavior:'smooth'});
 }
-function back(){current=null;detail.hidden=true;hub.querySelector('.pk-hub-cards').hidden=false;hub.querySelector('.pk-hub-tip').hidden=false;for(const node of nodes)grid.appendChild(node);hub.scrollIntoView({block:'start',behavior:'smooth'});}
+function back(){current=null;detail.hidden=true;hub.querySelector('.pk-hub-cards').hidden=false;hub.querySelector('.pk-hub-tip').hidden=false;hub.querySelector('#pk-hub-general-open').hidden=false;for(const node of nodes)grid.appendChild(node);hub.scrollIntoView({block:'start',behavior:'smooth'});}
 hub.querySelectorAll('[data-hub-open]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.hubOpen)));
-hub.querySelector('#pk-hub-back').addEventListener('click',back);
+hub.querySelector('#pk-hub-back').addEventListener('click',back);hub.querySelector('#pk-hub-general-open').addEventListener('click',()=>show('general'));
 })();
