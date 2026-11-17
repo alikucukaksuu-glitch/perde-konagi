@@ -5,7 +5,7 @@ const sb=window.supabase?.createClient(API,KEY);
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const titles={new:'İşlemde',processing:'İşlemde',waiting:'Beklemede',workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',delivered:'Teslim Edildi',cancelled:'İptal'};
+const titles={new:'İşlemde',processing:'İşlemde',waiting:'Beklemede',partial_waiting:'Kısmi Beklemede',workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',delivered:'Teslim Edildi',cancelled:'İptal'};
 let user=null,organizations=[],branches=[],orders=[],items=[],org='',filterStatus='',lineSeq=0,expandedOrders=new Set(),memberRole='staff';
 function show(id){['auth-panel','setup-panel','erp-panel'].forEach(n=>$(n).hidden=n!==id)}
 function msg(id,message){$(id).textContent=message||''}
@@ -53,7 +53,7 @@ async function load(){
  try{
   branches=await fetchAll('erp_branches','id,name,organization_id',q=>q.eq('organization_id',org).order('name'));
   orders=await fetchAll('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method,waiting_reason,barcode_printed_at',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(250));
-  items=orders.length?await fetchAll('erp_order_items','id,order_id,category,product_name,width_cm,height_cm,unit_price,production_note,status,barcode',q=>q.eq('organization_id',org).in('order_id',orders.map(x=>x.id))):[];
+  items=orders.length?await fetchAll('erp_order_items','id,order_id,category,product_name,width_cm,height_cm,unit_price,production_note,status,waiting_reason,barcode',q=>q.eq('organization_id',org).in('order_id',orders.map(x=>x.id))):[];
   const dropdown=$('filter-branch'),old=dropdown.value;
   dropdown.innerHTML='<option value="">Tüm Şubeler</option>';
   branches.forEach(b=>dropdown.add(new Option(b.name,b.id)));
