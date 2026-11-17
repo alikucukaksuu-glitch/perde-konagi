@@ -32,7 +32,8 @@ async function initialize(){
   organizations=await fetchAll('erp_organizations','id,name',q=>q.in('id',members.map(m=>m.organization_id).length?members.map(m=>m.organization_id):['00000000-0000-0000-0000-000000000000']));
   if(!organizations.length){show('setup-panel');return}
   const valid=organizations.some(o=>o.id===org);
-  org=valid?org:organizations[0].id;
+  const requestedOrg=new URLSearchParams(location.search).get('org');
+  org=organizations.some(o=>o.id===requestedOrg)?requestedOrg:(valid?org:organizations[0].id);
   memberRole=window.__erpMembers.find(m=>m.organization_id===org)?.role||'staff';
   $('organization-select').replaceChildren();
   organizations.forEach(o=>{const opt=new Option(o.name,o.id);$('organization-select').add(opt)});
@@ -384,7 +385,7 @@ function handlers(){
  $('login-form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget);msg('login-message','Giriş yapılıyor...');const {error}=await sb.auth.signInWithPassword({email:f.get('email'),password:f.get('password')});if(error)msg('login-message',error.message);else{msg('login-message','');await initialize()}};
  $('logout').onclick=async()=>{await sb.auth.signOut();user=null;org='';$('logout').hidden=true;$('session-user').textContent='';show('auth-panel')};
  $('setup-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,f=new FormData(form);msg('setup-message','İşletme oluşturuluyor...');const {error}=await sb.rpc('erp_create_organization',{p_name:f.get('organization'),p_branch:f.get('branch')});if(error)msg('setup-message','Oluşturulamadı: '+error.message);else{msg('setup-message','');await initialize()}};
- $('organization-select').onchange=async e=>{org=e.target.value;memberRole=window.__erpMembers?.find(m=>m.organization_id===org)?.role||'staff';await load()};
+ $('organization-select').onchange=async e=>{org=e.target.value;memberRole=window.__erpMembers?.find(m=>m.organization_id===org)?.role||'staff';if(window.parent!==window)window.parent.postMessage({type:'konak-erp-org-changed',org},location.origin);await load()};
  $('refresh').onclick=load;
  $('scan-qr').onclick=openQr;
  $('bulk-print-labels').onclick=()=>{
