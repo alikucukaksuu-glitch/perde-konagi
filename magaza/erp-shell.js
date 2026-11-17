@@ -97,10 +97,39 @@ async function initialize(){
  const fallback=Object.keys(menus).find(key=>allowed[key])||'orders';
  navigate(allowed[requested]===false?fallback:requested,false);
 }
+const accountTrigger=document.getElementById('erp-account-trigger'),accountMenu=document.getElementById('erp-account-menu');
+function closeAccountMenu(){accountMenu.hidden=true;accountTrigger.setAttribute('aria-expanded','false')}
+accountTrigger.addEventListener('click',event=>{
+ event.stopPropagation();
+ accountMenu.hidden=!accountMenu.hidden;
+ accountTrigger.setAttribute('aria-expanded',String(!accountMenu.hidden));
+});
+document.addEventListener('click',event=>{if(!event.target.closest('.erp-shell-account-wrap'))closeAccountMenu()});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeAccountMenu()});
+function showPasswordSection(){
+ navigate('company',true);
+ const record=frames.get('company');
+ const reveal=()=>{
+  try{const target=record.frame.contentDocument?.getElementById('security');if(target){target.scrollIntoView({block:'start'});record.frame.contentWindow.location.hash='security'}}catch(e){}
+ };
+ if(record.loaded)reveal();else record.frame.addEventListener('load',reveal,{once:true});
+}
+document.querySelectorAll('[data-account-action]').forEach(button=>button.addEventListener('click',async()=>{
+ const action=button.dataset.accountAction;closeAccountMenu();
+ if(action==='password'){showPasswordSection();return}
+ if(action==='logout'){
+  button.disabled=true;
+  try{const {error}=await client.auth.signOut();if(error)throw error;
+   orgId='';for(const record of frames.values())record.frame.remove();frames.clear();
+   history.replaceState(null,'','./?view=orders');await initialize();
+  }catch(error){alert('Çıkış yapılamadı: '+(error?.message||'Bilinmeyen hata'))}
+  finally{button.disabled=false}
+ }
+}));
 document.addEventListener('click',event=>{
  const link=event.target.closest?.('a[href]');if(!link||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
  const view=link.dataset.view||routeFromUrl(link.href);
- if(view){event.preventDefault();navigate(view,true)}
+ if(view){event.preventDefault();closeAccountMenu();navigate(view,true)}
 });
 window.addEventListener('popstate',()=>{const view=new URLSearchParams(location.search).get('view')||'orders';navigate(view,false)});
 let sessionRefreshTimer;
