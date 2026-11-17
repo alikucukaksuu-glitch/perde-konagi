@@ -7,7 +7,7 @@ const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const titles={new:'İşlemde',processing:'İşlemde',waiting:'Beklemede',partial_waiting:'Kısmi Beklemede',workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',delivered:'Teslim Edildi',cancelled:'Silinen',voided:'İptal Edildi'};
 let user=null,organizations=[],branches=[],orders=[],items=[],org='',filterStatus='',lineSeq=0,expandedOrders=new Set(),memberRole='staff';
-function show(id){['auth-panel','setup-panel','erp-panel'].forEach(n=>$(n).hidden=n!==id)}
+function show(id){['auth-panel','setup-panel','erp-panel','initial-loading'].forEach(n=>$(n).hidden=n!==id)}
 function msg(id,message){$(id).textContent=message||''}
 function dateTR(s){return s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString('tr-TR'):'Belirtilmedi'}
 function isAuthError(e){return /jwt|session|permission|not authorized|unauthorized/i.test(e?.message||'')}
@@ -20,8 +20,8 @@ async function fetchAll(table,select,query){
 }
 async function initialize(){
  if(!sb){show('auth-panel');msg('login-message','Bağlantı kütüphanesi yüklenemedi. Sayfayı yenileyin.');return}
- const {data,error}=await sb.auth.getUser();
- user=error?null:data?.user;
+ const {data,error}=await sb.auth.getSession();
+ user=error?null:data?.session?.user;
  if(!user){show('auth-panel');return}
  $('session-user').textContent=user.email||'Oturum açık';
  $('logout').hidden=false;
@@ -51,8 +51,10 @@ async function initialize(){
 async function load(){
  msg('orders-message','Siparişler yükleniyor...');
  try{
-  branches=await fetchAll('erp_branches','id,name,organization_id',q=>q.eq('organization_id',org).order('name'));
-  orders=await fetchAll('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method,waiting_reason,barcode_printed_at',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(250));
+  [branches,orders]=await Promise.all([
+   fetchAll('erp_branches','id,name,organization_id',q=>q.eq('organization_id',org).order('name')),
+   fetchAll('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method,waiting_reason,barcode_printed_at',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(250))
+  ]);
   items=orders.length?await fetchAll('erp_order_items','id,order_id,category,product_name,width_cm,height_cm,unit_price,production_note,status,waiting_reason,barcode,printed_at,cancellation_requested_at,cancellation_reason',q=>q.eq('organization_id',org).in('order_id',orders.map(x=>x.id))):[];
   const dropdown=$('filter-branch'),old=dropdown.value;
   dropdown.innerHTML='<option value="">Tüm Şubeler</option>';
