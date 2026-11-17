@@ -1,0 +1,10 @@
+-- QNB Pay payment storage foundation (applied to Supabase project rwylhxrtggsicieuyjrm)
+-- The canonical applied migration is tracked in Supabase migration history.
+-- No QNB Pay credentials or card data belong in this repository.
+-- Tables: public.shop_payment_transactions and public.shop_payment_events.
+-- RLS: enabled; admin/owner SELECT only; service-side writes only.
+-- Statuses: created, pending_3ds, pending_confirmation, paid, failed,
+-- cancelled, refund_pending, partially_refunded, refunded.
+-- Next: verified server-side QNBpay token, 3DS initiation, callback validation,
+-- checkstatus reconciliation, idempotency and refund endpoints.
+-- Never mark an order paid based solely on a browser redirect.
