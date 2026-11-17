@@ -70,7 +70,7 @@ function storSpecs(opts,w,h){
  return ['Kasa: '+cases[opts.caseType],opts.caseType!=='open'&&'Kasa Rengi: '+opts.color,
  'Zincir: '+(opts.chain==='metal'?'Metal':'Plastik'),'Zincir Yönü: '+(opts.side==='right'?'Sağ':'Sol'),
  'Boru: '+(opts.tube==='38'?'38 Jumbo':'32 Standart'),'Yan Ayak: '+(opts.foot==='metal'?'Metal':'Plastik'),
- 'Etek Dilim Modeli: Etek Dilim '+(opts.hem||'1'),
+ opts.hem&&'Etek Dilim Modeli: Etek Dilim '+opts.hem,
  'Hesap En: '+Math.max(100,Number(w)||0)+' cm','Hesap Boy: '+Math.max(200,Number(h)||0)+' cm'].filter(Boolean).join('; ')
 }
 function parseStorSpecs(spec){
@@ -79,7 +79,7 @@ function parseStorSpecs(spec){
  return {caseType:kase==='Kapalı Kasa Klasik'?'classic':kase==='Kapalı Kasa Renkli'?'colored':'open',
  color:get('Kasa Rengi'),chain:get('Zincir')==='Metal'?'metal':'plastic',
  side:get('Zincir Yönü')==='Sağ'?'right':'left',tube:get('Boru').startsWith('38')?'38':'32',
- foot:get('Yan Ayak')==='Metal'?'metal':'plastic',hem:(get('Etek Dilim Modeli').match(/(?:Etek Dilim )?(1[01]|[1-9])$/)?.[1]||'1')}
+ foot:get('Yan Ayak')==='Metal'?'metal':'plastic',hem:(get('Etek Dilim Modeli').match(/(?:Etek Dilim )?(1[01]|[1-9])$/)?.[1]||'')}
 }
 function stripStorOptions(spec){
  return String(spec||'').split(/;\s*/).filter(part=>!/^(Kasa|Kasa Rengi|Zincir|Zincir Yönü|Boru|Yan Ayak|Etek Dilim Modeli|Hesap En|Hesap Boy):\s*/.test(part)).join('; ').trim();
@@ -268,7 +268,7 @@ function openItem(category,index){
   const cfg=value?.stor||parseStorSpecs(value?.spec||'');
   $('stor-case').value=cfg.caseType;syncStorColor(cfg.caseType);
   if(cfg.color&&[...$('stor-color').options].some(x=>x.value===cfg.color))$('stor-color').value=cfg.color;
-  $('stor-chain').value=cfg.chain;$('stor-side').value=cfg.side;$('stor-tube').value=cfg.tube;$('stor-foot').value=cfg.foot;$('stor-hem').value=cfg.hem||'1';
+  $('stor-chain').value=cfg.chain;$('stor-side').value=cfg.side;$('stor-tube').value=cfg.tube;$('stor-foot').value=cfg.foot;$('stor-hem').value=cfg.hem??'';
  }
  if(category==='PLİSE PERDE'){
   const config=value?.plise||parsePliseConfiguration(value?.spec);
