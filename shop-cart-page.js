@@ -33,9 +33,9 @@ function show(){
  const sub=text('p',line.type==='tul'?(q.fabric_only?'Dikimsiz kumaş · '+q.used_fabric_m+' metre · %'+q.discount_percent+' indirim':q.width_cm+' × '+q.height_cm+' cm · '+o.pleat+' · '+o.sewing+(q.lining_color?' · '+q.lining_color+' Saten Güneşlik':'')):line.type==='wood-blind'?q.width_cm+' × '+q.height_cm+' cm · '+o.color+' · '+o.system+' · '+o.surface:line.type==='plise'?q.width_cm+' × '+q.height_cm+' cm · '+o.fabric+' Kumaş · '+o.profile+' Profil · '+o.surface+' · '+o.mounting:q.width_cm+' × '+q.height_cm+' cm · '+kasaName(o.kasaTip)+(o.kasaRenk?' ('+o.kasaRenk+')':'')+' · '+tr(o.zincir)+' Zincir · '+tr(o.boru)+' Boru · '+tr(o.yon)+' Yön','item-subtitle');
  const bottom=document.createElement('div');bottom.className='item-bottom';const price=text('strong',money(lineTotal),'price');
  if(Number(q.discount_amount)>0){const before=text('s',money(Number(q.original_unit_total)*line.quantity));before.style.cssText='display:block;color:#9e8e7d;font-size:12px;margin-bottom:4px;font-weight:400';block.append(before);const promo=text('p','✓ '+(q.campaign_badge||'Kampanya')+' · '+money(Number(q.discount_amount)*line.quantity)+' avantaj');promo.style.cssText='font-size:12px;color:#3c824e;font-weight:700;margin:7px 0';block.append(promo)}const controls=document.createElement('div');controls.className='qty';
- const minus=text('button','−');minus.type='button';minus.setAttribute('aria-label',q.title+' adedini azalt');minus.onclick=()=>change(line.id,line.quantity-1);
+ const minus=text('button','−');minus.type='button';minus.setAttribute('aria-label',q.title+' adedini azalt');minus.onclick=()=>change(line.id,-1);
  const n=text('span',String(line.quantity),'qty-count');
- const plus=text('button','+');plus.type='button';plus.setAttribute('aria-label',q.title+' adedini artır');plus.onclick=()=>change(line.id,line.quantity+1);
+ const plus=text('button','+');plus.type='button';plus.setAttribute('aria-label',q.title+' adedini artır');plus.onclick=()=>change(line.id,1);
  const remove=document.createElement('button');remove.type='button';remove.className='remove';remove.append(svg('trash'),text('span','Sil'));remove.setAttribute('aria-label',q.title+' ürününü sepetten kaldır');remove.onclick=()=>change(line.id,0);
  controls.append(minus,n,plus,remove);bottom.append(price,controls);block.append(productLink,sub,bottom);top.append(img,block);
  const custom=document.createElement('section');custom.className='custom-box';custom.setAttribute('aria-label','Ürün özelleştirmeleri');
@@ -53,8 +53,31 @@ function show(){
  const savings=cart.reduce((n,l)=>n+Math.max(0,Number(l.quote?.discount_amount)||0)*l.quantity,0);
  const savingsEl=document.getElementById('coupon-savings');if(savingsEl){savingsEl.hidden=savings<=0;document.getElementById('coupon-savings-value').textContent='−'+money(savings)}
 }
-function change(id,n){if(n>20){status.textContent='Bir üründen en fazla 20 adet ekleyebilirsiniz.';return}verified=false;if(n<1)cart=cart.filter(x=>x.id!==id);else cart=cart.map(x=>x.id===id?{...x,quantity:n}:x);save();show();verify()}
+function change(id,delta){
+ cart=read();
+ const line=cart.find(item=>item.id===id);
+ if(line){
+  const quantity=delta===0?0:Number(line.quantity)+delta;
+  if(quantity>20){status.textContent='Bir üründen en fazla 20 adet ekleyebilirsiniz.';return}
+  if(quantity<1)cart=cart.filter(item=>item.id!==id);
+  else line.quantity=quantity;
+  save();
+ }
+ verified=false;show();verify();
+}
+window.addEventListener('storage',event=>{
+ if(event.storageArea!==localStorage)return;
+ if(event.key!==null&&event.key!==key&&event.key!=='pkCouponCode')return;
+ if(event.key===null||event.key==='pkCouponCode'){
+  couponCode=localStorage.getItem('pkCouponCode')||'';
+  couponInput.value=couponCode;
+ }
+ verify();
+});
 async function verify(){
+ const storedCart=localStorage.getItem(key);
+ const storedCoupon=localStorage.getItem('pkCouponCode');
+ cart=read();
  verified=false;const t=++version;const prep=document.getElementById('checkout-prep');prep.disabled=true;const applyBtn=document.getElementById('coupon-apply');if(!sb){status.textContent='Fiyat servisine bağlanılamadı. Sepet fiyatları doğrulanamadı.';document.getElementById('checkout-prep').disabled=true;return}
  if(!cart.length){if(applyBtn)applyBtn.disabled=false;status.textContent='Sepetiniz boş.';show();return}
  const next=[];let rejected=0,validCouponUses=0;
@@ -66,12 +89,23 @@ async function verify(){
    let selected=normal;
    if(couponCode&&!isPlise&&!isWood&&!isTul){
     const {data:withCode,error:couponError}=await sb.rpc('shop_quote_with_promo',{...line.options,p_coupon_code:couponCode});
-    if(!couponError&&withCode){selected=withCode;if(withCode.coupon_applied===couponCode)validCouponUses++}
+    if(couponError){
+     if(couponError.code!=='22023'||couponError.message!=='Coupon invalid or expired')throw Error('Kupon doğrulanamadı');
+    }else{
+     if(!withCode)throw Error('Kupon yanıtı alınamadı');
+     selected=withCode;if(withCode.coupon_applied===couponCode)validCouponUses++;
+    }
    }
    next.push({...line,quote:selected,quantity:Math.min(20,Math.max(1,Math.floor(line.quantity)))});
   }catch{rejected++}
  }
  if(t!==version)return;
+ if(localStorage.getItem('pkCouponCode')!==storedCoupon){
+  couponCode=localStorage.getItem('pkCouponCode')||'';
+  couponInput.value=couponCode;
+  return verify();
+ }
+ if(localStorage.getItem(key)!==storedCart)return verify();
  if(rejected){
   show();total.textContent='—';
   status.textContent='Fiyat doğrulanamadı. Sepetiniz korundu. ';
