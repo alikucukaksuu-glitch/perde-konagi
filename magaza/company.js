@@ -149,6 +149,7 @@ function openStaffPermissions(member){
  }
  const areaBranches=$('staff-permission-branches');areaBranches.replaceChildren();
  const restricted=branchAssignments.filter(x=>x.user_id===member.user_id).map(x=>x.branch_id);
+ areaBranches.append(el('p','fine','Hiçbir şube işaretlenmezse personel tüm şubeleri kullanabilir. Belirli şubeler seçildiğinde yalnız o şubelere erişir.'));
  for(const b of branches){
   const label=el('label');label.style.cssText='display:flex;align-items:center;gap:5px;font-size:13px';
   const check=el('input');check.type='checkbox';check.value=b.id;check.dataset.staffBranch='1';check.checked=restricted.includes(b.id);
