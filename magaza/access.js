@@ -26,7 +26,7 @@ function denyPage(){
 async function run(){
  if(!window.supabase)return;
  const sb=window.supabase.createClient(API,KEY,{auth:{storageKey:'sb-rwylhxrtggsicieuyjrm-auth-token'}});
- const {data:{user},error}=await sb.auth.getUser();if(error||!user)return;
+ const {data:{session},error}=await sb.auth.getSession();const user=session?.user;if(error||!user)return;
  const {data:members}=await sb.from('erp_members').select('organization_id,role').eq('user_id',user.id);if(!members?.length)return;
  const selector=document.querySelector('#organization-select,#company-select');
  const chosen=members.find(m=>m.organization_id===selector?.value)||members[0];
@@ -42,5 +42,5 @@ async function run(){
  const page=permissionForLink(location.href);
  if(page&&!map[page])denyPage();
 }
-document.addEventListener('DOMContentLoaded',()=>{run().catch(()=>{});});
+document.addEventListener('DOMContentLoaded',()=>{run().catch(()=>{}).finally(()=>document.querySelector('.navigation')?.style.removeProperty('visibility'));});
 })();
