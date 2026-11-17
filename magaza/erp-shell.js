@@ -18,7 +18,7 @@ function routeFromUrl(raw){
  if(path.endsWith('/orders.html')||path.endsWith('/index.html')||path==='/magaza/')return 'orders';
  return null;
 }
-function iframeAddress(view){const [base,fragment]=menus[view].split('#'),url=new URL(base,location.href);url.searchParams.set('embedded','1');if(orgId&&view!=='company')url.searchParams.set('org',orgId);return url.href+(fragment?'#'+fragment:'')}
+function iframeAddress(view){const [base,fragment]=menus[view].split('#'),url=new URL(base,location.href);url.searchParams.set('embedded','1');if(orgId&&view!=='company')url.searchParams.set('org',orgId);if(view==='orders'){const initial=new URLSearchParams(location.search);for(const key of ['scan','received'])if(initial.has(key))url.searchParams.set(key,initial.get(key)||'1')}return url.href+(fragment?'#'+fragment:'')}
 function hideEmbeddedChrome(frame){
  try{
   const doc=frame.contentDocument;if(!doc)return;
