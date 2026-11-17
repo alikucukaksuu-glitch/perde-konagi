@@ -267,7 +267,7 @@ $('invite-password-form').onsubmit=async e=>{
  e.preventDefault();const form=e.currentTarget,fd=new FormData(form),password=String(fd.get('password')||''),repeat=String(fd.get('repeat')||'');
  if(password.length<8||password!==repeat){message('invite-password-message','Şifre en az 8 karakter olmalı ve iki alan eşleşmeli.');return}
  const button=form.querySelector('button[type=submit]');button.disabled=true;
- try{const {error}=await sb.auth.updateUser({password});if(error)throw error;message('invite-password-message','Şifreniz kaydedildi. Davet edilen işletmeye erişiminiz açıldı.');$('invite-setup').hidden=true;history.replaceState(null,'',location.pathname+location.hash);await init()}
+ try{const {error}=await sb.auth.updateUser({password});if(error)throw error;message('invite-password-message','Şifreniz oluşturuldu. KONAK ERP giriş ekranına yönlendiriliyorsunuz...');await sb.auth.signOut({scope:'local'});location.replace('/magaza/')}
  catch(error){message('invite-password-message','Şifre kaydedilemedi: '+error.message)}finally{button.disabled=false}
 };
 init();
