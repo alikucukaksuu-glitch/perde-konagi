@@ -65,6 +65,7 @@ function navigate(view,push){
  document.title='KONAK ERP | '+({orders:'Siparişler',missing:'Eksik Ürünler',products:'Ürünler',workshop:'Atölye',customers:'Müşteriler',cash:'Kasa',reports:'Raporlar',calendar:'Takvim',company:'Hesabım'}[view]||'Mağaza');
 }
 async function initialize(){
+ Object.assign(allowed,defaults);
  try{
   const session=(await client.auth.getSession()).data?.session;
   if(session?.user){
