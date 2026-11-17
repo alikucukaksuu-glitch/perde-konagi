@@ -232,7 +232,7 @@ function drawSlots(){
 }
 async function updateItemStatus(record,next){
  if(!editing||!record.id)throw Error('Kaydedilmemiş ürünün durumu değiştirilemez.');
- let result;
+ let result,waitingReason='';
  if(next==='waiting'||record.status==='waiting'){
   let reason=null;
   if(next==='waiting'){
@@ -240,9 +240,11 @@ async function updateItemStatus(record,next){
    if(reason===null)throw Error('Beklemeye alma iptal edildi');
    if(reason.trim().length<3)throw Error('Bekleme nedeni en az 3 karakter olmalı');
   }
+  waitingReason=next==='waiting'?reason?.trim()||'':'';
   result=await sb.rpc('erp_set_item_waiting',{p_org:org.id,p_item:record.id,p_action:next==='waiting'?'wait':'resume',p_reason:reason?.trim()||null});
  }else result=await sb.rpc('erp_set_item_workflow_status',{p_org:org.id,p_item:record.id,p_status:next});
  if(result.error)throw result.error;
+ if(next==='waiting'||record.status==='waiting')record.waitingReason=waitingReason;
  const {data,error:readError}=await sb.from('erp_orders').select('updated_at,status,waiting_reason').eq('organization_id',org.id).eq('id',editing.id).single();
  if(readError)throw readError;
  Object.assign(editing,data);
