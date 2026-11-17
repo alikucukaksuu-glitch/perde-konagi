@@ -21,11 +21,16 @@ async function init(){
  if(!sb){showAuth();message('company-login-message','Bağlantı kütüphanesi yüklenemedi.');return}
  try{
   const response=await sb.auth.getUser();
+  if(response.error&&/invalid refresh token|refresh token not found/i.test(response.error.message||'')){
+   await sb.auth.signOut({scope:'local'}).catch(()=>{});
+  }
   user=response.error?null:response.data?.user;
   if(!user){showAuth();return}
   $('current-email').textContent=user.email||'Oturum açık';$('logout-company').hidden=false;
-  const accept=await sb.rpc('erp_accept_team_invitations');
-  if(accept.error)throw accept.error;
+  if(new URLSearchParams(location.search).has('invite')){
+   const accept=await sb.rpc('erp_accept_team_invitations');
+   if(accept.error)throw accept.error;
+  }
   await reloadOrganizations();
   showDashboard();
   if(new URLSearchParams(location.search).has('invite')){
@@ -57,10 +62,13 @@ async function reloadOrganizations(preferred){
 }
 async function reloadCurrent(){
  if(!current)return;
- const teamResponse=await sb.rpc('erp_list_team',{p_org:current.id});
+ const [teamResponse,branchRows]=await Promise.all([
+  sb.rpc('erp_list_team',{p_org:current.id}),
+  getRows('erp_branches','id,name,code,phone,address,created_at',q=>q.eq('organization_id',current.id).order('created_at'))
+ ]);
  if(teamResponse.error)throw teamResponse.error;
  members=teamResponse.data||[];
- branches=await getRows('erp_branches','id,name,code,phone,address,created_at',q=>q.eq('organization_id',current.id).order('created_at'));
+ branches=branchRows;
  ['company-profile','team','branches'].forEach(id=>$(id).hidden=false);
  safeText($('quick-company'),current.name);
  safeText($('quick-members'),members.length);safeText($('hero-members'),members.length);
@@ -210,13 +218,15 @@ $('staff-form').onsubmit=async e=>{
  try{
   const email=String(fd.get('email')||'').trim(),nextRole=String(fd.get('role')||'staff');
   message('team-message','Kullanıcı kontrol ediliyor...');
-  const direct=await sb.rpc('erp_manage_team',{p_org:current.id,p_action:'add',p_member:null,p_email:email,p_role:nextRole});
-  if(!direct.error){await reloadCurrent();message('team-message','Kayıtlı personel işletmeye eklendi.');form.reset();form.hidden=true;return;}
-  if(!/kayıtlı hesap bulunamadı/i.test(direct.error.message))throw direct.error;
   message('team-message','Personel davet e-postası gönderiliyor...');
   const invited=await sb.functions.invoke('erp-invite-staff',{body:{org:current.id,email,role:nextRole}});
-  if(invited.error||invited.data?.error)throw Error(invited.data?.error||invited.error?.message||'Davet gönderilemedi');
-  form.reset();form.hidden=true;message('team-message','Davet gönderildi: '+email+'. Personel e-postasındaki bağlantıdan şifresini oluşturunca erişim kazanacak.');
+  if(invited.data?.registered){
+   const otp=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:'https://perdekonagi.com/magaza/company.html?invite=1'}});
+   if(otp.error)throw otp.error;
+  }else if(invited.error||invited.data?.error){
+   throw Error(invited.data?.error||invited.error?.message||'Davet gönderilemedi');
+  }
+  form.reset();form.hidden=true;message('team-message','Davet bağlantısı gönderildi: '+email+'. E-posta kabul edilmeden işletme erişimi açılmaz.');
  }catch(error){message('team-message','İşlem başarısız: '+error.message)}
  finally{button.disabled=false}
 };
