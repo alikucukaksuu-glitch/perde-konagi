@@ -18,6 +18,12 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
 .erp-shell-nav a[aria-current=page]{background:#b17b43}
 .erp-shell-nav a[hidden]{display:none}
 .erp-shell-account{color:#203a30;text-decoration:none;white-space:nowrap;border:1px solid #dce5de;border-radius:10px;padding:12px 20px;font-size:13px;font-weight:600}
+.erp-shell-account-wrap{position:relative;flex-shrink:0}
+.erp-shell-account{background:#fff;cursor:pointer;font-family:inherit}
+.erp-shell-account-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:30;background:#fff;border:1px solid #dce5de;box-shadow:0 12px 28px #0000001b;border-radius:12px;min-width:188px;padding:6px}
+.erp-shell-account-menu[hidden]{display:none}
+.erp-shell-account-menu a,.erp-shell-account-menu button{display:block;width:100%;box-sizing:border-box;text-align:left;border:0;border-radius:8px;padding:11px 12px;background:#fff;color:#203a30;font:600 13px Arial,sans-serif;text-decoration:none;cursor:pointer}
+.erp-shell-account-menu a:hover,.erp-shell-account-menu button:hover,.erp-shell-account-menu a:focus-visible,.erp-shell-account-menu button:focus-visible{background:#ecf3ee}
 .erp-shell-stage{position:relative;height:calc(100dvh - 76px);background:#f5f7f6}
 .erp-shell-page{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;background:#f5f7f6}
 .erp-shell-page.active{display:block}
@@ -26,7 +32,7 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
 @media(max-width:900px){.erp-shell-top{height:66px}.erp-shell-bar{width:calc(100% - 18px);gap:8px}.erp-shell-brand{font-size:16px}.erp-shell-brand small{font-size:7px}.erp-shell-nav a{font-size:11px;padding:11px}.erp-shell-account{font-size:11px;padding:9px}.erp-shell-stage{height:calc(100dvh - 66px)}}
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="./erp-shell.js?v=8"></script>
+<script defer src="./erp-shell.js?v=9"></script>
 </head>
 <body>
 <header class="erp-shell-top"><div class="erp-shell-bar">
@@ -41,7 +47,13 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
 <a data-view="reports" href="./?view=reports">Raporlar</a>
 <a data-view="calendar" href="./?view=calendar">Takvim</a>
 </nav>
-<a class="erp-shell-account" data-view="company" href="./?view=company">☻ &nbsp; Hesabım ▾</a>
+<div class="erp-shell-account-wrap">
+<button type="button" class="erp-shell-account" id="erp-account-trigger" aria-expanded="false" aria-controls="erp-account-menu" aria-haspopup="true">☻ &nbsp; Hesabım <span aria-hidden="true">▾</span></button>
+<div class="erp-shell-account-menu" id="erp-account-menu" hidden>
+<a href="./?view=company" data-view="company">Şirket Ayarları</a>
+<button type="button" data-account-action="password">Şifre Değiştir</button>
+<button type="button" data-account-action="logout">Çıkış Yap</button>
+</div></div>
 </div></header>
 <main class="erp-shell-stage" id="erp-shell-stage">
 <div class="erp-shell-notice" id="erp-shell-notice" role="status">KONAK ERP hazırlanıyor...</div>
