@@ -4,6 +4,12 @@ const menus={orders:'orders.html',missing:'missing.html',products:'hub.html?tab=
 const defaults={orders:true,missing:true,products:true,workshop:true,customers:true,cash:false,reports:false,calendar:true,company:true};
 const stage=document.getElementById('erp-shell-stage'),notice=document.getElementById('erp-shell-notice'),navigation=document.querySelector('.erp-shell-nav');
 const frames=new Map(),allowed={...defaults};let selected='',orgId='',authenticated=false;
+const mobileToggle=document.querySelector('.erp-mobile-toggle');
+function closeMobileMenu(){navigation.classList.remove('open');mobileToggle?.setAttribute('aria-expanded','false')}
+mobileToggle?.addEventListener('click',event=>{event.stopPropagation();const open=navigation.classList.toggle('open');mobileToggle.setAttribute('aria-expanded',String(open))});
+document.addEventListener('click',event=>{if(!event.target.closest('.erp-shell-nav,.erp-mobile-toggle'))closeMobileMenu()});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMobileMenu()});
+
 const client=window.__konakErpClient||(window.__konakErpClient=window.supabase?.createClient(API,KEY));
 function routeFromUrl(raw){
  const url=new URL(raw,location.href),path=url.pathname;
@@ -58,6 +64,7 @@ function showFrame(view){
 function navigate(view,push){
  if(!menus[view]||allowed[view]===false)return;
  selected=view;
+ closeMobileMenu();
  document.querySelectorAll('[data-view]').forEach(node=>{if(node.tagName==='A'){if(node.dataset.view===view)node.setAttribute('aria-current','page');else node.removeAttribute('aria-current')}});
  const record=ensureFrame(view);
  if(record.loaded){showFrame(view);notice.hidden=true}
