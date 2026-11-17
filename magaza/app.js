@@ -5,7 +5,7 @@ const sb=window.supabase?.createClient(API,KEY);
 const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const titles={new:'İşlemde',processing:'İşlemde',waiting:'Beklemede',partial_waiting:'Kısmi Beklemede',workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',delivered:'Teslim Edildi',cancelled:'İptal'};
+const titles={new:'İşlemde',processing:'İşlemde',waiting:'Beklemede',partial_waiting:'Kısmi Beklemede',workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',delivered:'Teslim Edildi',cancelled:'Silinen',voided:'İptal Edildi'};
 let user=null,organizations=[],branches=[],orders=[],items=[],org='',filterStatus='',lineSeq=0,expandedOrders=new Set(),memberRole='staff';
 function show(id){['auth-panel','setup-panel','erp-panel'].forEach(n=>$(n).hidden=n!==id)}
 function msg(id,message){$(id).textContent=message||''}
@@ -53,7 +53,7 @@ async function load(){
  try{
   branches=await fetchAll('erp_branches','id,name,organization_id',q=>q.eq('organization_id',org).order('name'));
   orders=await fetchAll('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method,waiting_reason,barcode_printed_at',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(250));
-  items=orders.length?await fetchAll('erp_order_items','id,order_id,category,product_name,width_cm,height_cm,unit_price,production_note,status,waiting_reason,barcode',q=>q.eq('organization_id',org).in('order_id',orders.map(x=>x.id))):[];
+  items=orders.length?await fetchAll('erp_order_items','id,order_id,category,product_name,width_cm,height_cm,unit_price,production_note,status,waiting_reason,barcode,printed_at,cancellation_requested_at,cancellation_reason',q=>q.eq('organization_id',org).in('order_id',orders.map(x=>x.id))):[];
   const dropdown=$('filter-branch'),old=dropdown.value;
   dropdown.innerHTML='<option value="">Tüm Şubeler</option>';
   branches.forEach(b=>dropdown.add(new Option(b.name,b.id)));
@@ -64,15 +64,15 @@ async function load(){
 }
 function branchName(id){return branches.find(b=>b.id===id)?.name||'Şube'}
 function render(){
- $('stat-total').textContent=orders.filter(o=>o.status!=='cancelled').length;
+ $('stat-total').textContent=orders.filter(o=>!['cancelled','voided'].includes(o.status)).length;
  $('stat-workshop').textContent=orders.filter(o=>o.status==='workshop'||o.status==='partial_ready').length;
  $('stat-ready').textContent=orders.filter(o=>o.status==='ready').length;
- $('stat-balance').textContent=money(orders.filter(o=>o.status!=='cancelled').reduce((s,o)=>s+Number(o.total_amount)-Number(o.paid_amount),0));
+ $('stat-balance').textContent=money(orders.filter(o=>!['cancelled','voided'].includes(o.status)).reduce((s,o)=>s+Number(o.total_amount)-Number(o.paid_amount),0));
  const text=$('filter-search').value.toLocaleLowerCase('tr-TR').trim();
  const branch=$('filter-branch').value,payment=$('filter-payment').value;
  const subset=orders.filter(o=>{
   if(filterStatus&&o.status!==filterStatus)return false;
-  if(!filterStatus&&o.status==='cancelled')return false;
+  if(!filterStatus&&['cancelled','voided'].includes(o.status))return false;
   if(branch&&o.branch_id!==branch)return false;
   const remaining=Number(o.total_amount)-Number(o.paid_amount);
   if(payment==='paid'&&remaining>0)return false;
@@ -88,7 +88,14 @@ function render(){
   const discount=Math.max(0,base-Number(o.total_amount));
   const expanded=expandedOrders.has(o.id);
   const status=escapeHtml(titles[o.status]||o.status);
-  const orderItems=rows.map((item,index)=>'<div class="compact-item"><span class="compact-item-number">'+(index+1)+'</span><div><b>'+escapeHtml(item.category)+' · '+escapeHtml(item.product_name)+'</b><small>En '+escapeHtml(item.width_cm??'—')+' × Boy '+escapeHtml(item.height_cm??'—')+' cm · '+money(item.unit_price)+'</small><small>Üretim Notu: '+escapeHtml(item.production_note||'—')+'</small></div><span class="chip '+escapeHtml(item.status)+'">'+escapeHtml(titles[item.status]||item.status||'İşlemde')+'</span></div>').join('');
+  const orderItems=rows.map((item,index)=>'<div class="compact-item"><span class="compact-item-number">'+(index+1)+'</span><div><b>'+escapeHtml(item.category)+' · '+escapeHtml(item.product_name)+'</b><small>En '+escapeHtml(item.width_cm??'—')+' × Boy '+escapeHtml(item.height_cm??'—')+' cm · '+money(item.unit_price)+'</small><small>Üretim Notu: '+escapeHtml(item.production_note||'—')+'</small>'+
+   (item.cancellation_requested_at?'<small>⏳ Yönetici onayı bekleniyor: '+escapeHtml(item.cancellation_reason||'')+'</small>':'')+
+   (item.status!=='cancelled'&&!['cancelled','voided'].includes(o.status)?
+     item.cancellation_requested_at?
+       (['owner','manager'].includes(memberRole)?'<button type="button" class="secondary" data-approve-cancel="'+escapeHtml(item.id)+'">✓ İptali Onayla</button> <button type="button" class="secondary" data-reject-cancel="'+escapeHtml(item.id)+'">✕ Reddet</button>':''):
+       '<button type="button" class="secondary" data-item-cancel="'+escapeHtml(item.id)+'">⊘ Ürünü İptal Et</button>'
+    :'')+
+   '</div><span class="chip '+escapeHtml(item.status)+'">'+escapeHtml(titles[item.status]||item.status||'İşlemde')+'</span></div>').join('');
   return '<article class="order card order-compact" id="order-'+escapeHtml(o.id)+'">'+
   '<div class="compact-main"><div class="compact-info">'+
    '<div class="compact-title"><span class="compact-number">'+escapeHtml(o.order_number)+'</span><h3>'+escapeHtml(o.customer_name)+'</h3><span class="chip '+escapeHtml(o.status)+'">'+status+'</span></div>'+
@@ -99,14 +106,15 @@ function render(){
    '<div><small>G.TOPLAM</small><strong>'+money(base)+'</strong></div>'+
    '<div><small>İskonto</small><strong>'+money(discount)+'</strong></div>'+
    '<div><small>Ödenen</small><strong>'+money(o.paid_amount)+'</strong></div>'+
-   '<div><small>Kalan</small><strong class="'+(remaining>0?'debt':'')+'">'+money(remaining)+'</strong></div>'+
+   '<div><small>'+(remaining<0?'İADE GEREKİYOR':'Kalan')+'</small><strong class="'+(remaining>0?'debt':'')+'">'+money(Math.abs(remaining))+'</strong></div>'+
   '</div><div class="compact-actions">'+
    '<button class="secondary" type="button" data-print-a4="'+escapeHtml(o.id)+'">▣ A4 Yazdır</button>'+ 
    '<button class="secondary" type="button" data-print-label="'+escapeHtml(o.id)+'" '+(o.barcode_printed_at?!['owner','manager'].includes(memberRole)?'disabled title="Tekrar baskı yalnızca yönetici yetkisiyle yapılabilir"':'':!['processing','new'].includes(o.status)?'disabled title="Barkod ilk kez yalnızca İşlemde durumunda basılabilir"':'')+'>'+(o.barcode_printed_at?'▥ QR Etiketi Tekrar Yazdır':'▥ Barkod Yazdır')+'</button>'+
    (rows.some(i=>['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ'].includes(i.category)&&i.status!=='cancelled')&&o.status!=='cancelled'?
    '<button class="secondary" type="button" data-whatsapp-order="'+escapeHtml(o.id)+'">◉ WhatsApp’tan Gönder</button>':'')+
    '<button class="secondary" type="button" data-edit="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
-   '<button class="secondary" type="button" data-payment="'+escapeHtml(o.id)+'" '+(remaining<=0||o.status==='cancelled'?'disabled':'')+'>◷ Ödeme Ekle</button>'+
+   '<button class="secondary" type="button" data-payment="'+escapeHtml(o.id)+'" '+(remaining<=0||['cancelled','voided'].includes(o.status)?'disabled':'')+'>◷ Ödeme Ekle</button>'+
+   '<button class="secondary" type="button" data-void="'+escapeHtml(o.id)+'" '+(['cancelled','voided'].includes(o.status)?'disabled':'')+'>⊘ İptal Et</button>'+ 
    '<button class="secondary compact-delete" type="button" data-delete="'+escapeHtml(o.id)+'" '+(!['owner','manager'].includes(memberRole)||o.status==='cancelled'?'disabled title="Silme yetkisi yalnızca yöneticidedir; silinen sipariş tekrar silinemez"':'')+'>▤ Sil</button>'+
   '</div></div></div>'+
   ((o.status==='processing'||o.status==='new')?
@@ -119,7 +127,7 @@ function render(){
  }).join('');
  if(!subset.length&&orders.length)msg('orders-message','Seçilen filtrelerde sipariş bulunamadı.');else if(orders.length)msg('orders-message','');
 }
-const auditLabels={waiting_reason:'Bekleme Nedeni',customer_name:'Müşteri Adı',customer_phone:'Telefon',delivery_date:'Teslim Tarihi',customer_note:'Sipariş Notu',branch_id:'Şube',order_type:'Sipariş Tipi',payment_method:'Ödeme Şekli',total_amount:'Genel Toplam',subtotal_amount:'Ara Toplam',discount_percent:'İskonto %',discount_amount:'İskonto ₺',paid_amount:'Ödenen Tutar',status:'Sipariş Durumu',category:'Kategori',product_name:'Ürün',width_cm:'En',height_cm:'Boy',unit_price:'Ürün Fiyatı',production_note:'Üretim Notu'};
+const auditLabels={cancellation_reason:'İptal Nedeni',cancellation_requested_at:'İptal Onayı Talebi',waiting_reason:'Bekleme Nedeni',customer_name:'Müşteri Adı',customer_phone:'Telefon',delivery_date:'Teslim Tarihi',customer_note:'Sipariş Notu',branch_id:'Şube',order_type:'Sipariş Tipi',payment_method:'Ödeme Şekli',total_amount:'Genel Toplam',subtotal_amount:'Ara Toplam',discount_percent:'İskonto %',discount_amount:'İskonto ₺',paid_amount:'Ödenen Tutar',status:'Sipariş Durumu',category:'Kategori',product_name:'Ürün',width_cm:'En',height_cm:'Boy',unit_price:'Ürün Fiyatı',production_note:'Üretim Notu'};
 const ignoredAuditFields=new Set(['updated_at','created_at','id','order_id','organization_id','created_by','barcode','arrived_at','arrived_by','quantity','slot_key']);
 function auditValue(field,value){
  if(value===null||value===undefined||value==='')return '—';
@@ -270,6 +278,33 @@ async function archiveOrder(id){
  if(error){msg('orders-message','Sipariş silinemedi: '+error.message);return}
  await load();msg('orders-message','Sipariş Silinenler bölümüne taşındı; değişiklik geçmişi korundu.');
 }
+async function voidOrder(id){
+ const o=orders.find(x=>x.id===id);if(!o)return;
+ const reason=prompt('#'+o.order_number+' siparişinin kalan ürünleri iptal edilecek. İptal nedenini yazın:','');
+ if(reason===null)return;
+ if(reason.trim().length<5){msg('orders-message','İptal nedeni en az 5 karakter olmalı.');return}
+ if(!confirm('Sipariş iptal edilsin mi? Toplam tutar sıfırlanır; tahsilat varsa İADE GEREKİYOR olarak görünür. Otomatik para iadesi yapılmaz.'))return;
+ const {error}=await sb.rpc('erp_void_order',{p_org:org,p_order:id,p_reason:reason.trim()});
+ if(error){msg('orders-message','Sipariş iptal edilemedi: '+error.message);return}
+ await load();msg('orders-message','Sipariş iptal edildi. Tahsilat varsa iade gereksinimini kontrol edin.');
+}
+async function cancelItem(id){
+ const item=items.find(x=>x.id===id);if(!item)return;
+ const reason=prompt(item.product_name+' ürünü için iptal nedeni:','');
+ if(reason===null)return;
+ if(reason.trim().length<5){msg('orders-message','İptal nedeni en az 5 karakter olmalı.');return}
+ if(!confirm(item.product_name+' iptal edilsin veya etiketi basılmışsa yönetici onayına gönderilsin mi?'))return;
+ const {data,error}=await sb.rpc('erp_request_item_cancellation',{p_org:org,p_item:id,p_reason:reason.trim()});
+ if(error){msg('orders-message','Ürün iptali başarısız: '+error.message);return}
+ await load();msg('orders-message',data==='pending'?'Basılmış ürün için yönetici onayı bekleniyor.':'Ürün iptal edildi; sipariş tutarı güncellendi.');
+}
+async function decideItemCancellation(id,approve){
+ if(!['owner','manager'].includes(memberRole)){msg('orders-message','Yönetici yetkisi gerekiyor.');return}
+ if(!confirm(approve?'Ürün iptalini onaylıyor musunuz? Bedeli siparişten düşülecek.':'İptal talebini reddediyor musunuz?'))return;
+ const {error}=await sb.rpc('erp_decide_item_cancellation',{p_org:org,p_item:id,p_approve:approve});
+ if(error){msg('orders-message','İptal onayı işlenemedi: '+error.message);return}
+ await load();msg('orders-message',approve?'İptal onaylandı; sipariş tutarı güncellendi.':'İptal talebi reddedildi.');
+}
 function exportCSV(){
  const header=['Sipariş','Müşteri','Telefon','Şube','Durum','Teslim','Toplam','Ödenen','Kalan','Not'];
  const rows=orders.map(o=>[o.order_number,o.customer_name,o.customer_phone,branchName(o.branch_id),titles[o.status],o.delivery_date,o.total_amount,o.paid_amount,Number(o.total_amount)-Number(o.paid_amount),o.customer_note]);
@@ -384,6 +419,10 @@ $('orders-list').onclick=e=>{
  const printA4=e.target.closest('[data-print-a4]');if(printA4){openPrint(printA4.dataset.printA4,'a4');return;}
  const printLabel=e.target.closest('[data-print-label]');if(printLabel){openPrint(printLabel.dataset.printLabel,'label');return;}
  const payment=e.target.closest('[data-payment]');if(payment){addPayment(payment.dataset.payment);return;}
+ const voidButton=e.target.closest('[data-void]');if(voidButton){voidOrder(voidButton.dataset.void);return;}
+ const cancelButton=e.target.closest('[data-item-cancel]');if(cancelButton){cancelItem(cancelButton.dataset.itemCancel);return;}
+ const approveButton=e.target.closest('[data-approve-cancel]');if(approveButton){decideItemCancellation(approveButton.dataset.approveCancel,true);return;}
+ const rejectButton=e.target.closest('[data-reject-cancel]');if(rejectButton){decideItemCancellation(rejectButton.dataset.rejectCancel,false);return;}
  const deletion=e.target.closest('[data-delete]');if(deletion){archiveOrder(deletion.dataset.delete);return;}
  const expand=e.target.closest('[data-expand]');if(expand){const id=expand.dataset.expand;if(expandedOrders.has(id))expandedOrders.delete(id);else expandedOrders.add(id);render();if(expandedOrders.has(id))loadHistory(id);return}const edit=e.target.closest('[data-edit]');if(edit){location.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(edit.dataset.edit);return}const button=e.target.closest('[data-detail]');if(button)openDetail(button.dataset.detail)};
  $('payment-form').onsubmit=savePayment;
