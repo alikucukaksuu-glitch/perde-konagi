@@ -6,7 +6,8 @@ const $=id=>document.getElementById(id);
 let user=null,organizations=[],members=[],branches=[],current=null,role='';
 const safeText=(el,value)=>{el.textContent=String(value??'')};
 function message(id,value){safeText($(id),value||'')}
-function showAuth(){ $('company-auth').hidden=false;$('company-dashboard').hidden=true}
+function showAuth(){ $('company-auth').hidden=false;$('company-dashboard').hidden=true;$('reset-password-setup').hidden=true}
+function showResetPassword(){ $('company-auth').hidden=true;$('company-dashboard').hidden=true;$('reset-password-setup').hidden=false;$('reset-password-setup').scrollIntoView({block:'center'})}
 function showDashboard(){$('company-auth').hidden=true;$('company-dashboard').hidden=false}
 function el(tag,cls,value){const node=document.createElement(tag);if(cls)node.className=cls;if(value!==undefined)node.textContent=value;return node}
 function isManager(){return role==='owner'||role==='manager'}
@@ -25,6 +26,10 @@ async function init(){
    await sb.auth.signOut({scope:'local'}).catch(()=>{});
   }
   user=response.error?null:response.data?.user;
+  if(new URLSearchParams(location.search).has('reset')){
+   if(user){showResetPassword();return}
+   showAuth();message('company-login-message','Sıfırlama bağlantısının süresi dolmuş veya bağlantı geçersiz. Yeni bağlantı istemek için Şifremi Unuttum seçeneğini kullanın.');return;
+  }
   if(!user){showAuth();return}
   $('current-email').textContent=user.email||'Oturum açık';$('logout-company').hidden=false;
   if(new URLSearchParams(location.search).has('invite')){
@@ -185,6 +190,40 @@ async function createBranch(e){
  }catch(err){message('branch-message','Şube eklenemedi: '+err.message)}
  finally{button.disabled=false}
 }
+function showForgotPassword(open){
+ $('company-login').hidden=open;
+ $('forgot-password-form').hidden=!open;
+ message('forgot-password-message','');
+ if(open)$('forgot-password-form').elements.namedItem('email').value=$('company-login').elements.namedItem('email').value||'';
+}
+$('forgot-password-open').onclick=()=>showForgotPassword(true);
+$('forgot-password-cancel').onclick=()=>showForgotPassword(false);
+$('forgot-password-form').onsubmit=async e=>{
+ e.preventDefault();
+ const form=e.currentTarget,email=String(new FormData(form).get('email')||'').trim();
+ const button=form.querySelector('[type=submit]');button.disabled=true;
+ message('forgot-password-message','Bağlantı gönderiliyor...');
+ try{
+  if(!sb)throw Error('Bağlantı kurulamadı');
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://perdekonagi.com/magaza/company.html?reset=1'});
+  if(error)throw error;
+  message('forgot-password-message','Bu adrese kayıtlı bir hesap varsa şifre sıfırlama bağlantısı gönderildi. Gelen kutunuzu ve spam klasörünü kontrol edin.');
+ }catch(error){message('forgot-password-message','E-posta gönderilemedi: '+error.message)}
+ finally{button.disabled=false}
+};
+$('reset-password-form').onsubmit=async e=>{
+ e.preventDefault();
+ const form=e.currentTarget,fd=new FormData(form),password=String(fd.get('password')||''),repeat=String(fd.get('repeat')||'');
+ if(password.length<8||password!==repeat){message('reset-password-message','Şifre en az 8 karakter olmalı ve iki alan aynı olmalı.');return}
+ const button=form.querySelector('[type=submit]');button.disabled=true;
+ try{
+  const {error}=await sb.auth.updateUser({password});if(error)throw error;
+  message('reset-password-message','Şifreniz yenilendi. Giriş ekranına yönlendiriliyorsunuz...');
+  await sb.auth.signOut({scope:'local'});
+  location.replace('/magaza/company.html');
+ }catch(error){message('reset-password-message','Şifre yenilenemedi: '+error.message)}
+ finally{button.disabled=false}
+};
 $('company-login').onsubmit=async e=>{
  e.preventDefault();const data=new FormData(e.currentTarget);
  message('company-login-message','Giriş yapılıyor...');
