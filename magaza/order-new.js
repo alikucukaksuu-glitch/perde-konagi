@@ -206,7 +206,7 @@ function drawSlots(){
     const select=newElement('select','slot-status');select.setAttribute('aria-label','Satır durumu: '+record.name);
     for(const v of ['processing','workshop','ready','delivered','cancelled']){
      const option=new Option(statusNames[v],v);
-     if(v==='ready'||v==='delivered'||record.status==='ready'||record.status==='delivered')option.disabled=v!==record.status;
+     if(v==='ready'||v==='delivered'||record.status==='ready'||record.status==='delivered'||(v==='processing'&&(record.status!=='processing'||Boolean(editing.barcode_printed_at))))option.disabled=v!==record.status;
      select.add(option);
     }
     select.value=record.status||'processing';
@@ -284,6 +284,7 @@ function openItem(category,index){
  $('product-note').value=value?.note||'';
  $('product-status').value=value?.status||'processing';
  $('product-status').disabled=!value?.id||['ready','delivered'].includes(value.status)||['waiting','delivered','cancelled'].includes(editing?.status);
+ for(const option of $('product-status').options){if(option.value==='processing'&&(value?.status!=='processing'||Boolean(editing?.barcode_printed_at)))option.disabled=true;else option.disabled=false;}
  $('product-status-wrapper').title=value?.id?'Durum değişikliği seçildiğinde anında kaydedilir.':'Sipariş kaydedilince ürün İşlemde durumunda başlar.';
  $('delete-product').hidden=!value;
  $('delete-product').disabled=!!value&&['ready','delivered'].includes(value.status);
@@ -440,7 +441,7 @@ async function start(){
 async function loadForEdit(orderId,orgId){
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId)){alertText('Geçersiz sipariş bağlantısı.');return}
  try{
-  const {data:order,error:orderError}=await sb.from('erp_orders').select('id,organization_id,branch_id,customer_name,customer_phone,delivery_date,customer_note,paid_amount,discount_percent,discount_amount,order_type,payment_method,status,updated_at').eq('organization_id',orgId).eq('id',orderId).single();
+  const {data:order,error:orderError}=await sb.from('erp_orders').select('id,organization_id,branch_id,customer_name,customer_phone,delivery_date,customer_note,paid_amount,discount_percent,discount_amount,order_type,payment_method,status,barcode_printed_at,updated_at').eq('organization_id',orgId).eq('id',orderId).single();
   if(orderError)throw orderError;
   if(['delivered','cancelled'].includes(order.status))throw Error('Teslim edilmiş veya iptal edilmiş sipariş düzenlenemez.');
   const {data:lines,error:lineError}=await sb.from('erp_order_items').select('id,category,product_name,width_cm,height_cm,unit_price,production_note,barcode,slot_key,status').eq('organization_id',orgId).eq('order_id',orderId).order('created_at',{ascending:true});
@@ -564,6 +565,7 @@ $('product-status').onchange=async()=>{
  const item=products.get(key(active.category,active.index)),select=$('product-status');
  if(!item?.id)return;
  const before=item.status,next=select.value;
+ if(next==='processing'&&(before!=='processing'||Boolean(editing?.barcode_printed_at))){select.value=before;$('product-status-message').textContent='Atölyeye alınan ürün tekrar İşlemde durumuna geçirilemez.';return}
  select.disabled=true;$('product-status-message').textContent='Durum kaydediliyor...';
  try{
   await updateItemStatus(item,next);
