@@ -70,8 +70,10 @@ async function reloadOrganizations(preferred){
 }
 async function reloadCurrent(){
  if(!current)return;
+ const ownPermissions=await getRows('erp_member_permissions','menu_key,can_view',q=>q.eq('organization_id',current.id).eq('user_id',user.id));
+ const maySeeTeam=isManager()||ownPermissions.some(p=>p.menu_key==='team'&&p.can_view);
  const [teamResponse,branchRows,permissionResponse,assignmentResponse]=await Promise.all([
-  sb.rpc('erp_list_team',{p_org:current.id}),
+  maySeeTeam?sb.rpc('erp_list_team',{p_org:current.id}):Promise.resolve({data:[]}),
   getRows('erp_branches','id,name,code,phone,address,created_at',q=>q.eq('organization_id',current.id).order('created_at')),
   getRows('erp_member_permissions','user_id,menu_key,can_view,can_edit',q=>q.eq('organization_id',current.id)),
   getRows('erp_member_branch_access','user_id,branch_id',q=>q.eq('organization_id',current.id))
