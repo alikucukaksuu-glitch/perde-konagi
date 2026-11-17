@@ -55,7 +55,7 @@ function validPliseMeasure(v){
  return String(v).trim()!==''&&Number.isFinite(n)&&n>0&&Math.abs(n*10-Math.round(n*10))<1e-7;
 }
 function storSettings(){
- return {caseType:$('stor-case').value,color:$('stor-color').value,chain:$('stor-chain').value,side:$('stor-side').value,tube:$('stor-tube').value,foot:$('stor-foot').value}
+ return {caseType:$('stor-case').value,color:$('stor-color').value,chain:$('stor-chain').value,side:$('stor-side').value,tube:$('stor-tube').value,foot:$('stor-foot').value,hem:$('stor-hem').value}
 }
 function storUnitPrice(base,w,h,opts){
  const calcWidth=Math.max(100,Number(w)||0),calcHeight=Math.max(200,Number(h)||0);
@@ -70,6 +70,7 @@ function storSpecs(opts,w,h){
  return ['Kasa: '+cases[opts.caseType],opts.caseType!=='open'&&'Kasa Rengi: '+opts.color,
  'Zincir: '+(opts.chain==='metal'?'Metal':'Plastik'),'Zincir Yönü: '+(opts.side==='right'?'Sağ':'Sol'),
  'Boru: '+(opts.tube==='38'?'38 Jumbo':'32 Standart'),'Yan Ayak: '+(opts.foot==='metal'?'Metal':'Plastik'),
+ 'Etek Dilim Modeli: Etek Dilim '+(opts.hem||'1'),
  'Hesap En: '+Math.max(100,Number(w)||0)+' cm','Hesap Boy: '+Math.max(200,Number(h)||0)+' cm'].filter(Boolean).join('; ')
 }
 function parseStorSpecs(spec){
@@ -78,10 +79,10 @@ function parseStorSpecs(spec){
  return {caseType:kase==='Kapalı Kasa Klasik'?'classic':kase==='Kapalı Kasa Renkli'?'colored':'open',
  color:get('Kasa Rengi'),chain:get('Zincir')==='Metal'?'metal':'plastic',
  side:get('Zincir Yönü')==='Sağ'?'right':'left',tube:get('Boru').startsWith('38')?'38':'32',
- foot:get('Yan Ayak')==='Metal'?'metal':'plastic'}
+ foot:get('Yan Ayak')==='Metal'?'metal':'plastic',hem:(get('Etek Dilim Modeli').match(/(?:Etek Dilim )?(1[01]|[1-9])$/)?.[1]||'1')}
 }
 function stripStorOptions(spec){
- return String(spec||'').split(/;\s*/).filter(part=>!/^(Kasa|Kasa Rengi|Zincir|Zincir Yönü|Boru|Yan Ayak|Hesap En|Hesap Boy):\s*/.test(part)).join('; ').trim();
+ return String(spec||'').split(/;\s*/).filter(part=>!/^(Kasa|Kasa Rengi|Zincir|Zincir Yönü|Boru|Yan Ayak|Etek Dilim Modeli|Hesap En|Hesap Boy):\s*/.test(part)).join('; ').trim();
 }
 function syncStorColor(value){
  const colors=storCaseColors[value]||[];
@@ -252,7 +253,7 @@ function openItem(category,index){
  $('product-category').value=category;
  $('catalog-search').value='';
  $('catalog-results').hidden=true;
- $('stor-case').value='open';$('stor-chain').value='plastic';$('stor-side').value='left';$('stor-tube').value='32';$('stor-foot').value='plastic';
+ $('stor-case').value='open';$('stor-chain').value='plastic';$('stor-side').value='left';$('stor-tube').value='32';$('stor-foot').value='plastic';$('stor-hem').value='1';
  $('plise-mount').value=pliseMounts[0];$('plise-case-color').value=pliseCaseColors[0];
  $('wood-ribbon').checked=false;$('wood-mechanism').value='İpli';
  syncCategoryUI();
@@ -267,7 +268,7 @@ function openItem(category,index){
   const cfg=value?.stor||parseStorSpecs(value?.spec||'');
   $('stor-case').value=cfg.caseType;syncStorColor(cfg.caseType);
   if(cfg.color&&[...$('stor-color').options].some(x=>x.value===cfg.color))$('stor-color').value=cfg.color;
-  $('stor-chain').value=cfg.chain;$('stor-side').value=cfg.side;$('stor-tube').value=cfg.tube;$('stor-foot').value=cfg.foot;
+  $('stor-chain').value=cfg.chain;$('stor-side').value=cfg.side;$('stor-tube').value=cfg.tube;$('stor-foot').value=cfg.foot;$('stor-hem').value=cfg.hem||'1';
  }
  if(category==='PLİSE PERDE'){
   const config=value?.plise||parsePliseConfiguration(value?.spec);
@@ -580,7 +581,7 @@ $('delete-product').onclick=()=>{if(!active)return;removeItem(active.category,ac
 $('product-shade').onclick=$('close-product').onclick=closeItem;
 ['product-price','product-quantity'].forEach(id=>$(id).oninput=calculateItemTotal);
  ['product-width','product-height'].forEach(id=>$(id).oninput=calculateItemTotal);
- ['stor-chain','stor-side','stor-tube','stor-foot','stor-color'].forEach(id=>$(id).onchange=calculateItemTotal);
+ ['stor-chain','stor-side','stor-tube','stor-foot','stor-color','stor-hem'].forEach(id=>$(id).onchange=calculateItemTotal);
  $('stor-case').onchange=()=>{syncStorColor($('stor-case').value);calculateItemTotal()};
  $('product-category').onchange=()=>{syncCategoryUI();$('catalog-search').value='';$('catalog-results').hidden=true;showCatalog();calculateItemTotal()};
  $('catalog-search').oninput=()=>{showCatalog()};
