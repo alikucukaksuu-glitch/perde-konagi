@@ -63,7 +63,7 @@ function addA4(){
  }
  const brandCopy=el('div','a4-brand-copy');
  txt(brandCopy,'h1','',company.name);
- txt(brandCopy,'strong','',(branch.name||'')+' ŞUBESİ');
+ txt(brandCopy,'strong','',/(?:^|\s)ŞUBESİ\s*$/i.test((branch.name||'').trim())?(branch.name||'').trim():((branch.name||'').trim()+' ŞUBESİ').trim());
  brand.append(brandCopy);
  const contact=el('div','a4-new-contact');
  if(branch.address)txt(contact,'p','',branch.address);
