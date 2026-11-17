@@ -18,7 +18,7 @@ function routeFromUrl(raw){
  if(path.endsWith('/orders.html')||path.endsWith('/index.html')||path==='/magaza/')return 'orders';
  return null;
 }
-function iframeAddress(view){const [base,fragment]=menus[view].split('#'),url=new URL(base,location.href);url.searchParams.set('embedded','1');if(orgId&&view!=='company')url.searchParams.set('org',orgId);if(view==='orders'){const initial=new URLSearchParams(location.search);for(const key of ['scan','received'])if(initial.has(key))url.searchParams.set(key,initial.get(key)||'1')}return url.href+(fragment?'#'+fragment:'')}
+function iframeAddress(view){const [base,fragment]=menus[view].split('#'),url=new URL(base,location.href);url.searchParams.set('embedded','1');const requestedOrg=orgId||new URLSearchParams(location.search).get('org');if(requestedOrg&&view!=='company')url.searchParams.set('org',requestedOrg);if(view==='orders'){const initial=new URLSearchParams(location.search);for(const key of ['scan','received'])if(initial.has(key))url.searchParams.set(key,initial.get(key)||'1')}return url.href+(fragment?'#'+fragment:'')}
 function hideEmbeddedChrome(frame){
  try{
   const doc=frame.contentDocument;if(!doc)return;
@@ -82,11 +82,12 @@ async function initialize(){
      allowed.company=true;
     }
    }else Object.keys(allowed).forEach(key=>allowed[key]=key==='orders');
-  }else Object.keys(allowed).forEach(key=>allowed[key]=key==='orders');
+  }else {Object.keys(allowed).forEach(key=>allowed[key]=key==='orders');for(const record of frames.values())record.frame.remove();frames.clear()}
  }catch(error){
   Object.keys(allowed).forEach(key=>allowed[key]=key==='orders');
   console.warn('KONAK ERP menü yetkileri okunamadı',error?.message);
  }
+ for(const [key,record] of frames){if(!allowed[key]){record.frame.remove();frames.delete(key)}}
  for(const link of navigation.querySelectorAll('[data-view]'))link.hidden=!allowed[link.dataset.view];
  navigation.style.visibility='visible';
  document.querySelector('.erp-shell-account').hidden=false;
@@ -108,7 +109,16 @@ window.addEventListener('storage',event=>{
   sessionRefreshTimer=setTimeout(()=>initialize(),120);
  }
 });
-window.addEventListener('message',event=>{if(event.origin===location.origin&&event.data?.type==='konak-erp-members-changed')initialize()});
+window.addEventListener('message',event=>{
+ if(event.origin!==location.origin)return;
+ if(event.data?.type==='konak-erp-members-changed'){initialize();return}
+ if(event.data?.type==='konak-erp-org-changed'&&/^[0-9a-f-]{36}$/i.test(String(event.data.org||''))){
+  orgId=event.data.org;
+  const url=new URL(location.href);url.searchParams.set('org',orgId);history.replaceState(history.state,'',url.pathname+url.search+url.hash);
+  for(const [key,record] of frames)if(record.frame.contentWindow!==event.source){record.frame.remove();frames.delete(key)}
+  initialize();
+ }
+});
 ensureFrame('orders');
 initialize();
 })();
