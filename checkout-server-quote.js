@@ -7,7 +7,7 @@ const key='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase.createClient('https://rwylhxrtggsicieuyjrm.supabase.co',key);
 const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(n);
 const safeCart=()=>{try{const data=JSON.parse(localStorage.getItem('perdeKonagiCartV1')||'[]');return Array.isArray(data)?data:[]}catch{return[]}};
-button.addEventListener('click',async()=>{
+async function verifyQuote(){
  button.disabled=true;message.textContent='Sunucu üzerinden güncel ürün ve kargo tutarları kontrol ediliyor…';
  try{
   const {data:{session},error}=await sb.auth.getSession();
@@ -29,5 +29,7 @@ button.addEventListener('click',async()=>{
   message.textContent=result.grand_total===null?'Ürün fiyatları sunucudan doğrulandı; kargo tutarı henüz belirlenmedi. Ödeme kapalıdır.':'Ürün ve kargo toplamı sunucudan doğrulandı: '+money(result.grand_total)+'. Ödeme altyapısı hazırlık aşamasındadır; ödeme alınmaz.';
  }catch(e){$('grand-row').hidden=true;message.textContent=e.message||'Fiyat kontrolü yapılamadı.'}
  finally{button.disabled=false}
-});
+}
+button.addEventListener('click',verifyQuote);
+window.addEventListener('load',verifyQuote,{once:true});
 })();
