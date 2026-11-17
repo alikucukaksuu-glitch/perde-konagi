@@ -83,10 +83,10 @@ async function initialize(){
      allowed.missing=allowed.workshop;
      allowed.company=true;
     }
-   }else Object.keys(allowed).forEach(key=>allowed[key]=key==='orders');
-  }else {Object.keys(allowed).forEach(key=>allowed[key]=key==='orders');for(const record of frames.values())record.frame.remove();frames.clear()}
+   }else Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));
+  }else {Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));for(const record of frames.values())record.frame.remove();frames.clear()}
  }catch(error){
-  Object.keys(allowed).forEach(key=>allowed[key]=key==='orders');
+  Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));
   console.warn('KONAK ERP menü yetkileri okunamadı',error?.message);
  }
  for(const [key,record] of frames){if(!allowed[key]){record.frame.remove();frames.delete(key)}}
