@@ -220,11 +220,15 @@ $('staff-form').onsubmit=async e=>{
   message('team-message','Kullanıcı kontrol ediliyor...');
   message('team-message','Personel davet e-postası gönderiliyor...');
   const invited=await sb.functions.invoke('erp-invite-staff',{body:{org:current.id,email,role:nextRole}});
-  if(invited.data?.registered){
+  let inviteResult=invited.data||{};
+  if(invited.error?.context?.json){
+   try{inviteResult=await invited.error.context.json()}catch(_){/* HTTP body unavailable */}
+  }
+  if(inviteResult.registered){
    const otp=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:'https://perdekonagi.com/magaza/company.html?invite=1'}});
    if(otp.error)throw otp.error;
-  }else if(invited.error||invited.data?.error){
-   throw Error(invited.data?.error||invited.error?.message||'Davet gönderilemedi');
+  }else if(invited.error||inviteResult.error){
+   throw Error(inviteResult.error||invited.error?.message||'Davet gönderilemedi');
   }
   form.reset();form.hidden=true;message('team-message','Davet bağlantısı gönderildi: '+email+'. E-posta kabul edilmeden işletme erişimi açılmaz.');
  }catch(error){message('team-message','İşlem başarısız: '+error.message)}
