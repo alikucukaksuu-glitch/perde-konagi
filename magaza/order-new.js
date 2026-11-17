@@ -156,9 +156,9 @@ function setDate(days){
 }
 function moneyValue(){
  let subtotal=0;
- for(const value of products.values())subtotal+=value.price*value.qty;
+ for(const value of products.values())if(value.status!=='cancelled')subtotal+=value.price*value.qty;
  const percent=asNum($('discount-percent').value),fixed=asNum($('discount-amount').value);
- const discount=Number((subtotal*percent/100+fixed).toFixed(2)),total=Number((subtotal-discount).toFixed(2));
+ const discount=Math.min(subtotal,Number((subtotal*percent/100+fixed).toFixed(2))),total=Number((subtotal-discount).toFixed(2));
  const paid=asNum($('paid-value').value);
  return {subtotal,percent,fixed,discount,total,paid};
 }
@@ -167,7 +167,7 @@ function updateMoney(){
  $('subtotal-value').textContent=fmt(v.subtotal);
  $('discount-value').textContent=fmt(v.discount);
  $('grand-value').textContent=fmt(Math.max(0,v.total));
- $('balance-value').textContent=fmt(Math.max(0,v.total-v.paid));
+ $('balance-value').textContent=fmt(Math.abs(v.total-v.paid));
  $('balance-value').style.color=(v.paid>v.total||v.total<0)?'#ad3923':'';
 }
 const statusNames={processing:'İşlemde',waiting:'Beklemede',workshop:'Atölyede',ready:'Mağazada · Teslime Hazır',delivered:'Teslim Edildi',cancelled:'İptal'};
@@ -208,11 +208,11 @@ function drawSlots(){
     const select=newElement('select','slot-status');select.setAttribute('aria-label','Satır durumu: '+record.name);
     for(const v of ['processing','waiting','workshop','ready','delivered','cancelled']){
      const option=new Option(statusNames[v],v);
-     if(v==='ready'||v==='delivered'||record.status==='ready'||record.status==='delivered'||(v==='processing'&&(record.status!=='processing'&&record.status!=='waiting'||Boolean(editing.barcode_printed_at)))||(v==='waiting'&&(record.status!=='processing'||Boolean(editing.barcode_printed_at)))||(record.status==='waiting'&&v!=='waiting'&&v!=='processing'))option.disabled=v!==record.status;
+     if(v==='ready'||v==='delivered'||v==='cancelled'||record.status==='ready'||record.status==='delivered'||record.status==='cancelled'||(v==='processing'&&(record.status!=='processing'&&record.status!=='waiting'||Boolean(editing.barcode_printed_at)))||(v==='waiting'&&(record.status!=='processing'||Boolean(editing.barcode_printed_at)))||(record.status==='waiting'&&v!=='waiting'&&v!=='processing'))option.disabled=v!==record.status;
      select.add(option);
     }
     select.value=record.status||'processing';
-    if(record.status==='ready'||record.status==='delivered'||editing.status==='delivered'||editing.status==='cancelled'||(editing.status==='waiting'&&record.status!=='waiting'))select.disabled=true;
+    if(record.status==='ready'||record.status==='delivered'||record.status==='cancelled'||editing.status==='delivered'||editing.status==='cancelled'||editing.status==='voided'||(editing.status==='waiting'&&record.status!=='waiting'))select.disabled=true;
     select.onchange=async()=>{const prev=record.status;select.disabled=true;
       try{await updateItemStatus(record,select.value);record.status=select.value;drawSlots();}
       catch(e){record.status=prev;drawSlots();alertText('Satır durumu değiştirilemedi: '+e.message);}
@@ -224,7 +224,7 @@ function drawSlots(){
    const controls=newElement('div','slot-controls');
    const edit=newElement('button','slot-edit','Düzenle');edit.type='button';edit.onclick=()=>openItem(group.name,i);
    const remove=newElement('button','slot-remove','Sil');remove.type='button';remove.onclick=()=>removeItem(group.name,i);
-   if(['workshop','ready','delivered'].includes(record.status)||record.printedAt){remove.disabled=true;remove.title='Atölyeye gönderilen veya teslim alınan ürün silinemez';}
+   if(['workshop','ready','delivered','cancelled'].includes(record.status)||record.printedAt){remove.disabled=true;remove.title='Atölyeye gönderilen veya teslim alınan ürün silinemez';}
    controls.append(edit,remove);wrapper.append(controls);grid.append(wrapper);
   }
   section.append(grid);target.append(section);
@@ -255,14 +255,15 @@ async function updateItemStatus(record,next){
 function removeItem(category,index){
  const k=key(category,index),item=products.get(k);
  if(!item)return;
- if(['workshop','ready','delivered','waiting'].includes(item.status)||item.printedAt){alertText('Atölyeye gönderilmiş, beklemeye alınmış veya teslim edilmiş ürün siparişten silinemez.');return}
+ if(['workshop','ready','delivered','waiting','cancelled'].includes(item.status)||item.printedAt){alertText('Atölyeye gönderilmiş, beklemeye alınmış veya teslim edilmiş ürün siparişten silinemez.');return}
  if(item.id&&!confirm(item.name+' ürünü siparişten kaldırılacak. Değişiklik, siparişi kaydedince gerçekleşecek. Devam edilsin mi?'))return;
  products.delete(k);closeItem();drawSlots();
 }
 function openItem(category,index){
- if(editing&&['ready','partial_ready'].includes(editing.status)&&!products.has(key(category,index))){alertText('Mağazada teslime hazır siparişe yeni ürün eklenemez.');return}
+ if(editing&&['ready','partial_ready','voided'].includes(editing.status)&&!products.has(key(category,index))){alertText('Mağazada teslime hazır siparişe yeni ürün eklenemez.');return}
  active={category,index};
  const value=products.get(key(category,index));
+ if(value?.status==='cancelled'){alertText('İptal edilmiş ürün düzenlenemez.');active=null;return}
  $('product-category-title').textContent=category+' · Kutucuk '+(index+1);
  $('product-dialog-title').textContent=value?'Satırı Düzenle':'Yeni Satır Ekle';
  $('product-form').reset();
@@ -303,7 +304,7 @@ function openItem(category,index){
  for(const option of $('product-status').options){if(option.value==='processing'&&(value?.status!=='processing'&&value?.status!=='waiting'||Boolean(editing?.barcode_printed_at)))option.disabled=true;else if(option.value==='waiting')option.disabled=value?.status!=='processing'||Boolean(editing?.barcode_printed_at);else if(value?.status==='waiting')option.disabled=option.value!=='waiting'&&option.value!=='processing';else option.disabled=false;}
  $('product-status-wrapper').title=value?.id?'Durum değişikliği seçildiğinde anında kaydedilir.':'Sipariş kaydedilince ürün İşlemde durumunda başlar.';
  $('delete-product').hidden=!value;
- $('delete-product').disabled=!!value&&(['workshop','ready','delivered','waiting'].includes(value.status)||value.printedAt);
+ $('delete-product').disabled=!!value&&(['workshop','ready','delivered','waiting','cancelled'].includes(value.status)||value.printedAt);
  $('product-quantity').disabled=!!value?.id;
  if(value?.id)$('product-quantity').value='1';
  $('product-status-message').textContent=value?.id?'Satır durumu seçildiğinde hemen kaydedilir. Ürün bilgileri için ayrıca Kaydet butonuna basın.':'';
@@ -368,7 +369,7 @@ function storeItem(e){
  const plise=category==='PLİSE PERDE'?pliseConfiguration():null;
  const wood=category==='AHŞAP JALUZİ'?woodConfiguration():null;
  const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):plise?['Montaj: '+plise.mount,'Kasa Rengi: '+plise.caseColor,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):wood?['Kurdela: '+(wood.ribbon?'Var':'Yok'),'Mekanizma: '+wood.mechanism,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
- const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,plise,wood,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||'processing'};
+ const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,plise,wood,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||'processing',printedAt:old?.printedAt||null};
  products.delete(oldKey);products.set(key(category,index),record);
  closeItem();drawSlots();
 }
@@ -459,7 +460,7 @@ async function loadForEdit(orderId,orgId){
  try{
   const {data:order,error:orderError}=await sb.from('erp_orders').select('id,organization_id,branch_id,customer_name,customer_phone,delivery_date,customer_note,paid_amount,discount_percent,discount_amount,order_type,payment_method,status,barcode_printed_at,updated_at').eq('organization_id',orgId).eq('id',orderId).single();
   if(orderError)throw orderError;
-  if(['delivered','cancelled'].includes(order.status))throw Error('Teslim edilmiş veya iptal edilmiş sipariş düzenlenemez.');
+  if(['delivered','cancelled','voided'].includes(order.status))throw Error('Teslim edilmiş veya iptal edilmiş sipariş düzenlenemez.');
   const {data:lines,error:lineError}=await sb.from('erp_order_items').select('id,category,product_name,width_cm,height_cm,unit_price,production_note,barcode,slot_key,status,waiting_reason,printed_at').eq('organization_id',orgId).eq('order_id',orderId).order('created_at',{ascending:true});
   if(lineError)throw lineError;
   editing=order;products.clear();
@@ -512,7 +513,7 @@ async function submit(){
  const count=[...products.values()].reduce((a,p)=>a+p.qty,0),v=moneyValue();
  if(!count){alertText('En az bir ürün ekleyin.');return}
  if(count>60){alertText('En fazla 60 ürün parçası eklenebilir.');return}
- if(!Number.isFinite(v.percent)||v.percent<0||v.percent>100||v.fixed<0||v.total<0||v.paid<0||v.paid>v.total){alertText('İskonto ve ödemeleri kontrol edin. Ödeme toplamı aşamaz.');return}
+ if(!Number.isFinite(v.percent)||v.percent<0||v.percent>100||v.fixed<0||v.total<0||v.paid<0){alertText('İskonto ve ödemeleri kontrol edin. Ödeme toplamı aşamaz.');return}
  if(!$('delivery-copy').value||!org||!branches.some(b=>b.id===$('store-select').value)){alertText('Teslim tarihini ve şubeyi kontrol edin.');return}
  const payload=[];
  for(const [slot,p] of products){
