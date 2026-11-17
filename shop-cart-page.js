@@ -49,12 +49,13 @@ function show(){
  }
  card.append(top,custom);items.append(card)}
  total.textContent=money(sum);count.textContent=qty+' adet ürün';if(badge)badge.textContent=qty>99?'99+':String(qty);
+ const prep=document.getElementById('checkout-prep');if(prep){prep.disabled=!(qty>0&&cart.every(x=>x.quote&&Number.isFinite(Number(x.quote.unit_total))));prep.onclick=()=>{if(!prep.disabled)location.href='odeme-hazirlik.html'}};
  const savings=cart.reduce((n,l)=>n+Math.max(0,Number(l.quote?.discount_amount)||0)*l.quantity,0);
  const savingsEl=document.getElementById('coupon-savings');if(savingsEl){savingsEl.hidden=savings<=0;document.getElementById('coupon-savings-value').textContent='−'+money(savings)}
 }
 function change(id,n){if(n>20){status.textContent='Bir üründen en fazla 20 adet ekleyebilirsiniz.';return}if(n<1)cart=cart.filter(x=>x.id!==id);else cart=cart.map(x=>x.id===id?{...x,quantity:n}:x);save();show()}
 async function verify(){
- const t=++version;if(!sb){status.textContent='Fiyat servisine bağlanılamadı. Sepet fiyatları doğrulanamadı.';return}
+ const t=++version;if(!sb){status.textContent='Fiyat servisine bağlanılamadı. Sepet fiyatları doğrulanamadı.';document.getElementById('checkout-prep').disabled=true;return}
  if(!cart.length){status.textContent='Sepetiniz boş.';show();return}
  const next=[];let rejected=0,validCouponUses=0;
  const applyBtn=document.getElementById('coupon-apply');if(applyBtn)applyBtn.disabled=true;
