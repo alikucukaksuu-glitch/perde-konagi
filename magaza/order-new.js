@@ -200,6 +200,7 @@ function drawSlots(){
    details.append(newElement('strong','',record.name));
    details.append(newElement('small','',record.qty+' adet · '+(record.width||'—')+' × '+(record.height||'—')+' cm'));
    if(record.pile)details.append(newElement('small','',record.pile));
+   if(record.status==='waiting'&&record.waitingReason)details.append(newElement('small','', 'Bekleme nedeni: '+record.waitingReason));
    details.append(newElement('small','',fmt(record.price*record.qty)));
    wrapper.append(details);
    if(editing&&record.id){
