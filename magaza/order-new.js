@@ -192,6 +192,7 @@ function drawSlots(){
    const k=key(group.name,i),record=products.get(k);
    if(!record){
     const add=newElement('button','product-slot');add.type='button';
+    if(editing&&['ready','partial_ready'].includes(editing.status)){add.disabled=true;add.title='Mağazada teslime hazır siparişe yeni ürün eklenemez';}
     add.append(newElement('span','slot-add',group.kind==='list'?(i+1)+'. + Ekle':'+ Ekle'));
     add.onclick=()=>openItem(group.name,i);grid.append(add);continue;
    }
@@ -259,6 +260,7 @@ function removeItem(category,index){
  products.delete(k);closeItem();drawSlots();
 }
 function openItem(category,index){
+ if(editing&&['ready','partial_ready'].includes(editing.status)&&!products.has(key(category,index))){alertText('Mağazada teslime hazır siparişe yeni ürün eklenemez.');return}
  active={category,index};
  const value=products.get(key(category,index));
  $('product-category-title').textContent=category+' · Kutucuk '+(index+1);
@@ -506,6 +508,7 @@ async function loadForEdit(orderId,orgId){
 }
 async function submit(){
  if(saving)return;
+ if(editing&&['ready','partial_ready'].includes(editing.status)&&[...products.values()].some(p=>!p.id)){alertText('Mağazada teslime hazır siparişe yeni ürün eklenemez.');return}
  const count=[...products.values()].reduce((a,p)=>a+p.qty,0),v=moneyValue();
  if(!count){alertText('En az bir ürün ekleyin.');return}
  if(count>60){alertText('En fazla 60 ürün parçası eklenebilir.');return}
