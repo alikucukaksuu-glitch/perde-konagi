@@ -99,3 +99,42 @@
 .qr-scan-actions{display:flex;gap:9px;justify-content:flex-end}
 .qr-scan-actions button{min-height:39px}
 @media(max-width:600px){.qr-scan-dialog{padding:15px}.qr-camera{min-height:180px}.qr-main-btn{flex-basis:100%}}
+
+
+/* Mobile workspace usability: all screens retain existing business logic. */
+@media(max-width:620px){
+ html,body{max-width:100%;overflow-x:hidden}
+ .shell{width:100%;max-width:100%;padding-left:12px;padding-right:12px}
+ .banner{grid-template-columns:minmax(0,1fr);gap:17px;margin:14px 0;padding:17px;border-radius:18px}
+ .banner h1{font-size:27px;line-height:1.2}
+ .banner p{font-size:13px}
+ .banner .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:16px}
+ .banner .actions button{width:100%;min-width:0;font-size:12px;line-height:1.25;min-height:43px;padding:9px 7px;white-space:normal}
+ .banner .actions #bulk-print-labels{grid-column:1/-1}
+ .banner .actions #scan-qr{grid-column:auto;flex-basis:auto}
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .stats>div{min-width:0;padding:12px;overflow-wrap:anywhere}
+ .stats strong{font-size:19px}
+ .filters{padding:13px}
+ .filters .three,.filters .two{grid-template-columns:minmax(0,1fr)}
+ .filters-row{display:grid;gap:10px;min-width:0}
+ .filters-row .pills{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;gap:6px;max-width:100%;padding:0 0 7px}
+ .filters-row .pills button{flex:0 0 auto;white-space:nowrap;scroll-snap-align:start}
+ .filters-row #filter-payment{max-width:100%;width:100%}
+ .order,.compact-order{min-width:0;overflow-wrap:anywhere}
+ .compact-money{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .compact-money strong{font-size:12px}
+ .compact-actions button{min-height:42px;font-size:11px}
+ .editor-backdrop,.finance-modal-backdrop,.qr-scan-backdrop{padding:7px}
+ .editor{max-width:100%;padding:14px;border-radius:13px}
+ .editor-head{align-items:start}
+ .editor-actions{display:grid;grid-template-columns:1fr 1fr}
+ .editor-actions button{min-height:44px}
+ input,select,textarea{font-size:16px}
+}
+@media(max-width:370px){
+ .banner .actions{gap:6px}
+ .banner .actions button{font-size:11px}
+ .compact-actions{grid-template-columns:1fr}
+ .finance-modal-stats{grid-template-columns:1fr}
+}
