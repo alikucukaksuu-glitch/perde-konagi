@@ -224,7 +224,7 @@ function drawSlots(){
    const controls=newElement('div','slot-controls');
    const edit=newElement('button','slot-edit','Düzenle');edit.type='button';edit.onclick=()=>openItem(group.name,i);
    const remove=newElement('button','slot-remove','Sil');remove.type='button';remove.onclick=()=>removeItem(group.name,i);
-   if(record.status==='ready'||record.status==='delivered'){remove.disabled=true;remove.title='Teslim alınan ürün silinemez';}
+   if(['workshop','ready','delivered'].includes(record.status)||record.printedAt){remove.disabled=true;remove.title='Atölyeye gönderilen veya teslim alınan ürün silinemez';}
    controls.append(edit,remove);wrapper.append(controls);grid.append(wrapper);
   }
   section.append(grid);target.append(section);
@@ -255,7 +255,7 @@ async function updateItemStatus(record,next){
 function removeItem(category,index){
  const k=key(category,index),item=products.get(k);
  if(!item)return;
- if(['ready','delivered','waiting'].includes(item.status)){alertText('Mağazaya ulaşmış veya teslim edilmiş ürün silinemez.');return}
+ if(['workshop','ready','delivered','waiting'].includes(item.status)||item.printedAt){alertText('Atölyeye gönderilmiş, beklemeye alınmış veya teslim edilmiş ürün siparişten silinemez.');return}
  if(item.id&&!confirm(item.name+' ürünü siparişten kaldırılacak. Değişiklik, siparişi kaydedince gerçekleşecek. Devam edilsin mi?'))return;
  products.delete(k);closeItem();drawSlots();
 }
@@ -303,7 +303,7 @@ function openItem(category,index){
  for(const option of $('product-status').options){if(option.value==='processing'&&(value?.status!=='processing'&&value?.status!=='waiting'||Boolean(editing?.barcode_printed_at)))option.disabled=true;else if(option.value==='waiting')option.disabled=value?.status!=='processing'||Boolean(editing?.barcode_printed_at);else if(value?.status==='waiting')option.disabled=option.value!=='waiting'&&option.value!=='processing';else option.disabled=false;}
  $('product-status-wrapper').title=value?.id?'Durum değişikliği seçildiğinde anında kaydedilir.':'Sipariş kaydedilince ürün İşlemde durumunda başlar.';
  $('delete-product').hidden=!value;
- $('delete-product').disabled=!!value&&['ready','delivered'].includes(value.status);
+ $('delete-product').disabled=!!value&&(['workshop','ready','delivered','waiting'].includes(value.status)||value.printedAt);
  $('product-quantity').disabled=!!value?.id;
  if(value?.id)$('product-quantity').value='1';
  $('product-status-message').textContent=value?.id?'Satır durumu seçildiğinde hemen kaydedilir. Ürün bilgileri için ayrıca Kaydet butonuna basın.':'';
@@ -460,7 +460,7 @@ async function loadForEdit(orderId,orgId){
   const {data:order,error:orderError}=await sb.from('erp_orders').select('id,organization_id,branch_id,customer_name,customer_phone,delivery_date,customer_note,paid_amount,discount_percent,discount_amount,order_type,payment_method,status,barcode_printed_at,updated_at').eq('organization_id',orgId).eq('id',orderId).single();
   if(orderError)throw orderError;
   if(['delivered','cancelled'].includes(order.status))throw Error('Teslim edilmiş veya iptal edilmiş sipariş düzenlenemez.');
-  const {data:lines,error:lineError}=await sb.from('erp_order_items').select('id,category,product_name,width_cm,height_cm,unit_price,production_note,barcode,slot_key,status,waiting_reason').eq('organization_id',orgId).eq('order_id',orderId).order('created_at',{ascending:true});
+  const {data:lines,error:lineError}=await sb.from('erp_order_items').select('id,category,product_name,width_cm,height_cm,unit_price,production_note,barcode,slot_key,status,waiting_reason,printed_at').eq('organization_id',orgId).eq('order_id',orderId).order('created_at',{ascending:true});
   if(lineError)throw lineError;
   editing=order;products.clear();
   const taken=new Set();
@@ -483,7 +483,7 @@ async function loadForEdit(orderId,orgId){
    const legacyBase=Number(line.unit_price)/pileFactor(parsedPile);
    const basePrice=baseMatch?Number(baseMatch[1]):rounded(legacyBase);
    const detailedSpec=(specParts?.[2]||(!specParts?spec:''))?.replace(/(?:^|;\s*)Baz Fiyat:\s*\d+(?:\.\d+)?/,'').trim().replace(/^;\s*|;\s*$/g,'');
-   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',note:spec?notes.split('\n').slice(1).join('\n'):notes});
+   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
   }
   $('store-select').value=order.branch_id;
   $('customer-name').value=order.customer_name;
