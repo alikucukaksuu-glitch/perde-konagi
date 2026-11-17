@@ -120,8 +120,7 @@ document.querySelectorAll('[data-account-action]').forEach(button=>button.addEve
  if(action==='logout'){
   button.disabled=true;
   try{const {error}=await client.auth.signOut();if(error)throw error;
-   orgId='';for(const record of frames.values())record.frame.remove();frames.clear();
-   history.replaceState(null,'','./?view=orders');await initialize();
+   window.location.replace(new URL('../erp/',location.href).href);
   }catch(error){alert('Çıkış yapılamadı: '+(error?.message||'Bilinmeyen hata'))}
   finally{button.disabled=false}
  }
