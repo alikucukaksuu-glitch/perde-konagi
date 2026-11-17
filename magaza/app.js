@@ -95,7 +95,7 @@ function render(){
        (['owner','manager'].includes(memberRole)?'<button type="button" class="secondary" data-approve-cancel="'+escapeHtml(item.id)+'">✓ İptali Onayla</button> <button type="button" class="secondary" data-reject-cancel="'+escapeHtml(item.id)+'">✕ Reddet</button>':''):
        '<button type="button" class="secondary" data-item-cancel="'+escapeHtml(item.id)+'">⊘ Ürünü İptal Et</button>'
     :'')+
-   '</div><span class="chip '+escapeHtml(item.status)+'">'+escapeHtml(titles[item.status]||item.status||'İşlemde')+'</span></div>').join('');
+   '</div><span class="chip '+escapeHtml(item.status)+'">'+escapeHtml(item.status==='cancelled'?'İptal':titles[item.status]||item.status||'İşlemde')+'</span></div>').join('');
   return '<article class="order card order-compact" id="order-'+escapeHtml(o.id)+'">'+
   '<div class="compact-main"><div class="compact-info">'+
    '<div class="compact-title"><span class="compact-number">'+escapeHtml(o.order_number)+'</span><h3>'+escapeHtml(o.customer_name)+'</h3><span class="chip '+escapeHtml(o.status)+'">'+status+'</span></div>'+
