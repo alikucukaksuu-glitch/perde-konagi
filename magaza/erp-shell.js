@@ -3,7 +3,7 @@ const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdk
 const menus={orders:'orders.html',missing:'missing.html',products:'hub.html?tab=products',workshop:'hub.html?tab=workshop',customers:'hub.html?tab=customers',cash:'cash.html',reports:'reports.html',calendar:'calendar.html',company:'company.html#account'};
 const defaults={orders:true,missing:true,products:true,workshop:true,customers:true,cash:false,reports:false,calendar:true,company:true};
 const stage=document.getElementById('erp-shell-stage'),notice=document.getElementById('erp-shell-notice'),navigation=document.querySelector('.erp-shell-nav');
-const frames=new Map(),allowed={...defaults};let selected='',orgId='';
+const frames=new Map(),allowed={...defaults};let selected='',orgId='',authenticated=false;
 const client=window.__konakErpClient||(window.__konakErpClient=window.supabase?.createClient(API,KEY));
 function routeFromUrl(raw){
  const url=new URL(raw,location.href),path=url.pathname;
@@ -66,10 +66,12 @@ function navigate(view,push){
  document.title='KONAK ERP | '+({orders:'Siparişler',missing:'Eksik Ürünler',products:'Ürünler',workshop:'Atölye',customers:'Müşteriler',cash:'Kasa',reports:'Raporlar',calendar:'Takvim',company:'Hesabım'}[view]||'Mağaza');
 }
 async function initialize(){
+ authenticated=false;
  Object.assign(allowed,defaults);
  try{
   const session=(await client.auth.getSession()).data?.session;
   if(session?.user){
+   authenticated=true;
    const {data:members,error}=await client.from('erp_members').select('organization_id,role').eq('user_id',session.user.id);
    if(error)throw error;
    const chosen=(members||[]).find(m=>m.organization_id===new URLSearchParams(location.search).get('org'))||(members||[])[0];
@@ -86,13 +88,16 @@ async function initialize(){
    }else Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));
   }else {Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));for(const record of frames.values())record.frame.remove();frames.clear()}
  }catch(error){
+  authenticated=false;
   Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));
   console.warn('KONAK ERP menü yetkileri okunamadı',error?.message);
  }
  for(const [key,record] of frames){if(!allowed[key]){record.frame.remove();frames.delete(key)}}
  for(const link of navigation.querySelectorAll('[data-view]'))link.hidden=!allowed[link.dataset.view];
- navigation.style.visibility='visible';
- document.querySelector('.erp-shell-account').hidden=false;
+ navigation.style.visibility=authenticated?'visible':'hidden';
+ document.querySelector('.erp-shell-account-wrap').hidden=!authenticated;
+ document.body.classList.toggle('erp-shell-guest',!authenticated);
+ if(!authenticated)closeAccountMenu();
  const requested=new URLSearchParams(location.search).get('view')||'orders';
  const fallback=Object.keys(menus).find(key=>allowed[key])||'orders';
  navigate(allowed[requested]===false?fallback:requested,false);
