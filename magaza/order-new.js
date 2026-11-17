@@ -202,19 +202,21 @@ function drawSlots(){
    details.append(newElement('small','',record.qty+' adet · '+(record.width||'—')+' × '+(record.height||'—')+' cm'));
    if(record.pile)details.append(newElement('small','',record.pile));
    if(record.status==='waiting'&&record.waitingReason)details.append(newElement('small','', 'Bekleme nedeni: '+record.waitingReason));
+   if(record.cancellationRequestedAt&&record.status!=='cancelled')details.append(newElement('small','', 'İptal talebi: Yönetici onayı bekleniyor.'));
+   if(record.status==='cancelled')details.append(newElement('small','', 'Bu ürün iptal edildi.'));
    details.append(newElement('small','',fmt(record.price*record.qty)));
    wrapper.append(details);
    if(editing&&record.id){
     const select=newElement('select','slot-status');select.setAttribute('aria-label','Satır durumu: '+record.name);
     for(const v of ['processing','waiting','workshop','ready','delivered','cancelled']){
      const option=new Option(statusNames[v],v);
-     if(v==='ready'||v==='delivered'||v==='cancelled'||record.status==='ready'||record.status==='delivered'||record.status==='cancelled'||(v==='processing'&&(record.status!=='processing'&&record.status!=='waiting'||Boolean(editing.barcode_printed_at)))||(v==='waiting'&&(record.status!=='processing'||Boolean(editing.barcode_printed_at)))||(record.status==='waiting'&&v!=='waiting'&&v!=='processing'))option.disabled=v!==record.status;
+     if(v==='ready'||v==='delivered'||record.status==='ready'||record.status==='delivered'||record.status==='cancelled'||(v==='processing'&&(record.status!=='processing'&&record.status!=='waiting'||Boolean(editing.barcode_printed_at)))||(v==='waiting'&&(record.status!=='processing'||Boolean(editing.barcode_printed_at)))||(record.status==='waiting'&&v!=='waiting'&&v!=='processing'&&v!=='cancelled'))option.disabled=v!==record.status;
      select.add(option);
     }
     select.value=record.status||'processing';
     if(record.status==='ready'||record.status==='delivered'||record.status==='cancelled'||editing.status==='delivered'||editing.status==='cancelled'||editing.status==='voided'||(editing.status==='waiting'&&record.status!=='waiting'))select.disabled=true;
-    select.onchange=async()=>{const prev=record.status;select.disabled=true;
-      try{await updateItemStatus(record,select.value);record.status=select.value;drawSlots();}
+    select.onchange=async()=>{const prev=record.status,next=select.value;select.disabled=true;
+      try{if(next==='cancelled'){await cancelItemInEditor(record);return;}await updateItemStatus(record,next);record.status=next;drawSlots();}
       catch(e){record.status=prev;drawSlots();alertText('Satır durumu değiştirilemedi: '+e.message);}
     };
     wrapper.append(select);
@@ -230,6 +232,19 @@ function drawSlots(){
   section.append(grid);target.append(section);
  }
  updateMoney();
+}
+async function cancelItemInEditor(record){
+ if(!editing||!record?.id)throw Error('Kaydedilmemiş ürün iptal edilemez.');
+ if(record.cancellationRequestedAt)throw Error('Bu ürün için yönetici onayı bekleniyor.');
+ const reason=prompt(record.name+' için iptal nedeni (en az 3 karakter):','');
+ if(reason===null){drawSlots();return;}
+ if(reason.trim().length<3)throw Error('İptal nedeni en az 3 karakter olmalı.');
+ if(!confirm(record.name+' ürünü için iptal işlemi başlatılsın mı?')){drawSlots();return;}
+ const {data,error}=await sb.rpc('erp_request_item_cancellation',{p_org:org.id,p_item:record.id,p_reason:reason.trim()});
+ if(error)throw error;
+ const state=typeof data==='string'?data:(data?.status||data?.result||'');
+ alertText(state==='pending'?'Etiketi basılmış ürün için iptal talebi oluşturuldu. Yönetici onayı bekleniyor.':'Ürün iptal edildi. Sipariş tutarı yeniden hesaplandı.');
+ window.location.reload();
 }
 async function updateItemStatus(record,next){
  if(!editing||!record.id)throw Error('Kaydedilmemiş ürünün durumu değiştirilemez.');
@@ -301,7 +316,7 @@ function openItem(category,index){
  $('product-note').value=value?.note||'';
  $('product-status').value=value?.status||'processing';
  $('product-status').disabled=!value?.id||['ready','delivered'].includes(value.status)||(editing?.status==='waiting'&&value?.status!=='waiting'||['delivered','cancelled'].includes(editing?.status));
- for(const option of $('product-status').options){if(option.value==='processing'&&(value?.status!=='processing'&&value?.status!=='waiting'||Boolean(editing?.barcode_printed_at)))option.disabled=true;else if(option.value==='waiting')option.disabled=value?.status!=='processing'||Boolean(editing?.barcode_printed_at);else if(value?.status==='waiting')option.disabled=option.value!=='waiting'&&option.value!=='processing';else option.disabled=false;}
+ for(const option of $('product-status').options){if(option.value==='processing'&&(value?.status!=='processing'&&value?.status!=='waiting'||Boolean(editing?.barcode_printed_at)))option.disabled=true;else if(option.value==='waiting')option.disabled=value?.status!=='processing'||Boolean(editing?.barcode_printed_at);else if(value?.status==='waiting')option.disabled=option.value!=='waiting'&&option.value!=='processing'&&option.value!=='cancelled';else option.disabled=false;}
  $('product-status-wrapper').title=value?.id?'Durum değişikliği seçildiğinde anında kaydedilir.':'Sipariş kaydedilince ürün İşlemde durumunda başlar.';
  $('delete-product').hidden=!value;
  $('delete-product').disabled=!!value&&(['workshop','ready','delivered','waiting','cancelled'].includes(value.status)||value.printedAt);
@@ -461,7 +476,7 @@ async function loadForEdit(orderId,orgId){
   const {data:order,error:orderError}=await sb.from('erp_orders').select('id,organization_id,branch_id,customer_name,customer_phone,delivery_date,customer_note,paid_amount,discount_percent,discount_amount,order_type,payment_method,status,barcode_printed_at,updated_at').eq('organization_id',orgId).eq('id',orderId).single();
   if(orderError)throw orderError;
   if(['delivered','cancelled','voided'].includes(order.status))throw Error('Teslim edilmiş veya iptal edilmiş sipariş düzenlenemez.');
-  const {data:lines,error:lineError}=await sb.from('erp_order_items').select('id,category,product_name,width_cm,height_cm,unit_price,production_note,barcode,slot_key,status,waiting_reason,printed_at').eq('organization_id',orgId).eq('order_id',orderId).order('created_at',{ascending:true});
+  const {data:lines,error:lineError}=await sb.from('erp_order_items').select('id,category,product_name,width_cm,height_cm,unit_price,production_note,barcode,slot_key,status,waiting_reason,printed_at,cancellation_requested_at,cancellation_reason').eq('organization_id',orgId).eq('order_id',orderId).order('created_at',{ascending:true});
   if(lineError)throw lineError;
   editing=order;products.clear();
   const taken=new Set();
@@ -484,7 +499,7 @@ async function loadForEdit(orderId,orgId){
    const legacyBase=Number(line.unit_price)/pileFactor(parsedPile);
    const basePrice=baseMatch?Number(baseMatch[1]):rounded(legacyBase);
    const detailedSpec=(specParts?.[2]||(!specParts?spec:''))?.replace(/(?:^|;\s*)Baz Fiyat:\s*\d+(?:\.\d+)?/,'').trim().replace(/^;\s*|;\s*$/g,'');
-   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
+   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,cancellationRequestedAt:line.cancellation_requested_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
   }
   $('store-select').value=order.branch_id;
   $('customer-name').value=order.customer_name;
@@ -551,6 +566,16 @@ $('order-status-display').onchange=async()=>{
  const select=$('order-status-display'),previous=editing?.status||'processing',next=select.value;
  if(!editing){select.value='processing';return}
  if(previous===next)return;
+ if(next==='cancelled'){
+  const reason=prompt('Siparişin tamamı için iptal nedeni (en az 3 karakter):','');
+  if(reason===null){select.value=previous;return;}
+  if(reason.trim().length<3){select.value=previous;$('order-status-help').textContent='İptal nedeni en az 3 karakter olmalı.';return;}
+  if(!confirm('Siparişin tamamı iptal edilecek. Etiketi basılmış siparişlerde yönetici yetkisi gerekir. Devam edilsin mi?')){select.value=previous;return;}
+  select.disabled=true;$('order-status-help').textContent='İptal işlemi kaydediliyor...';
+  try{const {error}=await sb.rpc('erp_void_order',{p_org:org.id,p_order:editing.id,p_reason:reason.trim()});if(error)throw error;window.location.href='./?org='+encodeURIComponent(org.id);}
+  catch(e){select.value=previous;$('order-status-help').textContent='Sipariş iptal edilemedi: '+e.message;syncOrderStatusOptions();}
+  return;
+ }
  if(!((previous==='processing'&&next==='waiting')||(previous==='waiting'&&next==='processing'&&!([...products.values()].some(p=>p.status==='waiting'))))){
   select.value=previous;$('order-status-help').textContent='Atölyeye geçiş barkod baskısıyla, mağaza kabulü barkod okutularak yapılır.';return;
  }
@@ -574,15 +599,16 @@ $('order-status-display').onchange=async()=>{
 function syncOrderStatusOptions(){
  const select=$('order-status-display'),current=editing?.status||'processing';
  for(const option of select.options){
-  option.disabled=editing?!((current==='processing'||current==='waiting'&&![...products.values()].some(p=>p.status==='waiting'))&&(option.value==='processing'||option.value==='waiting')||option.value===current):option.value!=='processing';
+  option.disabled=editing?!(option.value==='cancelled'||(current==='processing'||current==='waiting'&&![...products.values()].some(p=>p.status==='waiting'))&&(option.value==='processing'||option.value==='waiting')||option.value===current):option.value!=='processing';
  }
- select.disabled=!editing||!['processing','waiting'].includes(current)||current==='waiting'&&[...products.values()].some(p=>p.status==='waiting');
+ select.disabled=!editing||['cancelled','voided'].includes(current);
 }
 $('product-status').onchange=async()=>{
  if(!active)return;
  const item=products.get(key(active.category,active.index)),select=$('product-status');
  if(!item?.id)return;
  const before=item.status,next=select.value;
+ if(next==='cancelled'){select.disabled=true;try{await cancelItemInEditor(item);}catch(e){select.value=before;$('product-status-message').textContent='İptal edilemedi: '+e.message;}finally{select.disabled=false;}return;}
  if(next==='processing'&&(before!=='processing'&&before!=='waiting'||Boolean(editing?.barcode_printed_at))){select.value=before;$('product-status-message').textContent='Atölyeye alınan ürün tekrar İşlemde durumuna geçirilemez.';return}
  select.disabled=true;$('product-status-message').textContent='Durum kaydediliyor...';
  try{
