@@ -22,3 +22,28 @@ button.addEventListener('click',async()=>{
  }catch(e){message.textContent='İşlemler alınamadı: '+e.message}finally{button.disabled=false}
 });
 })();
+
+;(()=>{'use strict';
+const button=document.getElementById('pk-qnb-refunds-refresh'),body=document.getElementById('pk-qnb-refunds-body'),msg=document.getElementById('pk-qnb-refunds-message');
+if(!button||!body||!msg||!window.supabase)return;
+const sb=window.supabase.createClient('https://rwylhxrtggsicieuyjrm.supabase.co','sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA');
+const status={requested:'Talep edildi',processing:'İşleniyor',succeeded:'Başarılı',failed:'Başarısız'};
+button.addEventListener('click',async()=>{
+ button.disabled=true;body.replaceChildren();msg.textContent='İadeler yükleniyor…';
+ try{
+  const user=await sb.auth.getUser();if(user.error||!user.data.user)throw Error('Yönetici oturumu gerekli.');
+  const role=await sb.from('admin_access').select('role').eq('user_id',user.data.user.id).maybeSingle();
+  if(role.error||!['owner','admin'].includes(role.data?.role))throw Error('Yönetici yetkisi gerekli.');
+  const res=await sb.from('shop_payment_refunds').select('created_at,amount,status,transaction_id').order('created_at',{ascending:false}).limit(30);
+  if(res.error)throw res.error;
+  for(const item of res.data||[]){
+   const tr=document.createElement('tr');
+   for(const value of [new Date(item.created_at).toLocaleString('tr-TR'),new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(item.amount),status[item.status]||item.status,item.transaction_id]){
+    const td=document.createElement('td');td.textContent=value;td.style.padding='10px';tr.appendChild(td);
+   }
+   body.appendChild(tr);
+  }
+  msg.textContent=(res.data?.length||0)+' iade kaydı listelendi. Bu ekrandan iade başlatılamaz.';
+ }catch(e){msg.textContent='İade kayıtları alınamadı: '+e.message}finally{button.disabled=false}
+});
+})();
