@@ -25,9 +25,9 @@ function denyPage(){
 }
 async function run(){
  if(!window.supabase)return;
- const sb=window.supabase.createClient(API,KEY,{auth:{storageKey:'sb-rwylhxrtggsicieuyjrm-auth-token'}});
+ const sb=window.__konakErpClient||(window.__konakErpClient=window.supabase.createClient(API,KEY));
  const {data:{session},error}=await sb.auth.getSession();const user=session?.user;if(error||!user)return;
- const {data:members}=await sb.from('erp_members').select('organization_id,role').eq('user_id',user.id);if(!members?.length)return;
+ const members=window.__erpLoadMembers?await window.__erpLoadMembers(user.id):(await sb.from('erp_members').select('organization_id,role').eq('user_id',user.id)).data;if(!members?.length)return;
  const selector=document.querySelector('#organization-select,#company-select');
  const chosen=members.find(m=>m.organization_id===selector?.value)||members[0];
  if(chosen.role!=='staff')return;
