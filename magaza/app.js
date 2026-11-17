@@ -107,7 +107,7 @@ function render(){
    '<button class="secondary" type="button" data-whatsapp-order="'+escapeHtml(o.id)+'">◉ WhatsApp’tan Gönder</button>':'')+
    '<button class="secondary" type="button" data-edit="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
    '<button class="secondary" type="button" data-payment="'+escapeHtml(o.id)+'" '+(remaining<=0||o.status==='cancelled'?'disabled':'')+'>◷ Ödeme Ekle</button>'+
-   '<button class="secondary compact-delete" type="button" data-delete="'+escapeHtml(o.id)+'" '+(!['owner','manager'].includes(memberRole)||['cancelled','ready','partial_ready','delivered'].includes(o.status)?'disabled title="Silme yetkisi yöneticidedir; teslim aşamasındaki siparişler silinemez"':'')+'>▤ Sil</button>'+
+   '<button class="secondary compact-delete" type="button" data-delete="'+escapeHtml(o.id)+'" '+(!['owner','manager'].includes(memberRole)||o.status==='cancelled'?'disabled title="Silme yetkisi yalnızca yöneticidedir; silinen sipariş tekrar silinemez"':'')+'>▤ Sil</button>'+
   '</div></div></div>'+
   ((o.status==='processing'||o.status==='new')?
    '<div class="waiting-controls"><button type="button" class="secondary waiting-open" data-wait="'+escapeHtml(o.id)+'">⏸ Beklemeye Al</button><div class="wait-form" id="wait-form-'+escapeHtml(o.id)+'" hidden><label>Bekleme nedeni *<textarea id="wait-reason-'+escapeHtml(o.id)+'" maxlength="1500" rows="2" placeholder="Örn. Müşteriden ölçü bilgisi bekleniyor."></textarea></label><div class="wait-buttons"><button type="button" class="secondary" data-cancel-wait="'+escapeHtml(o.id)+'">Vazgeç</button><button type="button" class="primary" data-confirm-wait="'+escapeHtml(o.id)+'">Beklemeye Al</button></div></div></div>':
