@@ -17,6 +17,16 @@ let catalogCache=[],catalogOrg=null,catalogRequest=null,manualPrice=false;
 function isStor(){return $('product-category').value==='STOR PERDE'}
 function isPlise(){return $('product-category').value==='PLİSE PERDE'}
 function isWood(){return $('product-category').value==='AHŞAP JALUZİ'}
+function isFon(){return $('product-category').value==='FON PERDE'}
+const fonSizes=['60','65','70','75','80','85','90','95','100'];
+function syncFonSizes(selected=''){
+ const kind=$('fon-wing-type').value,select=$('fon-wing-size');select.replaceChildren();
+ const prompt=document.createElement('option');prompt.value='';prompt.textContent=kind?'Kanat ölçüsü seçiniz':'Önce kanat tipi seçiniz';select.append(prompt);
+ for(const size of kind?fonSizes:[]){const option=document.createElement('option');option.value=kind==='Çift Kanat'?size+'/'+size:size;option.textContent=option.value;select.append(option)}
+ select.value=[...select.options].some(o=>o.value===selected)?selected:'';
+}
+function parseFonConfiguration(spec){const text=String(spec||'');const kind=text.match(/(?:^|;\s*)Kanat Tipi:\s*(Tek Kanat|Çift Kanat)(?:;|$)/)?.[1]||'';const size=text.match(/(?:^|;\s*)Kanat Ölçüsü:\s*(\d+(?:\/\d+)?)(?:;|$)/)?.[1]||'';return {kind,size}}
+function stripFonFields(spec){return String(spec||'').split(/;\s*/).filter(x=>!/^Kanat (Tipi|Ölçüsü):\s*/.test(x)).join('; ').trim()}
 function woodConfiguration(){return {ribbon:$('wood-ribbon').checked,mechanism:$('wood-mechanism').value}}
 function parseWoodConfiguration(spec){
  const str=String(spec||'');
@@ -98,6 +108,7 @@ function syncCategoryUI(){
  $('stor-options').hidden=!stor;
  $('plise-options').hidden=!plise;
  $('wood-options').hidden=!wood;
+ $('fon-options').hidden=!isFon();
  // Remove the pile field from the DOM for stor products, not just visually hide it.
  // Restore the exact same field when switching back to tulle/fon/other categories.
  const pileRow=pileControlRow,unitRow=$('unit-options-row');
@@ -202,6 +213,7 @@ function drawSlots(){
    details.append(newElement('strong','',record.name));
    details.append(newElement('small','',record.qty+' adet · '+(record.width||'—')+' × '+(record.height||'—')+' cm'));
    if(record.pile)details.append(newElement('small','',record.pile));
+   if(group.name==='FON PERDE'){const fon=parseFonConfiguration(record.spec);if(fon.kind&&fon.size)details.append(newElement('small','',fon.kind+' · '+fon.size));}
    if(record.status==='waiting'&&record.waitingReason)details.append(newElement('small','', 'Bekleme nedeni: '+record.waitingReason));
    if(record.cancellationRequestedAt&&record.status!=='cancelled')details.append(newElement('small','', 'İptal talebi: Yönetici onayı bekleniyor.'));
    if(record.status==='cancelled')details.append(newElement('small','', 'Bu ürün iptal edildi.'));
@@ -289,6 +301,7 @@ function openItem(category,index){
  $('stor-case').value='open';$('stor-chain').value='plastic';$('stor-side').value='left';$('stor-tube').value='32';$('stor-foot').value='plastic';$('stor-hem').value='1';
  $('plise-mount').value=pliseMounts[0];$('plise-case-color').value=pliseCaseColors[0];
  $('wood-ribbon').checked=false;$('wood-mechanism').value='İpli';
+ $('fon-wing-type').value='';syncFonSizes();
  syncCategoryUI();
  $('product-name').value=value?.name||'';
  $('product-width').value=value?.width??'';
@@ -296,7 +309,7 @@ function openItem(category,index){
  $('product-price').value=value?(value.basePrice??value.price):'';
  $('product-quantity').value=value?.qty??1;
  pileControlSelect.value=value?.pile||'';
- $('product-spec').value=category==='STOR PERDE'?stripStorOptions(value?.spec||''):category==='PLİSE PERDE'?stripPliseSystemFields(value?.spec||''):category==='AHŞAP JALUZİ'?stripWoodFields(value?.spec||''):value?.spec||'';
+ $('product-spec').value=category==='STOR PERDE'?stripStorOptions(value?.spec||''):category==='PLİSE PERDE'?stripPliseSystemFields(value?.spec||''):category==='AHŞAP JALUZİ'?stripWoodFields(value?.spec||''):category==='FON PERDE'?stripFonFields(value?.spec||''):value?.spec||'';
  if(category==='STOR PERDE'){
   const cfg=value?.stor||parseStorSpecs(value?.spec||'');
   $('stor-case').value=cfg.caseType;syncStorColor(cfg.caseType);
@@ -307,6 +320,9 @@ function openItem(category,index){
   const config=value?.plise||parsePliseConfiguration(value?.spec);
   $('plise-mount').value=config.mount;
   $('plise-case-color').value=config.caseColor;
+ }
+ if(category==='FON PERDE'){
+  const cfg=parseFonConfiguration(value?.spec);$('fon-wing-type').value=cfg.kind;syncFonSizes(cfg.size);
  }
  if(category==='AHŞAP JALUZİ'){
   const cfg=value?.wood||parseWoodConfiguration(value?.spec);
@@ -370,6 +386,7 @@ function storeItem(e){
  if(category==='STOR PERDE'&&(!Number.isFinite(Number(width))||Number(width)<=0||!Number.isFinite(Number(height))||Number(height)<=0)){$('product-status-message').textContent='Stor perdede gerçek en ve boy ölçüsü sıfırdan büyük olmalı.';return}
  if(category==='PLİSE PERDE'&&(!validPliseMeasure(width)||!validPliseMeasure(height))){$('product-status-message').textContent='Plise perde en ve boy ölçüleri pozitif ve 0,1 cm hassasiyetinde olmalıdır (örn. 80,1 cm).';return}
  if(category==='AHŞAP JALUZİ'&&(!validWoodMeasure(width)||!validWoodMeasure(height))){$('product-status-message').textContent='Ahşap Jaluzi ölçülerini 0,5 cm aralıklarla girin (örn. 40,5; 41; 41,5).';return}
+ if(category==='FON PERDE'&&(!$('fon-wing-type').value||!$('fon-wing-size').value)){$('product-status-message').textContent='Fon perde için kanat tipi ve kanat ölçüsünü seçin.';return}
  const oldKey=key(active.category,active.index),old=products.get(oldKey);
  if(old&&['ready','delivered'].includes(old.status)){ $('product-status-message').textContent='Teslim alınmış ürün üretim bilgilerinde değişiklik yapılamaz.';return }
  const group=categories.find(c=>c.name===category);
@@ -384,7 +401,7 @@ function storeItem(e){
  const cfg=category==='STOR PERDE'?storSettings():null;
  const plise=category==='PLİSE PERDE'?pliseConfiguration():null;
  const wood=category==='AHŞAP JALUZİ'?woodConfiguration():null;
- const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):plise?['Montaj: '+plise.mount,'Kasa Rengi: '+plise.caseColor,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):wood?['Kurdela: '+(wood.ribbon?'Var':'Yok'),'Mekanizma: '+wood.mechanism,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
+ const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):plise?['Montaj: '+plise.mount,'Kasa Rengi: '+plise.caseColor,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):wood?['Kurdela: '+(wood.ribbon?'Var':'Yok'),'Mekanizma: '+wood.mechanism,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):category==='FON PERDE'?['Kanat Tipi: '+$('fon-wing-type').value,'Kanat Ölçüsü: '+$('fon-wing-size').value,$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
  const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,plise,wood,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||'processing',printedAt:old?.printedAt||null};
  products.delete(oldKey);products.set(key(category,index),record);
  closeItem();drawSlots();
@@ -716,7 +733,8 @@ $('product-shade').onclick=$('close-product').onclick=closeItem;
  ['product-width','product-height'].forEach(id=>$(id).oninput=calculateItemTotal);
  ['stor-chain','stor-side','stor-tube','stor-foot','stor-color','stor-hem'].forEach(id=>$(id).onchange=calculateItemTotal);
  $('stor-case').onchange=()=>{syncStorColor($('stor-case').value);calculateItemTotal()};
- $('product-category').onchange=()=>{syncCategoryUI();$('catalog-search').value='';$('catalog-results').hidden=true;showCatalog();calculateItemTotal()};
+ $('fon-wing-type').onchange=()=>syncFonSizes();
+ $('product-category').onchange=()=>{syncCategoryUI();$('fon-wing-type').value='';syncFonSizes();$('catalog-search').value='';$('catalog-results').hidden=true;showCatalog();calculateItemTotal()};
  $('catalog-search').oninput=()=>{showCatalog()};
  $('catalog-search').onfocus=showCatalog;
 pileControlSelect.onchange=calculateItemTotal;
