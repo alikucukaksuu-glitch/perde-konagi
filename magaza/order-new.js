@@ -426,6 +426,20 @@ function renderCustomers(){
  }
  if(!found.length)area.textContent='Kayıtlı müşteri bulunamadı.';
 }
+function renderOrderBranches(selectedId){
+ const host=$('order-branch-cards');host.replaceChildren();
+ const sorted=[...branches].sort((a,b)=>{const rank=x=>/GAZİOSMANPAŞA/i.test(x.name)?0:/SULTANGAZİ/i.test(x.name)?1:2;return rank(a)-rank(b)||a.name.localeCompare(b.name,'tr')});
+ for(let i=0;i<sorted.length;i++){
+  const b=sorted[i],selected=b.id===selectedId;
+  const card=newElement('div','order-branch'+(selected?' order-branch-selected':''));
+  const label=newElement('strong','order-branch-name',(i+1)+'. ŞUBE · '+b.name);card.append(label);
+  if(selected)card.append(newElement('span','order-branch-tag','SATIŞ YAPILAN ŞUBE'));
+  if(b.address)card.append(newElement('span','order-branch-contact',b.address));
+  if(b.phone)card.append(newElement('span','order-branch-contact','Tel: '+b.phone));
+  if(org?.email)card.append(newElement('span','order-branch-contact',org.email));
+  host.append(card);
+ }
+}
 function stage(next){
  $('stage1').hidden=next!==1;$('stage2').hidden=next!==2;
  $('step-label').textContent=next===1?'1 / 2 · Müşteri Bilgileri':(quoteMode?'2 / 2 · Teklif ve Ürünler':'2 / 2 · Sipariş ve Ürünler');
@@ -445,6 +459,7 @@ function stage(next){
   $('type-copy').value=$('order-type').value;
   $('note-copy').value=$('order-note').value;
   const branch=branches.find(x=>x.id===$('store-select').value);
+  renderOrderBranches(branch?.id);
   $('branch-heading').textContent=branch?.name||'Şube';
   $('organization-heading').textContent=org?.name||'KONAK ERP';
   $('company-contact').textContent=[org?.phone,org?.email,org?.address].filter(Boolean).join(' · ')||'KONAK ERP · Mağaza Yönetimi';
@@ -467,7 +482,7 @@ async function start(){
   const selected=membership.find(x=>x.organization_id===preferred)||membership[0];
   const [{data:company,error:companyErr},{data:branchData,error:branchErr},{data:orders,error:ordersErr}]=await Promise.all([
    sb.from('erp_organizations').select('id,name,phone,email,address,logo_url').eq('id',selected.organization_id).single(),
-   sb.from('erp_branches').select('id,name').eq('organization_id',selected.organization_id).order('name'),
+   sb.from('erp_branches').select('id,name,address,phone').eq('organization_id',selected.organization_id).order('name'),
    sb.from('erp_orders').select('customer_name,customer_phone').eq('organization_id',selected.organization_id).order('created_at',{ascending:false}).limit(500)]);
   if(companyErr||branchErr||ordersErr)throw companyErr||branchErr||ordersErr;
   org=company;branches=branchData||[];
