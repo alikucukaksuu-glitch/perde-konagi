@@ -287,7 +287,6 @@ async function bulkSelect(table,columns,apply){
 }
 async function startBulk(){
  $('print-title').textContent='İşlemdeki Siparişlerin Üretim Etiketleri';
- $('back').href='./';
  $('print-btn').disabled=true;
  $('confirm-label').hidden=true;
  if(!sb||!orgId){fail('İşletme bilgisi eksik.');return}
@@ -383,9 +382,9 @@ async function startBulk(){
 }
 
 async function start(){
+ $('back').href='./?view=orders'+(orgId?'&org='+encodeURIComponent(orgId):'');
  if(mode==='bulk'){await startBulk();return}
  $('print-title').textContent=mode==='label'?'Üretim Barkod Etiketleri':'A4 Müşteri Çıktısı';
- $('back').href='./order-new.html?org='+encodeURIComponent(orgId||'')+'&edit='+encodeURIComponent(id||'');
  if(!sb||!id||!orgId){fail('Eksik bağlantı veya giriş bilgisi');return}
  const {data:user,error:authError}=await sb.auth.getUser();
  if(authError||!user?.user){fail('Giriş yapmanız gerekiyor');return}

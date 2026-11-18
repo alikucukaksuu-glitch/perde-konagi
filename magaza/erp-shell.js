@@ -68,7 +68,8 @@ function navigate(view,push){
  document.querySelectorAll('[data-view]').forEach(node=>{if(node.tagName==='A'){if(node.dataset.view===view)node.setAttribute('aria-current','page');else node.removeAttribute('aria-current')}});
  if(push&&view==='orders'){
   const orders=frames.get('orders');
-  if(orders?.frame.contentDocument?.location.pathname.endsWith('/order-new.html')){
+  const currentPath=orders?.frame.contentDocument?.location.pathname;
+  if(orders?.loaded&&currentPath&&currentPath!==new URL(menus.orders,location.href).pathname){
    orders.frame.remove();
    frames.delete('orders');
   }
