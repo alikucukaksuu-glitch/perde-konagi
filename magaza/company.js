@@ -4,7 +4,10 @@ const KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY);
 const $=id=>document.getElementById(id);
 let user=null,organizations=[],members=[],branches=[],current=null,role='',permissionRows=[],branchAssignments=[],editingMember=null;
-const staffMenuItems=[['orders','Siparişler'],['products','Ürünler ve Eksik Ürünler'],['workshop','Atölye'],['customers','Müşteriler'],['cash','Kasa'],['reports','Raporlar'],['calendar','Takvim'],['team','Personel Yönetimi'],['company','Şirket ve Şubeler'],['create_company','Yeni İşletme Oluştur']];
+const staffMenuGroups=[['Satış ve Sipariş Yönetimi',[['orders','Siparişler'],['quotes','Teklif Siparişleri'],['appointments','Montaj Randevu'],['customers','Müşteriler']]],['Ürün ve Üretim Yönetimi',[['products','Ürünler'],['missing','Eksik Ürünler'],['workshop','Atölye']]],['Finans ve Diğer Modüller',[['cash','Kasa'],['reports','Raporlar'],['calendar','Takvim'],['team','Personel Yönetimi'],['company','Şirket ve Şubeler'],['create_company','Yeni İşletme Oluştur']]]];
+const staffMenuItems=staffMenuGroups.flatMap(g=>g[1]);
+const staffDefaults={orders:[true,true],quotes:[true,true],appointments:[true,true],products:[true,false],missing:[true,true],workshop:[true,true],customers:[true,true],cash:[false,false],reports:[false,false],calendar:[true,true],team:[false,false],company:[false,false],create_company:[false,false]};
+const staffTemplates={sales:['orders','quotes','appointments','customers'],manager:['orders','quotes','appointments','customers','products','missing','workshop','cash','reports','calendar','team','company'],workshop:['missing','workshop'],accounting:['cash','reports']};
 const safeText=(el,value)=>{el.textContent=String(value??'')};
 function message(id,value){safeText($(id),value||'')}
 function showAuth(){ $('company-auth').hidden=false;$('company-dashboard').hidden=true;$('reset-password-setup').hidden=true}
@@ -132,32 +135,54 @@ function openStaffPermissions(member){
  editingMember=member;
  $('staff-permission-target').textContent=member.email||'Personel';
  const area=$('staff-permission-rows');area.replaceChildren();
- for(const [key,label] of staffMenuItems){
-  const saved=permissionRows.find(p=>p.user_id===member.user_id&&p.menu_key===key);
-  const defaults={orders:[true,true],products:[true,false],workshop:[true,true],customers:[true,true],cash:[false,false],reports:[false,false],calendar:[true,true],team:[false,false],company:[false,false],create_company:[false,false]};
-  const view=saved?saved.can_view:defaults[key][0],edit=saved?saved.can_edit:defaults[key][1];
-  const row=el('div','staff-actions');row.style.cssText='display:grid;grid-template-columns:1fr 85px 90px;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #e3ebe6';
-  const title=el('strong','',label);
-  const viewLabel=el('label');viewLabel.style.cssText='display:flex;align-items:center;gap:5px;font-size:12px';
-  const viewCheck=el('input');viewCheck.type='checkbox';viewCheck.dataset.permissionView=key;viewCheck.checked=view;viewCheck.disabled=key==='create_company';
-  viewLabel.append(viewCheck,document.createTextNode('Gör'));
-  const editLabel=el('label');editLabel.style.cssText='display:flex;align-items:center;gap:5px;font-size:12px';
-  const editCheck=el('input');editCheck.type='checkbox';editCheck.dataset.permissionEdit=key;editCheck.checked=edit;editCheck.disabled=key==='create_company'||!view;
-  viewCheck.onchange=()=>{editCheck.disabled=!viewCheck.checked;if(!viewCheck.checked)editCheck.checked=false;};
-  editLabel.append(editCheck,document.createTextNode('İşlem'));
-  row.append(title,viewLabel,editLabel);area.append(row);
+ for(const [group,items] of staffMenuGroups){
+  const section=el('section','staff-v2-group');
+  section.append(el('h4','',group));
+  const head=el('div','staff-v2-head');
+  head.append(el('span','','Menü'),el('span','','Gör'),el('span','','İşlem'));
+  section.append(head);
+  for(const [key,label] of items){
+   const saved=permissionRows.find(p=>p.user_id===member.user_id&&p.menu_key===key);
+   const legacyKey={quotes:'orders',appointments:'orders',missing:'workshop'}[key];
+   const legacy=legacyKey?permissionRows.find(p=>p.user_id===member.user_id&&p.menu_key===legacyKey):null;
+   const view=saved?!!saved.can_view:legacy?!!legacy.can_view:staffDefaults[key][0];
+   const edit=saved?!!saved.can_edit:legacy?!!legacy.can_edit:staffDefaults[key][1];
+   const row=el('div','staff-v2-row');
+   const title=el('strong','',label);
+   const viewLabel=el('label','staff-v2-check');const viewCheck=el('input');viewCheck.type='checkbox';viewCheck.dataset.permissionView=key;viewCheck.checked=view;viewCheck.disabled=key==='create_company';
+   viewLabel.append(viewCheck,document.createTextNode('Gör'));
+   const editLabel=el('label','staff-v2-check');const editCheck=el('input');editCheck.type='checkbox';editCheck.dataset.permissionEdit=key;editCheck.checked=edit;editCheck.disabled=key==='create_company'||!view;
+   viewCheck.onchange=()=>{editCheck.disabled=!viewCheck.checked;if(!viewCheck.checked)editCheck.checked=false;};
+   editLabel.append(editCheck,document.createTextNode('İşlem'));
+   row.append(title,viewLabel,editLabel);section.append(row);
+  }
+  area.append(section);
  }
  const areaBranches=$('staff-permission-branches');areaBranches.replaceChildren();
  const restricted=branchAssignments.filter(x=>x.user_id===member.user_id).map(x=>x.branch_id);
- areaBranches.append(el('p','fine','Hiçbir şube işaretlenmezse personel tüm şubeleri kullanabilir. Belirli şubeler seçildiğinde yalnız o şubelere erişir.'));
+ const allLabel=el('label','staff-v2-branch staff-v2-branch-all');const allCheck=el('input');allCheck.type='checkbox';allCheck.id='staff-all-branches';allCheck.checked=restricted.length===0;
+ allLabel.append(allCheck,document.createTextNode('Tüm Şubelere Erişim'));areaBranches.append(allLabel);
  for(const b of branches){
-  const label=el('label');label.style.cssText='display:flex;align-items:center;gap:5px;font-size:13px';
-  const check=el('input');check.type='checkbox';check.value=b.id;check.dataset.staffBranch='1';check.checked=restricted.includes(b.id);
+  const label=el('label','staff-v2-branch');const check=el('input');check.type='checkbox';check.value=b.id;check.dataset.staffBranch='1';check.checked=restricted.includes(b.id);check.disabled=allCheck.checked;
   label.append(check,document.createTextNode(b.name));areaBranches.append(label);
+  check.addEventListener('change',()=>{if(check.checked){allCheck.checked=false;for(const el of areaBranches.querySelectorAll('[data-staff-branch]'))el.disabled=false}});
  }
+ allCheck.addEventListener('change',()=>{for(const item of areaBranches.querySelectorAll('[data-staff-branch]')){item.disabled=allCheck.checked;if(allCheck.checked)item.checked=false}});
+ const template=$('staff-permission-template');template.value='custom';
  $('staff-permission-panel').hidden=false;message('staff-permission-message','');
  $('staff-permission-panel').scrollIntoView({block:'start',behavior:'smooth'});
 }
+$('staff-permission-template').onchange=e=>{
+ const kind=e.target.value;if(kind==='custom')return;
+ const selected=staffTemplates[kind]||[];
+ for(const [key] of staffMenuItems){
+  const view=document.querySelector('[data-permission-view="'+key+'"]'),edit=document.querySelector('[data-permission-edit="'+key+'"]');
+  if(!view||!edit||key==='create_company')continue;
+  view.checked=selected.includes(key);edit.checked=selected.includes(key)&&key!=='products'&&key!=='reports'&&key!=='team'&&key!=='company';
+  edit.disabled=!view.checked;
+ }
+ message('staff-permission-message','Hazır şablon uygulandı. Kaydetmeden önce izinleri kontrol edebilirsiniz.');
+};
 $('staff-permission-close').onclick=()=>{$('staff-permission-panel').hidden=true;editingMember=null};
 $('staff-permission-save').onclick=async()=>{
  if(!current||role!=='owner'||!editingMember)return;
@@ -167,7 +192,7 @@ $('staff-permission-save').onclick=async()=>{
   edit:!!document.querySelector('[data-permission-edit="'+key+'"]')?.checked};
  }
  permissions.create_company={view:false,edit:false};
- const selected=[...document.querySelectorAll('[data-staff-branch]:checked')].map(el=>el.value);
+ const selected=$('staff-all-branches')?.checked?[]:[...document.querySelectorAll('[data-staff-branch]:checked')].map(el=>el.value);
  const button=$('staff-permission-save');button.disabled=true;message('staff-permission-message','Yetkiler kaydediliyor...');
  try{
   const {error}=await sb.rpc('erp_save_staff_permissions',{p_org:current.id,p_user:editingMember.user_id,p_permissions:permissions,p_branch_ids:selected});
