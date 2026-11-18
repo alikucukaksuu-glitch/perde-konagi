@@ -483,7 +483,7 @@ function configureQuoteMode(){
  $('submit-order').textContent='Teklifi Kaydet';
  $('continue-btn').textContent='Teklife Devam Et →';
  const field=document.createElement('div');field.className='quote-extra-fields';field.innerHTML='<div class="two"><label>Teklif Durumu<select id="quote-state"><option value="draft">Taslak</option><option value="pending">Onay Bekliyor</option><option value="rejected">Reddedildi</option></select></label><label>Teklif Geçerlilik Tarihi<input id="quote-valid" type="date"></label></div>';
- $('order-type').closest('label').after(field);
+ $('order-type').closest('label').after(field);$('order-type').closest('label').hidden=true;
  $('paid-value').value='0';$('paid-value').disabled=true;
  const finance=$('.finance-box');if(finance)finance.querySelector('h3').textContent='Teklif Özeti';
  $('order-note').placeholder='Müşteriye verilen teklif notu';
@@ -618,7 +618,7 @@ async function submit(){
    p_discount_amount:v.fixed,p_payment_method:$('payment-method').value});
   if(error)throw error;
   location.replace('./?'+(editing?'updated':'created')+'='+encodeURIComponent(data));
- }catch(e){$('save-message').textContent='Kaydedilemedi: '+e.message;alertText('Sipariş kaydedilemedi: '+e.message)}
+ }catch(e){$('save-message').textContent='Kaydedilemedi: '+e.message;alertText((quoteMode?'Teklif':'Sipariş')+' kaydedilemedi: '+e.message)}
  finally{saving=false;$('submit-order').disabled=false}
 }
 $('customer-form').onsubmit=e=>{
