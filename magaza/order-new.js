@@ -222,7 +222,7 @@ function drawSlots(){
     };
     wrapper.append(select);
    }else{
-    wrapper.append(newElement('span','status-label',statusNames[record.status||'processing']));
+    wrapper.append(newElement('span','status-label',quoteMode?'Teklif Kalemi':statusNames[record.status||'processing']));
    }
    const controls=newElement('div','slot-controls');
    const edit=newElement('button','slot-edit','Düzenle');edit.type='button';edit.onclick=()=>openItem(group.name,i);
@@ -485,7 +485,10 @@ function configureQuoteMode(){
  const field=document.createElement('div');field.className='quote-extra-fields';field.innerHTML='<div class="two"><label>Teklif Durumu<select id="quote-state"><option value="draft">Taslak</option><option value="pending">Onay Bekliyor</option><option value="rejected">Reddedildi</option></select></label><label>Teklif Geçerlilik Tarihi<input id="quote-valid" type="date"></label></div>';
  $('order-type').closest('label').after(field);$('order-type').closest('label').hidden=true;
  $('paid-value').value='0';$('paid-value').disabled=true;
- const finance=$('.finance-box');if(finance)finance.querySelector('h3').textContent='Teklif Özeti';
+ const finance=document.querySelector('.finance-box');if(finance)finance.querySelector('h3').textContent='Teklif Özeti';
+ const noteLabel=document.querySelector('.notes-block label');if(noteLabel)noteLabel.firstChild.textContent='Teklif Notu';
+ const noteHelp=document.querySelector('.notes-block p');if(noteHelp)noteHelp.textContent='Bu not müşteriye sunulacak teklifte gösterilebilir.';
+ const firstNote=$('order-note').closest('label');if(firstNote)firstNote.firstChild.textContent='Genel Teklif Notu';
  $('order-note').placeholder='Müşteriye verilen teklif notu';
 }
 async function loadQuoteForEdit(id,orgId){
