@@ -195,3 +195,16 @@
 }
 .a4-mode .pdf-capture-page .a4-new-head{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)!important}
 .a4-mode .pdf-capture-page .a4-product-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+
+/* A4 heading only: two branch columns and customer/logo at right */
+.a4-new-head{grid-template-columns:minmax(0,2fr) minmax(0,.95fr);gap:3mm;min-height:32mm}
+.a4-new-brand{display:block;min-width:0}.a4-brand-title{font:700 18px Georgia,serif;line-height:1.12;color:#173d2d;margin:0 0 2mm}
+.a4-branch-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0}
+.a4-branch{min-width:0;padding:0 2mm 0 0;display:flex;flex-direction:column;gap:.8mm;overflow-wrap:anywhere}
+.a4-branch+.a4-branch{border-left:1px solid #aeb9af;padding-left:2mm}
+.a4-branch strong{font-size:7.4px;line-height:1.2;color:#193c2b}
+.a4-sale-tag{font-size:6.5px;font-weight:700;color:#1b7046}
+.a4-branch p{font-size:7px;line-height:1.2;margin:0;color:#505b52}
+.a4-new-customer{border:0;background:transparent;padding:0;min-width:0}
+.a4-new-customer .a4-new-logo{display:block;width:15mm;height:15mm;object-fit:contain;margin:0 0 1.5mm auto}
+.a4-new-customer dl{grid-template-columns:19mm minmax(0,1fr);font-size:8px;gap:.8mm 1mm}
