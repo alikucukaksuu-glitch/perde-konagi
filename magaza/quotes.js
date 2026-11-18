@@ -56,8 +56,9 @@ async function init(){
  if(!user)return;
  const {data:members,error}=await sb.from('erp_members').select('organization_id,role').eq('user_id',user.id);if(error)throw error;
  orgs=members||[];if(!orgs.length)throw Error('Kayıtlı işletme yok.');
+ const {data:companyNames}=await sb.from('erp_organizations').select('id,name').in('id',orgs.map(x=>x.organization_id));const orgNames=new Map((companyNames||[]).map(x=>[x.id,x.name]));
  $('quote-auth').hidden=true;$('quote-main').hidden=false;
- $('quote-organization').replaceChildren();for(const m of orgs)$('quote-organization').add(new Option(m.organization_id,m.organization_id));
+ $('quote-organization').replaceChildren();for(const m of orgs)$('quote-organization').add(new Option(orgNames.get(m.organization_id)||m.organization_id,m.organization_id));
  const requested=new URLSearchParams(location.search).get('org');org=orgs.some(m=>m.organization_id===requested)?requested:orgs[0].organization_id;$('quote-organization').value=org;
  await load();
 }
