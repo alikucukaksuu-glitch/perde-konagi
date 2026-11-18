@@ -1,9 +1,11 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
-const defaults={orders:[true,true],products:[true,false],workshop:[true,true],customers:[true,true],cash:[false,false],reports:[false,false],calendar:[true,true],team:[false,false],company:[false,false],create_company:[false,false]};
+const defaults={orders:[true,true],quotes:[true,true],appointments:[true,true],products:[true,false],missing:[true,true],workshop:[true,true],customers:[true,true],cash:[false,false],reports:[false,false],calendar:[true,true],team:[false,false],company:[false,false],create_company:[false,false]};
 const permissionForLink=href=>{
  const u=new URL(href,location.href),path=u.pathname;
- if(path.endsWith('/missing.html'))return 'workshop';
+ if(path.endsWith('/missing.html'))return 'missing';
+ if(path.endsWith('/quotes.html'))return 'quotes';
+ if(path.endsWith('/appointments.html'))return 'appointments';
  if(path.endsWith('/cash.html'))return 'cash';
  if(path.endsWith('/reports.html'))return 'reports';
  if(path.endsWith('/calendar.html'))return 'calendar';
@@ -34,6 +36,10 @@ async function run(){
  const {data:rows}=await sb.from('erp_member_permissions').select('menu_key,can_view,can_edit').eq('organization_id',chosen.organization_id).eq('user_id',user.id);
  const map={};for(const key of Object.keys(defaults))map[key]=defaults[key][0];
  for(const row of rows||[])map[row.menu_key]=row.can_view;
+ const saved=new Set((rows||[]).map(r=>r.menu_key));
+ if(!saved.has('quotes'))map.quotes=map.orders;
+ if(!saved.has('appointments'))map.appointments=map.orders;
+ if(!saved.has('missing'))map.missing=map.workshop;
  map.create_company=false;
  for(const a of document.querySelectorAll('a[href]')){
   const key=permissionForLink(a.getAttribute('href'));if(key&&!map[key])a.hidden=true;
