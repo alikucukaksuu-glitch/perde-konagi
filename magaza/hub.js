@@ -165,7 +165,7 @@ function renderCustomers(){
  const byCustomer=new Map();
  const normalize=raw=>{let d=(raw||'').replace(/\D/g,'');if(d.startsWith('90')&&d.length===12)d=d.slice(2);if(d.startsWith('0')&&d.length===11)d=d.slice(1);return d};
  for(const c of customers){
-  const key=c.normalized_phone||normalize(c.customer_phone)||('customer:'+c.id);
+  const key=c.normalized_phone||('customer:'+c.id);
   byCustomer.set(key,{name:c.customer_name,phone:c.customer_phone||'',email:c.email||'',address:c.address||'',notes:c.notes||'',orders:[],amount:0,paid:0});
  }
  for(const o of orders.filter(o=>o.status!=='cancelled')){
