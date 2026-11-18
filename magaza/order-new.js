@@ -6,6 +6,7 @@ const categories=[{name:'TÜL PERDE',count:10},{name:'FON PERDE',count:5},{name:
 const fmt=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const asNum=v=>Number(v)||0;
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let memberRole='staff';
 let user=null,org=null,branches=[],existingCustomers=[],products=new Map(),active=null,saving=false,editing=null;
 const key=(category,index)=>category+'|'+index;
 const pileFactors={'1.0x':1,'2.0x':2,'3.0x':3,'3.5x':3.5,'4.5x':4.5,'Özel':1,'':1};
@@ -223,6 +224,7 @@ function drawSlots(){
     const select=newElement('select','slot-status');select.setAttribute('aria-label','Satır durumu: '+record.name);
     for(const v of ['processing','waiting','workshop','ready','delivered','cancelled']){
      const option=new Option(statusNames[v],v);
+     if(v==='workshop'&&!['owner','manager'].includes(memberRole))option.disabled=true;
      if(v==='ready'||v==='delivered'||record.status==='ready'||record.status==='delivered'||record.status==='cancelled'||(v==='processing'&&(record.status!=='processing'&&record.status!=='waiting'||Boolean(editing.barcode_printed_at)))||(v==='waiting'&&(record.status!=='processing'||Boolean(editing.barcode_printed_at)))||(record.status==='waiting'&&v!=='waiting'&&v!=='processing'&&v!=='cancelled'))option.disabled=v!==record.status;
      select.add(option);
     }
@@ -450,7 +452,7 @@ function stage(next){
  if(next===2){
   $('order-status-display').value=editing?.status==='new'?'processing':editing?.status||'processing';
   $('editor-print-a4').hidden=!editing;
-  $('editor-print-label').hidden=!editing;
+  $('editor-print-label').hidden=!editing||!['owner','manager'].includes(memberRole);
   $('editor-print-label').disabled=!editing||!['processing','new'].includes(editing.status)||Boolean(editing.barcode_printed_at);
   $('editor-print-label').title=editing?.barcode_printed_at?'Bu siparişin barkodu daha önce basılmış':'';
   $('editor-whatsapp').hidden=!editing||![...products.keys()].some(k=>['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ'].some(c=>k.startsWith(c+'|')));
@@ -482,6 +484,7 @@ async function start(){
   if(!membership?.length){$('auth-warning').hidden=false;alertText('Önce Hesabım → Şirket Ayarları bölümünden işletme oluşturun.');return}
   const preferred=new URLSearchParams(location.search).get('org');
   const selected=membership.find(x=>x.organization_id===preferred)||membership[0];
+  memberRole=selected.role||'staff';
   const [{data:company,error:companyErr},{data:branchData,error:branchErr},{data:orders,error:ordersErr}]=await Promise.all([
    sb.from('erp_organizations').select('id,name,phone,email,address,logo_url,instagram').eq('id',selected.organization_id).single(),
    sb.from('erp_branches').select('id,name,address,phone').eq('organization_id',selected.organization_id).order('name'),
@@ -729,6 +732,7 @@ $('product-status').onchange=async()=>{
  const item=products.get(key(active.category,active.index)),select=$('product-status');
  if(!item?.id)return;
  const before=item.status,next=select.value;
+ if(next==='workshop'&&!['owner','manager'].includes(memberRole)){select.value=before;$('product-status-message').textContent='Atölyeye aktarma yalnızca yöneticiler tarafından yapılabilir.';return;}
  if(next==='cancelled'){select.disabled=true;try{await cancelItemInEditor(item);}catch(e){select.value=before;$('product-status-message').textContent='İptal edilemedi: '+e.message;}finally{select.disabled=false;}return;}
  if(next==='processing'&&(before!=='processing'&&before!=='waiting'||Boolean(editing?.barcode_printed_at))){select.value=before;$('product-status-message').textContent='Atölyeye alınan ürün tekrar İşlemde durumuna geçirilemez.';return}
  select.disabled=true;$('product-status-message').textContent='Durum kaydediliyor...';
@@ -863,7 +867,7 @@ $('whatsapp-confirm').onclick=async()=>{
 };
 
 $('editor-print-a4').onclick=()=>openEditorPrint('a4');
-$('editor-print-label').onclick=()=>openEditorPrint('label');
+$('editor-print-label').onclick=()=>{if(!['owner','manager'].includes(memberRole)){alert('Etiket yazdırma yalnızca yöneticiler tarafından yapılabilir.');return;}openEditorPrint('label')};
 $('order-logout').onclick=async()=>{await sb.auth.signOut();location.href='./'};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('product-overlay').hidden)closeItem()});
 start();
