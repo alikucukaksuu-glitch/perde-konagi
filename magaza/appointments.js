@@ -44,10 +44,13 @@ $('list').onclick=async e=>{
  if(btn.dataset.action==='edit'){open(a);return}
  if(btn.dataset.action==='whatsapp'){
   const text=messageFor(a);
-  try{await navigator.clipboard.writeText(text)}catch(_){}
   const url='https://api.whatsapp.com/send?text='+encodeURIComponent(text);
-  const opened=window.open(url,'_blank','noopener');if(!opened)window.location.href=url;
-  note('Mesaj hazırlandı. WhatsApp’ta “Montaj ve Ölçü” grubunu seçip Gönder’e basın.');return;
+  // Open synchronously while the user's click is still active. Never navigate the embedded ERP frame.
+  const link=document.createElement('a');
+  link.href=url;link.target='_blank';link.rel='noopener noreferrer';
+  document.body.append(link);link.click();link.remove();
+  try{await navigator.clipboard.writeText(text)}catch(_){}
+  note('Mesaj hazırlandı. WhatsApp ayrı sekmede açılır. “Montaj ve Ölçü” grubunu seçip Gönder’e basın.');return;
  }
 };
 $('form').onsubmit=async e=>{
