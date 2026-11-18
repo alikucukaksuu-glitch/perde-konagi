@@ -439,6 +439,10 @@ function renderOrderBranches(selectedId){
   if(org?.email)card.append(newElement('span','order-branch-contact',org.email));
   host.append(card);
  }
+ const social=$('order-social');social.replaceChildren();
+ social.append(newElement('span','','Web: perdekonagi.com'));
+ const instagram=String(org?.instagram||'').trim();
+ social.append(newElement('span','','Instagram: '+(instagram||'@perdekonagi')));
 }
 function stage(next){
  $('stage1').hidden=next!==1;$('stage2').hidden=next!==2;
@@ -479,7 +483,7 @@ async function start(){
   const preferred=new URLSearchParams(location.search).get('org');
   const selected=membership.find(x=>x.organization_id===preferred)||membership[0];
   const [{data:company,error:companyErr},{data:branchData,error:branchErr},{data:orders,error:ordersErr}]=await Promise.all([
-   sb.from('erp_organizations').select('id,name,phone,email,address,logo_url').eq('id',selected.organization_id).single(),
+   sb.from('erp_organizations').select('id,name,phone,email,address,logo_url,instagram').eq('id',selected.organization_id).single(),
    sb.from('erp_branches').select('id,name,address,phone').eq('organization_id',selected.organization_id).order('name'),
    sb.from('erp_orders').select('customer_name,customer_phone').eq('organization_id',selected.organization_id).order('created_at',{ascending:false}).limit(500)]);
   if(companyErr||branchErr||ordersErr)throw companyErr||branchErr||ordersErr;
