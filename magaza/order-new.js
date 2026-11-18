@@ -13,6 +13,7 @@ const pileFactors={'1.0x':1,'2.0x':2,'3.0x':3,'3.5x':3.5,'4.5x':4.5,'Özel':1,''
 const pileFactor=(pile)=>pileFactors[pile]??1;
 const rounded=(n)=>Math.round((Number(n)+Number.EPSILON)*100)/100;
 const priceFromBase=(base,pile)=>rounded(Number(base)*pileFactor(pile));
+const tulUnitPrice=(base,widthCm,pile)=>rounded((Number(widthCm)/100)*pileFactor(pile)*Number(base));
 const storCaseColors={open:[],classic:['Beyaz','Krem'],colored:['Gri','Antrasit','Kahve']};
 let catalogCache=[],catalogOrg=null,catalogRequest=null,manualPrice=false;
 function isStor(){return $('product-category').value==='STOR PERDE'}
@@ -373,6 +374,11 @@ function calculateItemTotal(){
   $('product-total').textContent=valid?fmt(unit*qty):'—';
   $('pile-price-hint').textContent=valid?'Gerçek ölçü: '+w+' × '+h+' cm · Fiyat ölçüsü: '+cw+' × '+ch+' cm · '+area.toLocaleString('tr-TR',{maximumFractionDigits:4})+' m² (min. 1 m²) × '+fmt(base)+' × '+qty+' adet = '+fmt(unit*qty):'En ve boyu 0,5 cm aralıklarla girin (örn. 40,5; 41; 41,5).';
   $('wood-calculation').textContent=valid?'Üretim: '+w+' × '+h+' cm · Fiyatlandırma: '+cw+' × '+ch+' cm · '+fmt(unit)+' / adet':'Gerçek ölçüler girildiğinde fiyat otomatik hesaplanır.';
+ }else if($('product-category').value==='TÜL PERDE'){
+  const width=asNum($('product-width').value),p=pileControlSelect.value,factor=pileFactor(p);
+  const unit=width>0?tulUnitPrice(base,width,p):0;
+  $('product-total').textContent=width>0?fmt(unit*qty):'—';
+  $('pile-price-hint').textContent=width>0?'Hesap: '+width+' cm ÷ 100 × '+String(factor).replace('.',',')+' (pile) × '+fmt(base)+' / metre × '+qty+' adet = '+fmt(unit*qty):'Tül perde en ölçüsünü cm olarak girin; fiyat en (metre) × pile × metre fiyatıdır.';
  }else{
   const p=pileControlSelect.value,factor=pileFactor(p);
   $('product-total').textContent=fmt(priceFromBase(base,p)*qty);
@@ -381,10 +387,11 @@ function calculateItemTotal(){
 }
 function storeItem(e){
  e.preventDefault();
- const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise()||isWood())?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):isWood()?woodPrice(basePrice,$('product-width').value,$('product-height').value):priceFromBase(basePrice,pile);
+ const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise()||isWood())?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):isWood()?woodPrice(basePrice,$('product-width').value,$('product-height').value):$('product-category').value==='TÜL PERDE'?tulUnitPrice(basePrice,$('product-width').value,pile):priceFromBase(basePrice,pile);
  const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value;
  if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(basePrice)||basePrice<0||!Number.isFinite(price)||price<0||price>99999999){$('product-status-message').textContent='Ürün adı, fiyatı veya adedi geçersiz.';return}
  if((width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))||(height!==''&&(!Number.isFinite(Number(height))||Number(height)<0))){$('product-status-message').textContent='En ve boy negatif olamaz.';return}
+ if(category==='TÜL PERDE'&&(!Number.isFinite(Number(width))||Number(width)<=0)){$('product-status-message').textContent='Tül perde için en (cm) sıfırdan büyük olmalıdır.';return}
  if(category==='STOR PERDE'&&(!Number.isFinite(Number(width))||Number(width)<=0||!Number.isFinite(Number(height))||Number(height)<=0)){$('product-status-message').textContent='Stor perdede gerçek en ve boy ölçüsü sıfırdan büyük olmalı.';return}
  if(category==='PLİSE PERDE'&&(!validPliseMeasure(width)||!validPliseMeasure(height))){$('product-status-message').textContent='Plise perde en ve boy ölçüleri pozitif ve 0,1 cm hassasiyetinde olmalıdır (örn. 80,1 cm).';return}
  if(category==='AHŞAP JALUZİ'&&(!validWoodMeasure(width)||!validWoodMeasure(height))){$('product-status-message').textContent='Ahşap Jaluzi ölçülerini 0,5 cm aralıklarla girin (örn. 40,5; 41; 41,5).';return}
@@ -571,7 +578,7 @@ async function loadQuoteForEdit(id,orgId){
    const specParts=spec.match(/^Pile:\s*([^;]+)(?:;\s*(.*))?$/);
    const baseMatch=spec.match(/(?:^|;\s*)Baz Fiyat:\s*(\d+(?:\.\d+)?)/);
    const parsedPile=specParts?.[1]||'';
-   const legacyBase=Number(line.unit_price)/pileFactor(parsedPile);
+   const legacyBase=Number(line.unit_price)/(line.category==='TÜL PERDE'&&Number(line.width_cm)>0?(Number(line.width_cm)/100)*pileFactor(parsedPile):pileFactor(parsedPile));
    const basePrice=baseMatch?Number(baseMatch[1]):rounded(legacyBase);
    const detailedSpec=(specParts?.[2]||(!specParts?spec:''))?.replace(/(?:^|;\s*)Baz Fiyat:\s*\d+(?:\.\d+)?/,'').trim().replace(/^;\s*|;\s*$/g,'');
    products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:line.qty||1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,cancellationRequestedAt:line.cancellation_requested_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
