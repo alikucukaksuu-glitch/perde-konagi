@@ -2,7 +2,7 @@
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY),$=id=>document.getElementById(id);
 const q=new URLSearchParams(location.search),id=q.get('id'),orgId=q.get('org'),mode=q.get('type')==='bulk'?'bulk':q.get('type')==='label'?'label':'a4',reprint=q.get('reprint')==='1';
-let order=null,company=null,branch=null,items=[],printedRequested=false;
+let order=null,company=null,branch=null,allBranches=[],items=[],printedRequested=false;
 const fmt=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const date=s=>s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString('tr-TR'):'—';
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=String(text??'');return e}
@@ -58,20 +58,24 @@ function addA4(){
  document.body.classList.add('a4-mode');
  const header=el('header','a4-new-head');
  const brand=el('div','a4-new-brand');
- if(company.logo_url&&/^https:\/\//.test(company.logo_url)){
-  const logo=el('img','a4-new-logo');logo.src=company.logo_url;logo.alt=company.name;brand.append(logo);
+ txt(brand,'h1','a4-brand-title',company.name);
+ const branchCards=el('div','a4-branch-cards');
+ const sorted=[...allBranches].sort((a,b)=>{const rank=x=>/GAZİOSMANPAŞA/i.test(x.name)?0:/SULTANGAZİ/i.test(x.name)?1:2;return rank(a)-rank(b)||a.name.localeCompare(b.name,'tr')});
+ for(let i=0;i<sorted.length;i++){
+  const item=sorted[i],selected=item.id===order.branch_id;
+  const card=el('div','a4-branch'+(selected?' a4-branch-selected':''));
+  txt(card,'strong','',(i+1)+'. ŞUBE · '+item.name);
+  if(selected)txt(card,'span','a4-sale-tag','SATIŞ YAPILAN ŞUBE');
+  if(item.address)txt(card,'p','',item.address);
+  if(item.phone)txt(card,'p','','Tel: '+item.phone);
+  if(company.email)txt(card,'p','',company.email);
+  branchCards.append(card);
  }
- const brandCopy=el('div','a4-brand-copy');
- txt(brandCopy,'h1','',company.name);
- txt(brandCopy,'strong','',/(?:^|\s)ŞUBESİ\s*$/i.test((branch.name||'').trim())?(branch.name||'').trim():((branch.name||'').trim()+' ŞUBESİ').trim());
- brand.append(brandCopy);
- const contact=el('div','a4-new-contact');
- if(branch.address)txt(contact,'p','',branch.address);
- if(branch.phone)txt(contact,'p','','Tel: '+branch.phone);
- if(company.phone&&company.phone!==branch.phone)txt(contact,'p','','Merkez: '+company.phone);
- if(company.instagram)txt(contact,'p','',company.instagram);
- brand.append(contact);
+ brand.append(branchCards);
  const customer=el('div','a4-new-customer');
+ if(company.logo_url&&/^https:\/\//.test(company.logo_url)){
+  const logo=el('img','a4-new-logo');logo.src=company.logo_url;logo.alt=company.name;customer.append(logo);
+ }
  const dl=el('dl');
  pair(dl,'Sipariş No','#'+order.order_number);
  pair(dl,'Müşteri',order.customer_name);
@@ -399,9 +403,10 @@ async function start(){
  ]);
  if(e1||e2||e3){fail('Sipariş bilgileri alınamadı: '+(e1||e2||e3).message);return}
  order=o;items=rows||[];company=co;
- const {data:br,error:e4}=await sb.from('erp_branches').select('name,address,phone').eq('id',o.branch_id).eq('organization_id',orgId).single();
+ const {data:br,error:e4}=await sb.from('erp_branches').select('id,name,address,phone').eq('organization_id',orgId).order('name');
  if(e4){fail('Şube bilgisi alınamadı: '+e4.message);return}
- branch=br;
+ allBranches=br||[];branch=allBranches.find(b=>b.id===o.branch_id);
+ if(!branch){fail('Siparişin şubesi bulunamadı.');return}
  $('warning').textContent='';
  if(mode==='label'){
   if(reprint){
