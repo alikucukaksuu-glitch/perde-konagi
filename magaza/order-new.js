@@ -482,7 +482,7 @@ function configureQuoteMode(){
  document.querySelector('.form-actions a').href='./?view=quotes';
  $('submit-order').textContent='Teklifi Kaydet';
  $('continue-btn').textContent='Teklife Devam Et →';
- const field=document.createElement('div');field.className='quote-extra-fields';field.innerHTML='<div class="two"><label>Teklif Durumu<select id="quote-state"><option value="draft">Taslak</option><option value="pending">Onay Bekliyor</option><option value="rejected">Reddedildi</option></select></label><label>Teklif Geçerlilik Tarihi<input id="quote-valid" type="date"></label></div>';
+ const field=document.createElement('div');field.className='quote-extra-fields';field.innerHTML='<div class="two"><label>Teklif Durumu<select id="quote-state"><option value="draft">Taslak</option><option value="pending">Onay Bekliyor</option></select></label><label>Teklif Geçerlilik Tarihi<input id="quote-valid" type="date"></label></div>';
  $('order-type').closest('label').after(field);$('order-type').closest('label').hidden=true;
  $('paid-value').value='0';$('paid-value').disabled=true;
  const finance=document.querySelector('.finance-box');if(finance)finance.querySelector('h3').textContent='Teklif Özeti';
@@ -536,7 +536,7 @@ async function loadQuoteForEdit(id,orgId){
   $('order-note').value=order.customer_note||'';
   $('discount-percent').value=order.discount_percent??0;
   $('discount-amount').value=order.discount_amount??0;
-  $('quote-state').value=order.status||'draft';
+  $('quote-state').value=order.status==='rejected'?'draft':(order.status||'draft');
   $('quote-valid').value=order.valid_until||'';
   document.querySelector('.order-topline h1').textContent='Teklif #T-'+order.quote_number+' Düzenle';
   $('submit-order').textContent='Teklifi Güncelle';
