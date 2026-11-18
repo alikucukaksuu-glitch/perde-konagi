@@ -163,6 +163,45 @@ function showCatalog(){
  list.hidden=false;
 }
 
+function catalogMatch(category,name){
+ const normalized=String(name||'').trim().toLocaleUpperCase('tr-TR');
+ return catalogCache.find(p=>p.category===category&&p.name.trim().toLocaleUpperCase('tr-TR')===normalized);
+}
+function closeQuickAdd(){
+ $('quick-add-panel').hidden=true;$('quick-add-message').textContent='';
+}
+function openQuickAdd(){
+ const category=$('product-category').value;
+ $('quick-add-category').textContent='Kategori: '+category;
+ $('quick-add-name').value=$('product-name').value.trim()||$('catalog-search').value.trim();
+ $('quick-add-price').value=$('product-price').value||'';
+ $('quick-add-message').textContent='';
+ $('quick-add-panel').hidden=false;
+ $('quick-add-name').focus();
+}
+async function saveQuickAdd(){
+ const category=$('product-category').value,name=$('quick-add-name').value.trim(),price=Number($('quick-add-price').value);
+ if(name.length<2||name.length>180||$('quick-add-price').value.trim()===''||!Number.isFinite(price)||price<0||price>99999999||Math.round(price*100)!==price*100){
+  $('quick-add-message').textContent='Ürün adı ve geçerli birim fiyat girin.';return;
+ }
+ if(!org?.id){$('quick-add-message').textContent='İşletme seçimi bulunamadı.';return;}
+ const btn=$('quick-add-save');btn.disabled=true;$('quick-add-message').textContent='Ürün kataloğa kaydediliyor...';
+ try{
+  const {data:productId,error}=await sb.rpc('erp_catalog_quick_add',{p_org:org.id,p_category:category,p_name:name,p_unit_price:price});
+  if(error)throw error;
+  const {data:created,error:readError}=await sb.from('erp_catalog_products').select('id,name,category,unit_price').eq('organization_id',org.id).eq('id',productId).single();
+  if(readError)throw readError;
+  catalogCache=catalogCache.filter(p=>p.id!==created.id);
+  catalogCache.push(created);
+  $('product-name').value=created.name;
+  $('catalog-search').value=created.name;
+  $('product-price').value=created.unit_price;
+  $('catalog-results').hidden=true;
+  closeQuickAdd();calculateItemTotal();
+  $('catalog-hint').textContent='Ürün seçildi: '+created.name+'. Sipariş satırını tamamlayabilirsiniz.';
+ }catch(e){$('quick-add-message').textContent='Ürün eklenemedi: '+e.message;}
+ finally{btn.disabled=false;}
+}
 function alertText(text){$('order-alert').textContent=text;$('order-alert').hidden=!text;window.scrollTo({top:0,behavior:'smooth'})}
 function setDate(days){
  const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+days);
@@ -302,6 +341,7 @@ function openItem(category,index){
  $('product-category').value=category;
  $('catalog-search').value='';
  $('catalog-results').hidden=true;
+ closeQuickAdd();
  $('stor-case').value='open';$('stor-chain').value='plastic';$('stor-side').value='left';$('stor-tube').value='32';$('stor-foot').value='plastic';$('stor-hem').value='1';
  $('plise-mount').value=pliseMounts[0];$('plise-case-color').value=pliseCaseColors[0];
  $('wood-ribbon').checked=false;$('wood-mechanism').value='İpli';
@@ -390,6 +430,10 @@ function storeItem(e){
  e.preventDefault();
  const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise()||isWood())?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):isWood()?woodPrice(basePrice,$('product-width').value,$('product-height').value):isTul()?tulUnitPrice(basePrice,$('product-width').value,pile):priceFromBase(basePrice,pile);
  const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value;
+ if(!catalogMatch(category,name)){
+  $('product-status-message').textContent='Bu ürün seçili kategori kataloğunda kayıtlı değil. Önce + Hızlı Ürün Ekle ile kaydedin veya arama listesinden kayıtlı bir ürün seçin.';
+  openQuickAdd();return;
+ }
  if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(basePrice)||basePrice<0||!Number.isFinite(price)||price<0||price>99999999){$('product-status-message').textContent='Ürün adı, fiyatı veya adedi geçersiz.';return}
  if((width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))||(height!==''&&(!Number.isFinite(Number(height))||Number(height)<0))){$('product-status-message').textContent='En ve boy negatif olamaz.';return}
  if(category==='TÜL PERDE'&&(!Number.isFinite(Number(width))||Number(width)<=0)){$('product-status-message').textContent='Tül perde için en (cm) sıfırdan büyük olmalıdır.';return}
@@ -763,7 +807,10 @@ $('product-shade').onclick=$('close-product').onclick=closeItem;
  ['stor-chain','stor-side','stor-tube','stor-foot','stor-color','stor-hem'].forEach(id=>$(id).onchange=calculateItemTotal);
  $('stor-case').onchange=()=>{syncStorColor($('stor-case').value);calculateItemTotal()};
  $('fon-wing-type').onchange=()=>syncFonSizes();
- $('product-category').onchange=()=>{syncCategoryUI();$('fon-wing-type').value='';syncFonSizes();$('catalog-search').value='';$('catalog-results').hidden=true;showCatalog();calculateItemTotal()};
+ $('quick-add-toggle').onclick=openQuickAdd;
+ $('quick-add-cancel').onclick=closeQuickAdd;
+ $('quick-add-save').onclick=saveQuickAdd;
+ $('product-category').onchange=()=>{closeQuickAdd();syncCategoryUI();$('fon-wing-type').value='';syncFonSizes();$('catalog-search').value='';$('catalog-results').hidden=true;showCatalog();calculateItemTotal()};
  $('catalog-search').oninput=()=>{showCatalog()};
  $('catalog-search').onfocus=showCatalog;
 pileControlSelect.onchange=calculateItemTotal;
