@@ -420,6 +420,9 @@ function calculateItemTotal(){
   const unit=width>0?tulUnitPrice(base,width,p):0;
   $('product-total').textContent=width>0?fmt(unit*qty):'—';
   $('pile-price-hint').textContent=width>0?'Hesap: '+width+' cm ÷ 100 × '+String(factor).replace('.',',')+' (pile) × '+fmt(base)+' / metre × '+qty+' adet = '+fmt(unit*qty):'Tül perde en ölçüsünü cm olarak girin; fiyat en (metre) × pile × metre fiyatıdır.';
+ }else if(isFon()){
+  $('product-total').textContent=fmt(base*qty);
+  $('pile-price-hint').textContent='Hesap: '+fmt(base)+' × '+qty+' adet = '+fmt(base*qty)+' · Pile seçimi fiyatı değiştirmez.';
  }else{
   const p=pileControlSelect.value,factor=pileFactor(p);
   $('product-total').textContent=fmt(priceFromBase(base,p)*qty);
@@ -428,7 +431,7 @@ function calculateItemTotal(){
 }
 function storeItem(e){
  e.preventDefault();
- const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise()||isWood())?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):isWood()?woodPrice(basePrice,$('product-width').value,$('product-height').value):isTul()?tulUnitPrice(basePrice,$('product-width').value,pile):priceFromBase(basePrice,pile);
+ const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise()||isWood())?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):isWood()?woodPrice(basePrice,$('product-width').value,$('product-height').value):isTul()?tulUnitPrice(basePrice,$('product-width').value,pile):isFon()?rounded(basePrice):priceFromBase(basePrice,pile);
  const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value;
  if(!catalogMatch(category,name)){
   $('product-status-message').textContent='Bu ürün seçili kategori kataloğunda kayıtlı değil. Önce + Hızlı Ürün Ekle ile kaydedin veya arama listesinden kayıtlı bir ürün seçin.';
