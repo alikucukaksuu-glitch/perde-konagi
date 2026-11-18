@@ -495,7 +495,14 @@ async function loadQuoteForEdit(id,orgId){
   if(error)throw error;
   if(order.status==='approved')throw Error('Onaylanan teklif değiştirilemez.');
   quoteEditing=order;products.clear();
-  const lines=(order.items||[]).map(line=>({...line,id:null,barcode:null,status:'processing',printed_at:null,cancellation_requested_at:null,waiting_reason:null}));
+  const grouped=new Map();
+  for(const [index,line] of (order.items||[]).entries()){
+   const slot=String(line.slot_key||line.category+'|'+index).replace(/-\\d+$/,'');
+   const existing=grouped.get(slot);
+   if(existing)existing.qty+=1;
+   else grouped.set(slot,{...line,slot_key:slot,qty:1,id:null,barcode:null,status:'processing',printed_at:null,cancellation_requested_at:null,waiting_reason:null});
+  }
+  const lines=[...grouped.values()];
   const taken=new Set();
   for(const line of lines||[]){
    const group=categories.find(x=>x.name===line.category);
@@ -516,7 +523,7 @@ async function loadQuoteForEdit(id,orgId){
    const legacyBase=Number(line.unit_price)/pileFactor(parsedPile);
    const basePrice=baseMatch?Number(baseMatch[1]):rounded(legacyBase);
    const detailedSpec=(specParts?.[2]||(!specParts?spec:''))?.replace(/(?:^|;\s*)Baz Fiyat:\s*\d+(?:\.\d+)?/,'').trim().replace(/^;\s*|;\s*$/g,'');
-   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,cancellationRequestedAt:line.cancellation_requested_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
+   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:line.qty||1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,cancellationRequestedAt:line.cancellation_requested_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
   }
 
   $('store-select').value=order.branch_id;
