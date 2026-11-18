@@ -53,8 +53,8 @@ async function refresh(){
   }else{
    orders=await get('erp_orders','id,branch_id,order_number,customer_name,customer_phone,created_at,delivery_date,status,barcode_printed_at,total_amount,paid_amount',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(1000));
    if(tab==='customers'){
-    const first=await get('erp_customers','id,customer_name,customer_phone,normalized_phone,email,address,notes',q=>q.eq('organization_id',org).order('customer_name').range(0,999));
-    const second=first.length===1000?await get('erp_customers','id,customer_name,customer_phone,normalized_phone,email,address,notes',q=>q.eq('organization_id',org).order('customer_name').range(1000,1999)):[];
+    const first=await get('erp_customers','id,customer_name,customer_phone,normalized_phone,email,address,notes',q=>q.eq('organization_id',org).order('customer_name').order('id').range(0,999));
+    const second=first.length===1000?await get('erp_customers','id,customer_name,customer_phone,normalized_phone,email,address,notes',q=>q.eq('organization_id',org).order('customer_name').order('id').range(1000,1999)):[];
     customers=[...first,...second];
    }
    if(tab==='workshop'){
