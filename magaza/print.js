@@ -72,6 +72,10 @@ function addA4(){
   branchCards.append(card);
  }
  brand.append(branchCards);
+ const social=el('div','a4-branch-social');
+ txt(social,'span','','Web: perdekonagi.com');
+ txt(social,'span','','Instagram: '+(String(company.instagram||'').trim()||'@perdekonagi'));
+ brand.append(social);
  const customer=el('div','a4-new-customer');
  if(company.logo_url&&/^https:\/\//.test(company.logo_url)){
   const logo=el('img','a4-new-logo');logo.src=company.logo_url;logo.alt=company.name;customer.append(logo);
