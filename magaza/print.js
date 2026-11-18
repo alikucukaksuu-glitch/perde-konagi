@@ -16,7 +16,7 @@ function a4OrderItem(card,item,index){
  txt(product,'strong','a4-product-name',(index+1)+'. '+item.product_name);
  const size=(item.width_cm??'—')+' × '+(item.height_cm??'—')+' cm';
  const specs=[
-  ['Ölçü',size],['Adet','1'],...(item.category==='STOR PERDE'||item.category==='PLİSE PERDE'||item.category==='AHŞAP JALUZİ'?[]:[['Pile',details.pile||'—']]),['Tutar',fmt(item.unit_price)]
+  ['Ölçü',size],['Adet','1'],...(item.category==='STOR PERDE'||item.category==='PLİSE PERDE'||item.category==='AHŞAP JALUZİ'?[]:[['Pile',details.pile||'—']]),...(item.category==='FON PERDE'?([['Kanat Tipi',details.field('Kanat Tipi')||'—'],['Kanat Ölçüsü',details.field('Kanat Ölçüsü')||'—']]):[]),['Tutar',fmt(item.unit_price)]
  ];
  for(const [key,value] of specs){
   const row=el('div','a4-product-detail');
@@ -116,7 +116,7 @@ function parseProductionInfo(note){
  const extra=parts.filter(part=>!/^(Pile|Baz Fiyat):\s*/i.test(part)).join('; ');
  const noteLines=prefix?lines.slice(1):lines;
  const cleanNote=noteLines.join('\n').replace(/(?:^|[;\n]\s*)Baz Fiyat:\s*[\d.,]+/gi,'').trim();
- return {pile,detail:[extra,cleanNote].filter(Boolean).join(' · ')};
+ return {pile,detail:[extra,cleanNote].filter(Boolean).join(' · '),field:label=>(parts.find(p=>p.startsWith(label+': '))||'').slice(label.length+2)};
 }
 function makeLabel(item){
  const box=el('article','thermal-label qr-label');
@@ -150,6 +150,10 @@ function makeLabel(item){
  }else if(isWood){
   lines.push('Kurdela: '+(option('Kurdela')||'Yok'));
   if(option('Mekanizma'))lines.push('Mekanizma: '+option('Mekanizma'));
+ }else if(item.category==='FON PERDE'){
+  lines.push('Kanat: '+(details.field('Kanat Tipi')||'—'));
+  lines.push('Kanat Ölçüsü: '+(details.field('Kanat Ölçüsü')||'—'));
+  if(details.pile)lines.push('Pile: '+details.pile);
  }else lines.push('Pile: '+(details.pile||'—'));
  for(const x of lines)txt(specs,'span','',x);
  left.append(specs);
