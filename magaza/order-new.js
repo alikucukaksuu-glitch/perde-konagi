@@ -401,7 +401,7 @@ function toggleCustomer(which){
 function renderCustomers(){
  const text=$('customer-search').value.trim().toLocaleLowerCase('tr-TR');
  const area=$('customer-results');area.replaceChildren();
- const found=existingCustomers.filter(c=>[c.name,c.phone].some(v=>String(v||'').toLocaleLowerCase('tr-TR').includes(text))).slice(0,30);
+ const found=existingCustomers.filter(c=>[c.name,c.phone,c.email].some(v=>String(v||'').toLocaleLowerCase('tr-TR').includes(text))).slice(0,30);
  for(const c of found){
   const btn=document.createElement('button');btn.type='button';btn.textContent=c.name+(c.phone?' — '+c.phone:'');
   btn.onclick=()=>{$('customer-name').value=c.name;$('customer-phone').value=c.phone||'';toggleCustomer('new');alertText('')};
@@ -454,8 +454,19 @@ async function start(){
    sb.from('erp_orders').select('customer_name,customer_phone').eq('organization_id',selected.organization_id).order('created_at',{ascending:false}).limit(500)]);
   if(companyErr||branchErr||ordersErr)throw companyErr||branchErr||ordersErr;
   org=company;branches=branchData||[];
+  const [{data:poolFirst,error:poolErr},{data:poolSecond,error:poolNextErr}]=await Promise.all([
+   sb.from('erp_customers').select('customer_name,customer_phone,email,normalized_phone').eq('organization_id',selected.organization_id).order('customer_name').order('id').range(0,999),
+   sb.from('erp_customers').select('customer_name,customer_phone,email,normalized_phone').eq('organization_id',selected.organization_id).order('customer_name').order('id').range(1000,1999)
+  ]);
+  if(poolErr||poolNextErr)throw poolErr||poolNextErr;
   const seen=new Set();existingCustomers=[];
-  for(const record of orders||[]){const name=record.customer_name?.trim(),phone=record.customer_phone?.trim()||'';if(!name)continue;const k=(name+'|'+phone).toLocaleLowerCase('tr-TR');if(!seen.has(k)){seen.add(k);existingCustomers.push({name,phone})}}
+  const normalize=raw=>{let digits=String(raw||'').replace(/\D/g,'');if(digits.startsWith('90')&&digits.length===12)digits=digits.slice(2);if(digits.startsWith('0')&&digits.length===11)digits=digits.slice(1);return digits};
+  for(const record of [...(poolFirst||[]),...(poolSecond||[]),...(orders||[])]){
+   const name=(record.customer_name||'').trim(),phone=(record.customer_phone||'').trim(),email=(record.email||'').trim();
+   if(!name)continue;
+   const k=record.normalized_phone||normalize(phone)||name.toLocaleLowerCase('tr-TR')+'|'+email.toLocaleLowerCase('tr-TR');
+   if(!seen.has(k)){seen.add(k);existingCustomers.push({name,phone,email})}
+  }
   const selector=$('store-select');selector.replaceChildren(new Option('Şube seçiniz',''));
   branches.forEach(b=>selector.add(new Option(b.name,b.id)));
   if(branches.length===1)selector.value=branches[0].id;
