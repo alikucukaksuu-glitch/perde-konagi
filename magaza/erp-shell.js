@@ -99,9 +99,10 @@ async function initialize(){
      const {data:rows,error:permissionError}=await client.from('erp_member_permissions').select('menu_key,can_view').eq('organization_id',orgId).eq('user_id',session.user.id);
      if(permissionError)throw permissionError;
      for(const row of rows||[])allowed[row.menu_key]=!!row.can_view;
-     allowed.missing=allowed.workshop;
-     allowed.quotes=allowed.orders;
-     allowed.appointments=allowed.orders;
+     const savedKeys=new Set((rows||[]).map(row=>row.menu_key));
+     if(!savedKeys.has('missing'))allowed.missing=allowed.workshop;
+     if(!savedKeys.has('quotes'))allowed.quotes=allowed.orders;
+     if(!savedKeys.has('appointments'))allowed.appointments=allowed.orders;
      allowed.company=true;
     }
    }else Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));
@@ -111,8 +112,6 @@ async function initialize(){
   Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));
   console.warn('KONAK ERP menü yetkileri okunamadı',error?.message);
  }
- allowed.quotes=allowed.orders;
- allowed.appointments=allowed.orders;
  for(const [key,record] of frames){if(!allowed[key]){record.frame.remove();frames.delete(key)}}
  for(const link of navigation.querySelectorAll('[data-view]'))link.hidden=!allowed[link.dataset.view];
  navigation.style.visibility=authenticated?'visible':'hidden';
