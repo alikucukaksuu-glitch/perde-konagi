@@ -50,21 +50,41 @@ async function initialize(){
   }
  }catch(e){show('auth-panel');msg('login-message','İşletme bilgileri yüklenemedi: '+e.message)}
 }
+async function fetchPages(table,select,query){
+ const rows=[],pageSize=250;
+ for(let offset=0;;offset+=pageSize){
+  const page=await fetchAll(table,select,q=>query(q).range(offset,offset+pageSize-1));
+  rows.push(...page);
+  if(page.length<pageSize)return rows;
+ }
+}
+let loadVersion=0;
 async function load(){
+ const version=++loadVersion,organization=org;
  msg('orders-message','Siparişler yükleniyor...');
  try{
-  [branches,orders]=await Promise.all([
-   fetchAll('erp_branches','id,name,organization_id',q=>q.eq('organization_id',org).order('name')),
-   fetchAll('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method,waiting_reason,barcode_printed_at',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(250))
+  const [nextBranches,nextOrders]=await Promise.all([
+   fetchAll('erp_branches','id,name,organization_id',q=>q.eq('organization_id',organization).order('name')),
+   fetchPages('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method,waiting_reason,barcode_printed_at',q=>q.eq('organization_id',organization).order('created_at',{ascending:false}).order('id'))
   ]);
-  items=orders.length?await fetchAll('erp_order_items','id,order_id,category,product_name,width_cm,height_cm,unit_price,production_note,status,waiting_reason,barcode,printed_at,cancellation_requested_at,cancellation_reason',q=>q.eq('organization_id',org).in('order_id',orders.map(x=>x.id))):[];
+  const nextItems=[];
+  for(let offset=0;offset<nextOrders.length;offset+=40){
+   if(version!==loadVersion)return;
+   const ids=nextOrders.slice(offset,offset+40).map(order=>order.id);
+   const batch=await fetchPages('erp_order_items','id,order_id,category,product_name,width_cm,height_cm,unit_price,production_note,status,waiting_reason,barcode,printed_at,cancellation_requested_at,cancellation_reason',q=>q.eq('organization_id',organization).in('order_id',ids).order('id'));
+   nextItems.push(...batch);
+  }
+  if(version!==loadVersion)return;
+  branches=nextBranches;
+  orders=nextOrders;
+  items=nextItems;
   const dropdown=$('filter-branch'),old=dropdown.value;
   dropdown.innerHTML='<option value="">Tüm Şubeler</option>';
   branches.forEach(b=>dropdown.add(new Option(b.name,b.id)));
   dropdown.value=branches.some(b=>b.id===old)?old:'';
   render();
   msg('orders-message',orders.length?'':'Henüz sipariş bulunmuyor. İlk siparişinizi oluşturabilirsiniz.');
- }catch(e){msg('orders-message','Sipariş verileri alınamadı: '+e.message)}
+ }catch(e){if(version===loadVersion)msg('orders-message','Sipariş verileri alınamadı: '+e.message)}
 }
 function branchName(id){return branches.find(b=>b.id===id)?.name||'Şube'}
 function render(){
