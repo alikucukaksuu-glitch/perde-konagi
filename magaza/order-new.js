@@ -401,7 +401,7 @@ function toggleCustomer(which){
 function renderCustomers(){
  const text=$('customer-search').value.trim().toLocaleLowerCase('tr-TR');
  const area=$('customer-results');area.replaceChildren();
- const found=existingCustomers.filter(c=>[c.name,c.phone,c.email].some(v=>String(v||'').toLocaleLowerCase('tr-TR').includes(text))).slice(0,30);
+ const found=existingCustomers.filter(c=>[c.name,c.phone,c.email].some(v=>String(v||'').toLocaleLowerCase('tr-TR').includes(text)));
  for(const c of found){
   const btn=document.createElement('button');btn.type='button';btn.textContent=c.name+(c.phone?' — '+c.phone:'');
   btn.onclick=()=>{$('customer-name').value=c.name;$('customer-phone').value=c.phone||'';toggleCustomer('new');alertText('')};
