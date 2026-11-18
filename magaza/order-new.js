@@ -427,7 +427,7 @@ function renderCustomers(){
  if(!found.length)area.textContent='Kayıtlı müşteri bulunamadı.';
 }
 function renderOrderBranches(selectedId){
- const host=$('order-branch-cards');host.replaceChildren();
+ const host=$('order-branch-cards');if(!host)return;host.replaceChildren();
  const sorted=[...branches].sort((a,b)=>{const rank=x=>/GAZİOSMANPAŞA/i.test(x.name)?0:/SULTANGAZİ/i.test(x.name)?1:2;return rank(a)-rank(b)||a.name.localeCompare(b.name,'tr')});
  for(let i=0;i<sorted.length;i++){
   const b=sorted[i],selected=b.id===selectedId;
@@ -439,7 +439,7 @@ function renderOrderBranches(selectedId){
   if(org?.email)card.append(newElement('span','order-branch-contact',org.email));
   host.append(card);
  }
- const social=$('order-social');social.replaceChildren();
+ const social=$('order-social');if(!social)return;social.replaceChildren();
  social.append(newElement('span','','Web: perdekonagi.com'));
  const instagram=String(org?.instagram||'').trim();
  social.append(newElement('span','','Instagram: '+(instagram||'@perdekonagi')));
