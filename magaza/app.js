@@ -133,7 +133,7 @@ function render(){
    '<div><small>'+(remaining<0?'İADE GEREKİYOR':'Kalan')+'</small><strong class="'+(remaining>0?'debt':'')+'">'+money(Math.abs(remaining))+'</strong></div>'+
   '</div><div class="compact-actions">'+
    '<button class="secondary" type="button" data-print-a4="'+escapeHtml(o.id)+'">▣ A4 Yazdır</button>'+ 
-   '<button class="secondary" type="button" data-print-label="'+escapeHtml(o.id)+'" '+(o.barcode_printed_at?!['owner','manager'].includes(memberRole)?'disabled title="Tekrar baskı yalnızca yönetici yetkisiyle yapılabilir"':'':!['processing','new'].includes(o.status)?'disabled title="Barkod ilk kez yalnızca İşlemde durumunda basılabilir"':'')+'>'+(o.barcode_printed_at?'▥ QR Etiketi Tekrar Yazdır':'▥ Barkod Yazdır')+'</button>'+
+   '<button class="secondary" type="button" data-print-label="'+escapeHtml(o.id)+'" '+(!['owner','manager'].includes(memberRole)?'disabled title="Üretim etiketi yalnızca yöneticiler tarafından yazdırılabilir" ':'')+' '+(o.barcode_printed_at?!['owner','manager'].includes(memberRole)?'disabled title="Tekrar baskı yalnızca yönetici yetkisiyle yapılabilir"':'':!['processing','new'].includes(o.status)?'disabled title="Barkod ilk kez yalnızca İşlemde durumunda basılabilir"':'')+'>'+(o.barcode_printed_at?'▥ QR Etiketi Tekrar Yazdır':'▥ Barkod Yazdır')+'</button>'+
    (rows.some(i=>['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ'].includes(i.category)&&i.status!=='cancelled')&&o.status!=='cancelled'?
    '<button class="secondary" type="button" data-whatsapp-order="'+escapeHtml(o.id)+'">◉ WhatsApp’tan Gönder</button>':'')+
    '<button class="secondary" type="button" data-edit="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
@@ -249,11 +249,12 @@ function openDetail(id){
  const o=orders.find(x=>x.id===id);if(!o)return;
  const rows=items.filter(x=>x.order_id===id);
  const list=rows.map((i,index)=>'<div class="item-box"><b>'+(index+1)+'. '+escapeHtml(i.category)+' · '+escapeHtml(i.product_name)+'</b><p>En: '+escapeHtml(i.width_cm??'—')+' cm · Boy: '+escapeHtml(i.height_cm??'—')+' cm · Fiyat: '+money(i.unit_price)+'</p><p><strong>Üretim notu:</strong> '+escapeHtml(i.production_note||'—')+'</p><span class="barcode">Barkod: '+escapeHtml(i.barcode)+'</span><span class="chip '+escapeHtml(i.status)+'">'+escapeHtml(titles[i.status]||i.status||'İşlemde')+'</span></div>').join('');
- $('detail-body').innerHTML='<div class="detail-body"><div class="detail-row"><span>Sipariş No</span><b>#'+escapeHtml(o.order_number)+'</b></div><div class="detail-row"><span>Müşteri</span><b>'+escapeHtml(o.customer_name)+'</b></div><div class="detail-row"><span>Şube</span><b>'+escapeHtml(branchName(o.branch_id))+'</b></div><div class="detail-row"><span>Teslim Tarihi</span><b>'+escapeHtml(dateTR(o.delivery_date))+'</b></div><div class="detail-row"><span>Genel Sipariş Notu (A4 ve barkodlarda)</span><b>'+escapeHtml(o.customer_note||'—')+'</b></div><div class="item-section"><h3>Ürün Kutucukları</h3>'+list+'</div><div class="money-grid"><div><small>Toplam</small><b>'+money(o.total_amount)+'</b></div><div><small>Ödenen</small><b>'+money(o.paid_amount)+'</b></div><div><small>Kalan</small><b>'+money(Number(o.total_amount)-Number(o.paid_amount))+'</b></div></div><div class="detail-buttons"><button type="button" id="print-a4" class="secondary">A4 Müşteri Çıktısı</button><button type="button" id="print-barcode" class="secondary">Barkod Yazdır</button></div><p class="fine">Barkod baskısı onaylandığında sipariş Atölyede durumuna alınır. Mağaza barkod okuma modülü ayrı aşamadadır.</p></div>';
+ $('detail-body').innerHTML='<div class="detail-body"><div class="detail-row"><span>Sipariş No</span><b>#'+escapeHtml(o.order_number)+'</b></div><div class="detail-row"><span>Müşteri</span><b>'+escapeHtml(o.customer_name)+'</b></div><div class="detail-row"><span>Şube</span><b>'+escapeHtml(branchName(o.branch_id))+'</b></div><div class="detail-row"><span>Teslim Tarihi</span><b>'+escapeHtml(dateTR(o.delivery_date))+'</b></div><div class="detail-row"><span>Genel Sipariş Notu (A4 ve barkodlarda)</span><b>'+escapeHtml(o.customer_note||'—')+'</b></div><div class="item-section"><h3>Ürün Kutucukları</h3>'+list+'</div><div class="money-grid"><div><small>Toplam</small><b>'+money(o.total_amount)+'</b></div><div><small>Ödenen</small><b>'+money(o.paid_amount)+'</b></div><div><small>Kalan</small><b>'+money(Number(o.total_amount)-Number(o.paid_amount))+'</b></div></div><div class="detail-buttons"><button type="button" id="print-a4" class="secondary">A4 Müşteri Çıktısı</button><button type="button" id="print-barcode" class="secondary" '+(!['owner','manager'].includes(memberRole)?'disabled title="Yalnızca yönetici"':'')+'>Barkod Yazdır</button></div><p class="fine">Barkod baskısı onaylandığında sipariş Atölyede durumuna alınır. Mağaza barkod okuma modülü ayrı aşamadadır.</p></div>';
  $('print-a4').onclick=()=>openPrint(id,'a4');$('print-barcode').onclick=()=>openPrint(id,'label');
  $('order-detail').hidden=false;
 }
 function openPrint(id,type){
+ if(type==='label'&&!['owner','manager'].includes(memberRole)){alert('Üretim etiketi yazdırma yalnızca yönetici yetkisiyle yapılabilir.');return}
  const o=orders.find(x=>x.id===id);
  if(!o)return;
  const url='./print.html?type='+encodeURIComponent(type)+'&org='+encodeURIComponent(org)+'&id='+encodeURIComponent(id)+(type==='label'&&o.barcode_printed_at?'&reprint=1':'');
@@ -409,7 +410,10 @@ function handlers(){
  $('organization-select').onchange=async e=>{org=e.target.value;memberRole=window.__erpMembers?.find(m=>m.organization_id===org)?.role||'staff';if(window.parent!==window)window.parent.postMessage({type:'konak-erp-org-changed',org},location.origin);await load()};
  $('refresh').onclick=load;
  $('scan-qr').onclick=openQr;
+ $('bulk-print-labels').disabled=!['owner','manager'].includes(memberRole);
+ $('bulk-print-labels').title=$('bulk-print-labels').disabled?'Etiket yazdırma yalnızca yönetici yetkisiyle yapılabilir':'';
  $('bulk-print-labels').onclick=()=>{
+  if(!['owner','manager'].includes(memberRole)){msg('orders-message','Üretim etiketi yalnızca yöneticiler tarafından yazdırılabilir.');return;}
   if(!org||!user){msg('orders-message','Önce işletme hesabıyla giriş yapın.');return}
   const url='./print.html?type=bulk&org='+encodeURIComponent(org);
   const win=window.open(url,'_blank');
