@@ -176,3 +176,6 @@
 .customer-summary{min-width:0;max-width:365px}
 @media(max-width:700px){.workspace-header{grid-template-columns:minmax(0,1fr)}.order-branch-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.customer-summary{justify-self:stretch;max-width:none}}
 @media print{.workspace-header{grid-template-columns:minmax(0,2.15fr) minmax(0,1fr)!important}.order-branch-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}.order-branch{break-inside:avoid}.customer-summary{max-width:none}}
+
+/* Hide legacy duplicate branch text beneath the two-column branch header. */
+.business-id #branch-heading[hidden],.business-id #company-contact[hidden]{display:none!important}
