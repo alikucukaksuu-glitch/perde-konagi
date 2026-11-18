@@ -5,7 +5,6 @@ const $=id=>document.getElementById(id);
 const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const types={measurement:'Evde Ölçü Alma',installation:'Montaj'};
 const statuses={pending:'Bekliyor',scheduled:'Planlandı',completed:'Tamamlandı',cancelled:'İptal'};
-const groupLink='https://chat.whatsapp.com/H3KWO9Tffy95r2kOJqen8m';
 let organizations=[],org='',branches=[],records=[],editing=null,working=false;
 const note=t=>$('message').textContent=t||'';
 const formNote=t=>$('form-message').textContent=t||'';
@@ -27,7 +26,7 @@ function messageFor(a){
 function render(){
  const b=$('branch-filter').value,t=$('type-filter').value;
  const shown=records.filter(a=>(!b||a.branch_id===b)&&(!t||a.appointment_type===t));
- $('list').innerHTML=shown.map(a=>'<article class="item"><div><span class="chip '+safe(a.appointment_type)+'">'+safe(types[a.appointment_type]||'Randevu')+'</span> <span class="chip">'+safe(statuses[a.status]||a.status)+'</span></div><h3>'+safe(a.customer_name)+'</h3><div class="meta"><strong>Şube:</strong> '+safe(branchName(a.branch_id))+' &nbsp; <strong>Telefon:</strong> '+safe(a.customer_phone)+'<br><strong>Randevu:</strong> '+safe(a.appointment_date?new Date(a.appointment_date+'T12:00:00').toLocaleDateString('tr-TR'):'Tarih belirlenmedi')+' '+safe(a.appointment_time?String(a.appointment_time).slice(0,5):'')+'</div><div class="address"><strong>Ev Adresi:</strong> '+safe(a.customer_address)+'</div>'+(a.notes?'<div class="muted">Not: '+safe(a.notes)+'</div>':'')+'<div class="actions"><button data-action="edit" data-id="'+a.id+'">Düzenle</button><button class="primary" data-action="whatsapp" data-id="'+a.id+'">WhatsApp’tan Gönder</button><button data-action="group" data-id="'+a.id+'">Montaj ve Ölçü Grubu</button></div></article>').join('')||'<div class="panel">Bu filtreye uygun randevu bulunamadı.</div>';
+ $('list').innerHTML=shown.map(a=>'<article class="item"><div><span class="chip '+safe(a.appointment_type)+'">'+safe(types[a.appointment_type]||'Randevu')+'</span> <span class="chip">'+safe(statuses[a.status]||a.status)+'</span></div><h3>'+safe(a.customer_name)+'</h3><div class="meta"><strong>Şube:</strong> '+safe(branchName(a.branch_id))+' &nbsp; <strong>Telefon:</strong> '+safe(a.customer_phone)+'<br><strong>Randevu:</strong> '+safe(a.appointment_date?new Date(a.appointment_date+'T12:00:00').toLocaleDateString('tr-TR'):'Tarih belirlenmedi')+' '+safe(a.appointment_time?String(a.appointment_time).slice(0,5):'')+'</div><div class="address"><strong>Ev Adresi:</strong> '+safe(a.customer_address)+'</div>'+(a.notes?'<div class="muted">Not: '+safe(a.notes)+'</div>':'')+'<div class="actions"><button data-action="edit" data-id="'+a.id+'">Düzenle</button><button class="primary" data-action="whatsapp" data-id="'+a.id+'">WhatsApp’tan Gönder</button></div></article>').join('')||'<div class="panel">Bu filtreye uygun randevu bulunamadı.</div>';
 }
 function open(a=null){
  editing=a;$('form').reset();formNote('');
@@ -50,7 +49,6 @@ $('list').onclick=async e=>{
   const opened=window.open(url,'_blank','noopener');if(!opened)window.location.href=url;
   note('Mesaj hazırlandı. WhatsApp’ta “Montaj ve Ölçü” grubunu seçip Gönder’e basın.');return;
  }
- if(btn.dataset.action==='group')window.open(groupLink,'_blank','noopener');
 };
 $('form').onsubmit=async e=>{
  e.preventDefault();if(working)return;
