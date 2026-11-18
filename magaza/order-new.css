@@ -96,3 +96,20 @@
 .whatsapp-confirm{margin-top:16px;padding-top:12px;border-top:1px solid #d8e2da}
 .whatsapp-confirm button{margin-top:4px}
 @media(max-width:600px){.whatsapp-dialog{padding:16px}.whatsapp-dialog h2{font-size:19px}.whatsapp-buttons button{flex:1}}
+
+/* Teklif modu, normal siparişin ürün kutucuklarını paylaşır. */
+.quote-mode .workspace-toolbar>div:first-child,
+.quote-mode .workspace-toolbar>div:nth-child(3),
+.quote-mode .status-legend,
+.quote-mode #product-status-wrapper,
+.quote-mode .finance-box>.two,
+.quote-mode .financial-line.balance,
+.quote-mode #editor-print-a4,
+.quote-mode #editor-print-label,
+.quote-mode #editor-whatsapp{display:none!important}
+.quote-mode .quote-extra-fields{margin:16px 0}
+.quote-mode .quote-extra-fields .two{gap:14px}
+.quote-mode .quote-extra-fields label{font-size:13px;font-weight:600}
+.quote-mode .quote-extra-fields input,.quote-mode .quote-extra-fields select{display:block;width:100%;margin-top:7px;box-sizing:border-box;padding:12px;border:1px solid #d9e1db;border-radius:10px;background:white}
+.quote-mode .workspace-toolbar{grid-template-columns:1fr}
+@media(max-width:650px){.quote-mode .quote-extra-fields .two{display:grid;grid-template-columns:1fr}}
