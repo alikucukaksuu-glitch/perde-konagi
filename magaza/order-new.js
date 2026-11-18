@@ -497,7 +497,7 @@ async function loadQuoteForEdit(id,orgId){
   quoteEditing=order;products.clear();
   const grouped=new Map();
   for(const [index,line] of (order.items||[]).entries()){
-   const slot=String(line.slot_key||line.category+'|'+index).replace(/-\\d+$/,'');
+   const slot=String(line.slot_key||line.category+'|'+index).replace(/-\d+$/,'');
    const existing=grouped.get(slot);
    if(existing)existing.qty+=1;
    else grouped.set(slot,{...line,slot_key:slot,qty:1,id:null,barcode:null,status:'processing',printed_at:null,cancellation_requested_at:null,waiting_reason:null});
