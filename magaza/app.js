@@ -137,6 +137,7 @@ function render(){
    (rows.some(i=>['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ'].includes(i.category)&&i.status!=='cancelled')&&o.status!=='cancelled'?
    '<button class="secondary" type="button" data-whatsapp-order="'+escapeHtml(o.id)+'">◉ WhatsApp’tan Gönder</button>':'')+
    '<button class="secondary" type="button" data-edit="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
+   (o.status==='ready'?'<button class="primary" type="button" data-deliver="'+escapeHtml(o.id)+'">Teslim Et</button>':'')+
    '<button class="secondary" type="button" data-payment="'+escapeHtml(o.id)+'" '+(remaining<=0||['cancelled','voided'].includes(o.status)?'disabled':'')+'>◷ Ödeme Ekle</button>'+
    '<button class="secondary" type="button" data-void="'+escapeHtml(o.id)+'" '+(['cancelled','voided'].includes(o.status)?'disabled':'')+'>⊘ İptal Et</button>'+ 
    '<button class="secondary compact-delete" type="button" data-delete="'+escapeHtml(o.id)+'" '+(!['owner','manager'].includes(memberRole)||o.status==='cancelled'?'disabled title="Silme yetkisi yalnızca yöneticidedir; silinen sipariş tekrar silinemez"':'')+'>▤ Sil</button>'+
@@ -443,7 +444,22 @@ function handlers(){
  }catch(err){msg('orders-message','Durum değiştirilemedi: '+err.message)}
  finally{if(button?.isConnected)button.disabled=false}
 }
+async function deliverOrder(button){
+ const order=orders.find(o=>o.id===button.dataset.deliver&&o.status==='ready');
+ if(!order)return;
+ const remaining=Number(order.total_amount)-Number(order.paid_amount);
+ const balance=remaining>0?' Kalan tahsilat: '+money(remaining)+'.':'';
+ if(!confirm('#'+order.order_number+' numaralı siparişin müşteriye teslim edildiğini onaylıyor musunuz?'+balance))return;
+ button.disabled=true;
+ try{
+  const {error}=await sb.rpc('erp_deliver_order',{p_org:order.organization_id,p_order:order.id});
+  if(error)throw error;
+  await load();
+ }catch(error){msg('orders-message','Sipariş teslim edilemedi: '+error.message)}
+ finally{if(button.isConnected)button.disabled=false}
+}
 $('orders-list').onclick=e=>{
+ const delivery=e.target.closest('[data-deliver]');if(delivery){deliverOrder(delivery);return;}
  const wait=e.target.closest('[data-wait]');
  if(wait){const f=$('wait-form-'+wait.dataset.wait);if(f){f.hidden=false;f.querySelector('textarea')?.focus();}return;}
  const cancel=e.target.closest('[data-cancel-wait]');
