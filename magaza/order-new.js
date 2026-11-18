@@ -22,7 +22,7 @@ const fonSizes=['60','65','70','75','80','85','90','95','100'];
 function syncFonSizes(selected=''){
  const kind=$('fon-wing-type').value,select=$('fon-wing-size');select.replaceChildren();
  const prompt=document.createElement('option');prompt.value='';prompt.textContent=kind?'Kanat ölçüsü seçiniz':'Önce kanat tipi seçiniz';select.append(prompt);
- for(const size of kind?fonSizes:[]){const option=document.createElement('option');option.value=kind==='Çift Kanat'?size+'/'+size:size;option.textContent=option.value;select.append(option)}
+ for(const size of kind?fonSizes:[]){const option=document.createElement('option');option.value=kind==='Çift Kanat'?size+'/'+size:size;option.textContent=option.value+' cm';select.append(option)}
  select.value=[...select.options].some(o=>o.value===selected)?selected:'';
 }
 function parseFonConfiguration(spec){const text=String(spec||'');const kind=text.match(/(?:^|;\s*)Kanat Tipi:\s*(Tek Kanat|Çift Kanat)(?:;|$)/)?.[1]||'';const size=text.match(/(?:^|;\s*)Kanat Ölçüsü:\s*(\d+(?:\/\d+)?)(?:;|$)/)?.[1]||'';return {kind,size}}
@@ -213,7 +213,7 @@ function drawSlots(){
    details.append(newElement('strong','',record.name));
    details.append(newElement('small','',record.qty+' adet · '+(record.width||'—')+' × '+(record.height||'—')+' cm'));
    if(record.pile)details.append(newElement('small','',record.pile));
-   if(group.name==='FON PERDE'){const fon=parseFonConfiguration(record.spec);if(fon.kind&&fon.size)details.append(newElement('small','',fon.kind+' · '+fon.size));}
+   if(group.name==='FON PERDE'){const fon=parseFonConfiguration(record.spec);if(fon.kind&&fon.size)details.append(newElement('small','',fon.kind+' · '+fon.size+' cm'));}
    if(record.status==='waiting'&&record.waitingReason)details.append(newElement('small','', 'Bekleme nedeni: '+record.waitingReason));
    if(record.cancellationRequestedAt&&record.status!=='cancelled')details.append(newElement('small','', 'İptal talebi: Yönetici onayı bekleniyor.'));
    if(record.status==='cancelled')details.append(newElement('small','', 'Bu ürün iptal edildi.'));
