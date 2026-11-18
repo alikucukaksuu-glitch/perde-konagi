@@ -163,7 +163,7 @@ function renderWorkshop(){
 function renderCustomers(){
  const list=$('hub-list');list.replaceChildren();
  const byCustomer=new Map();
- const normalize=raw=>{let d=(raw||'').replace(/\\D/g,'');if(d.startsWith('90')&&d.length===12)d=d.slice(2);if(d.startsWith('0')&&d.length===11)d=d.slice(1);return d};
+ const normalize=raw=>{let d=(raw||'').replace(/\D/g,'');if(d.startsWith('90')&&d.length===12)d=d.slice(2);if(d.startsWith('0')&&d.length===11)d=d.slice(1);return d};
  for(const c of customers){
   const key=c.normalized_phone||normalize(c.customer_phone)||c.customer_name.toLocaleLowerCase('tr-TR');
   byCustomer.set(key,{name:c.customer_name,phone:c.customer_phone||'',email:c.email||'',address:c.address||'',notes:c.notes||'',orders:[],amount:0,paid:0});
