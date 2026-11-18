@@ -460,9 +460,7 @@ function stage(next){
   $('note-copy').value=$('order-note').value;
   const branch=branches.find(x=>x.id===$('store-select').value);
   renderOrderBranches(branch?.id);
-  $('branch-heading').textContent=branch?.name||'Şube';
   $('organization-heading').textContent=org?.name||'KONAK ERP';
-  $('company-contact').textContent=[org?.phone,org?.email,org?.address].filter(Boolean).join(' · ')||'KONAK ERP · Mağaza Yönetimi';
   if(org?.logo_url&&/^https:\/\//i.test(org.logo_url)){$('company-logo-image').src=org.logo_url;$('company-logo-image').hidden=false;$('company-logo-fallback').hidden=true}
   drawSlots();
  }
