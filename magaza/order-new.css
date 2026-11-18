@@ -113,3 +113,53 @@
 .quote-mode .quote-extra-fields input,.quote-mode .quote-extra-fields select{display:block;width:100%;margin-top:7px;box-sizing:border-box;padding:12px;border:1px solid #d9e1db;border-radius:10px;background:white}
 .quote-mode .workspace-toolbar{grid-template-columns:1fr}
 @media(max-width:650px){.quote-mode .quote-extra-fields .two{display:grid;grid-template-columns:1fr}}
+
+/* Mobile-first refinements shared by normal orders and quotations. */
+@media (max-width:700px){
+ .order-shell{width:100%;max-width:100%;box-sizing:border-box;padding:0 12px;margin:16px auto 36px}
+ .order-topline{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-bottom:14px}
+ .order-topline>div,.order-top-actions{min-width:0;width:100%}
+ .order-top-actions{display:flex;flex-wrap:wrap;gap:8px}
+ .order-top-actions button{flex:1 1 135px;min-height:42px}
+ .step-tag{display:block;width:100%;box-sizing:border-box;text-align:left;border-radius:12px}
+ .on-form,.workspace{width:100%;max-width:100%;box-sizing:border-box}
+ .on-form{padding:16px}
+ .on-form form,.customer-picker{min-width:0}
+ .on-form .two,.product-sheet .two{grid-template-columns:minmax(0,1fr)}
+ .form-actions{flex-wrap:wrap}.form-actions>*{min-height:42px}
+ .workspace{padding:16px 14px 22px;border-radius:15px}
+ .workspace-header{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+ .business-id,.customer-summary{min-width:0;max-width:none;width:100%;justify-self:stretch}
+ .business-id h2{font-size:23px;line-height:1.2;overflow-wrap:anywhere}
+ .company-logo{height:auto!important;max-height:none;justify-content:flex-start;align-items:flex-start;margin:6px 0 12px}
+ .company-logo img{width:auto;height:auto;max-height:72px!important;max-width:160px;object-fit:contain}
+ .company-logo span{font-size:14px;padding:11px}
+ .customer-summary dl{grid-template-columns:minmax(90px,auto) minmax(0,1fr);gap:8px 12px;font-size:12px;margin:0}
+ .customer-summary dt,.customer-summary dd{min-width:0;overflow-wrap:anywhere}
+ .customer-summary dd{text-align:right}
+ .workspace-toolbar{grid-template-columns:minmax(0,1fr);margin-top:20px}
+ .workspace-toolbar>div,.workspace-toolbar input,.workspace-toolbar select{min-width:0;max-width:100%;width:100%;box-sizing:border-box}
+ .category-heading h3{font-size:14px}
+ .category-heading span{flex:none;white-space:nowrap}
+ .slot-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .slot-grid .product-slot{height:74px;padding:6px;text-align:center}
+ .slot-list{grid-template-columns:minmax(0,1fr)}
+ .slot-record{min-height:100px;box-sizing:border-box}
+ .slot-list .slot-record-detail{grid-template-columns:minmax(0,1fr)}
+ .bottom-summary{grid-template-columns:minmax(0,1fr)}
+ .notes-block textarea{min-height:90px}
+ .order-bottom-bar{gap:12px}
+ .order-bottom-bar>button,.submit-side,.submit-side button{width:100%;min-width:0;box-sizing:border-box}
+ .submit-side{display:grid;gap:8px}
+ .product-overlay{align-items:stretch}
+ .product-sheet{width:100%;max-width:100%;box-sizing:border-box;padding:18px 16px calc(24px + env(safe-area-inset-bottom));border-radius:0}
+ .product-sheet .two,.product-sheet .three-inputs{grid-template-columns:minmax(0,1fr)}
+ .sheet-head{gap:12px}.sheet-head h2{font-size:18px}
+ .sheet-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .sheet-actions button{width:100%;min-width:0;min-height:44px}
+ .finance-box{min-width:0}
+}
+@media (min-width:500px) and (max-width:700px){
+ .slot-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .product-sheet .three-inputs{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
