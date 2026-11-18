@@ -20,6 +20,7 @@ function isStor(){return $('product-category').value==='STOR PERDE'}
 function isPlise(){return $('product-category').value==='PLİSE PERDE'}
 function isWood(){return $('product-category').value==='AHŞAP JALUZİ'}
 function isFon(){return $('product-category').value==='FON PERDE'}
+function isTul(){return $('product-category').value.trim().toLocaleUpperCase('tr-TR')==='TÜL PERDE'}
 const fonSizes=['60','65','70','75','80','85','90','95','100'];
 function syncFonSizes(selected=''){
  const kind=$('fon-wing-type').value,select=$('fon-wing-size');select.replaceChildren();
@@ -125,8 +126,8 @@ function syncCategoryUI(){
   pileControlSelect.disabled=false;
  }
  unitRow.classList.toggle('stor-price-only',stor||plise||wood);
- $('product-price').closest('label').firstChild.textContent=(stor||plise||wood)?'m² Birim Fiyatı (₺) *':'Temel Birim Fiyat (₺) *';
- $('product-width').required=stor||plise||wood;$('product-height').required=stor||plise||wood;
+ $('product-price').closest('label').firstChild.textContent=(stor||plise||wood)?'m² Birim Fiyatı (₺) *':isTul()?'Metre Fiyatı (₺ / m) *':'Temel Birim Fiyat (₺) *';
+ $('product-width').required=stor||plise||wood||isTul();$('product-height').required=stor||plise||wood;
  $('product-width').step=wood?'0.5':plise?'0.1':'0.01';$('product-height').step=wood?'0.5':plise?'0.1':'0.01';
  if(stor)syncStorColor($('stor-case').value);
 }
@@ -374,7 +375,7 @@ function calculateItemTotal(){
   $('product-total').textContent=valid?fmt(unit*qty):'—';
   $('pile-price-hint').textContent=valid?'Gerçek ölçü: '+w+' × '+h+' cm · Fiyat ölçüsü: '+cw+' × '+ch+' cm · '+area.toLocaleString('tr-TR',{maximumFractionDigits:4})+' m² (min. 1 m²) × '+fmt(base)+' × '+qty+' adet = '+fmt(unit*qty):'En ve boyu 0,5 cm aralıklarla girin (örn. 40,5; 41; 41,5).';
   $('wood-calculation').textContent=valid?'Üretim: '+w+' × '+h+' cm · Fiyatlandırma: '+cw+' × '+ch+' cm · '+fmt(unit)+' / adet':'Gerçek ölçüler girildiğinde fiyat otomatik hesaplanır.';
- }else if($('product-category').value==='TÜL PERDE'){
+ }else if(isTul()){
   const width=asNum($('product-width').value),p=pileControlSelect.value,factor=pileFactor(p);
   const unit=width>0?tulUnitPrice(base,width,p):0;
   $('product-total').textContent=width>0?fmt(unit*qty):'—';
@@ -387,7 +388,7 @@ function calculateItemTotal(){
 }
 function storeItem(e){
  e.preventDefault();
- const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise()||isWood())?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):isWood()?woodPrice(basePrice,$('product-width').value,$('product-height').value):$('product-category').value==='TÜL PERDE'?tulUnitPrice(basePrice,$('product-width').value,pile):priceFromBase(basePrice,pile);
+ const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise()||isWood())?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):isWood()?woodPrice(basePrice,$('product-width').value,$('product-height').value):isTul()?tulUnitPrice(basePrice,$('product-width').value,pile):priceFromBase(basePrice,pile);
  const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value;
  if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(basePrice)||basePrice<0||!Number.isFinite(price)||price<0||price>99999999){$('product-status-message').textContent='Ürün adı, fiyatı veya adedi geçersiz.';return}
  if((width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))||(height!==''&&(!Number.isFinite(Number(height))||Number(height)<0))){$('product-status-message').textContent='En ve boy negatif olamaz.';return}
