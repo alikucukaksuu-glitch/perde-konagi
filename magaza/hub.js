@@ -7,7 +7,7 @@ const tab=['products','workshop','customers'].includes(qs.get('tab'))?qs.get('ta
 const categories=['TÜL PERDE','FON PERDE','GÜNEŞLİK','STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ','AKSESUAR'];
 const fmt=x=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(x)||0);
 const trDate=x=>x?new Date(x).toLocaleString('tr-TR'):'—';
-let user=null,org='',members=[],orgs=[],catalog=[],orders=[],items=[],branches=[],productEditing=null,role='staff',expanded=new Set(),working=false;
+let user=null,org='',members=[],orgs=[],catalog=[],orders=[],items=[],branches=[],customers=[],productEditing=null,role='staff',expanded=new Set(),working=false;
 const el=(tag,cls,text)=>{let n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text??'');return n};
 function put(parent,tag,cls,text){const n=el(tag,cls,text);parent.append(n);return n}
 function message(s){$('hub-message').textContent=s||''}
@@ -17,7 +17,7 @@ function settings(){
  const content={
  products:['ÜRÜN KATALOĞU','Kategoriler & Ürünler','İşletmenizin kumaş, perde ve aksesuar fiyatlarını tek ekrandan yönetin.'],
  workshop:['ÜRETİM TAKİBİ','Atölye · Basılan Barkodlar','Barkodu yazdırılmış siparişlerin ve ürünlerin üretim durumları.'],
- customers:['MÜŞTERİ KAYITLARI','Müşteriler','Mevcut siparişlerden oluşan müşteri listesi ve sipariş geçmişi.']
+ customers:['MÜŞTERİ KAYITLARI','Müşteriler','Şubelerinizin ortak müşteri havuzu ve yeni sipariş geçmişi.']
  }[tab];
  $('hub-eyebrow').textContent=content[0];$('hub-title').textContent=content[1];$('hub-desc').textContent=content[2];
  document.querySelectorAll('[data-tab]').forEach(a=>a.classList.toggle('selected',a.dataset.tab===tab));
@@ -52,6 +52,11 @@ async function refresh(){
    catalog=await get('erp_catalog_products','id,organization_id,category,name,unit_price,description,active,updated_at',q=>q.eq('organization_id',org).order('category').order('name').limit(1000));
   }else{
    orders=await get('erp_orders','id,branch_id,order_number,customer_name,customer_phone,created_at,delivery_date,status,barcode_printed_at,total_amount,paid_amount',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(1000));
+   if(tab==='customers'){
+    const first=await get('erp_customers','id,customer_name,customer_phone,normalized_phone,email,address,notes',q=>q.eq('organization_id',org).order('customer_name').range(0,999));
+    const second=first.length===1000?await get('erp_customers','id,customer_name,customer_phone,normalized_phone,email,address,notes',q=>q.eq('organization_id',org).order('customer_name').range(1000,1999)):[];
+    customers=[...first,...second];
+   }
    if(tab==='workshop'){
     const stamped=orders.filter(o=>o.barcode_printed_at);
     items=stamped.length?await get('erp_order_items','id,order_id,product_name,category,width_cm,height_cm,barcode,status,production_note',q=>q.eq('organization_id',org).in('order_id',stamped.map(o=>o.id)).limit(1000)):[];
@@ -158,33 +163,43 @@ function renderWorkshop(){
 function renderCustomers(){
  const list=$('hub-list');list.replaceChildren();
  const byCustomer=new Map();
+ const normalize=raw=>{let d=(raw||'').replace(/\\D/g,'');if(d.startsWith('90')&&d.length===12)d=d.slice(2);if(d.startsWith('0')&&d.length===11)d=d.slice(1);return d};
+ for(const c of customers){
+  const key=c.normalized_phone||normalize(c.customer_phone)||c.customer_name.toLocaleLowerCase('tr-TR');
+  byCustomer.set(key,{name:c.customer_name,phone:c.customer_phone||'',email:c.email||'',address:c.address||'',notes:c.notes||'',orders:[],amount:0,paid:0});
+ }
  for(const o of orders.filter(o=>o.status!=='cancelled')){
-  const name=(o.customer_name||'').trim(),phone=(o.customer_phone||'').replace(/\D/g,'');
-  const key=phone||name.toLocaleLowerCase('tr-TR');
-  if(!key)continue;
-  if(!byCustomer.has(key))byCustomer.set(key,{name,phone:o.customer_phone,orders:[],amount:0,paid:0});
+  const name=(o.customer_name||'').trim(),phone=normalize(o.customer_phone);
+  const key=phone||name.toLocaleLowerCase('tr-TR');if(!key)continue;
+  if(!byCustomer.has(key))byCustomer.set(key,{name,phone:o.customer_phone||'',email:'',address:'',notes:'',orders:[],amount:0,paid:0});
   const c=byCustomer.get(key);c.orders.push(o);c.amount+=Number(o.total_amount)||0;c.paid+=Number(o.paid_amount)||0;
  }
  const all=[...byCustomer.values()];
  $('stat-a').textContent=all.length;$('stat-b').textContent=orders.filter(o=>o.status!=='cancelled').length;
  const search=$('hub-search').value.trim().toLocaleLowerCase('tr-TR');
- for(const c of all.filter(c=>(c.name+' '+c.phone).toLocaleLowerCase('tr-TR').includes(search)).sort((a,b)=>a.name.localeCompare(b.name,'tr'))){
+ for(const c of all.filter(c=>(c.name+' '+c.phone+' '+c.address+' '+c.email).toLocaleLowerCase('tr-TR').includes(search)).sort((a,b)=>a.name.localeCompare(b.name,'tr'))){
   const card=el('section','hub-customer');
   const h=el('div','hub-customer-head');
   const name=el('div');put(name,'strong','',c.name);put(name,'small','',c.phone||'Telefon yok');h.append(name);
   put(h,'span','hub-pill',c.orders.length+' sipariş');card.append(h);
-  const summary=el('div','hub-customer-stats');
-  put(summary,'span','','Toplam: '+fmt(c.amount));put(summary,'span','','Ödenen: '+fmt(c.paid));put(summary,'span','','Kalan: '+fmt(c.amount-c.paid));card.append(summary);
-  const toggle=el('button','secondary','Sipariş Geçmişini Göster');toggle.type='button';
-  const detail=el('div','hub-customer-detail');detail.hidden=true;
-  for(const o of c.orders){
-   const a=el('a','','#'+o.order_number+' · '+trDate(o.created_at)+' · '+fmt(o.total_amount));
-   a.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(o.id);detail.append(a);
+  if(c.email)put(card,'p','hub-muted','E-posta: '+c.email);
+  if(c.address)put(card,'p','hub-muted','Adres: '+c.address);
+  if(c.notes)put(card,'p','hub-muted','Not: '+c.notes);
+  if(c.orders.length){
+   const summary=el('div','hub-customer-stats');
+   put(summary,'span','','Toplam: '+fmt(c.amount));put(summary,'span','','Ödenen: '+fmt(c.paid));put(summary,'span','','Kalan: '+fmt(c.amount-c.paid));card.append(summary);
+   const toggle=el('button','secondary','Sipariş Geçmişini Göster');toggle.type='button';
+   const detail=el('div','hub-customer-detail');detail.hidden=true;
+   for(const o of c.orders){
+    const link=el('a','','#'+o.order_number+' · '+trDate(o.created_at)+' · '+fmt(o.total_amount));
+    link.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(o.id);detail.append(link);
+   }
+   toggle.onclick=()=>{detail.hidden=!detail.hidden;toggle.textContent=detail.hidden?'Sipariş Geçmişini Göster':'Geçmişi Gizle'};
+   card.append(toggle,detail);
   }
-  toggle.onclick=()=>{detail.hidden=!detail.hidden;toggle.textContent=detail.hidden?'Sipariş Geçmişini Göster':'Geçmişi Gizle'};
-  card.append(toggle,detail);list.append(card);
+  list.append(card);
  }
- if(!list.children.length)put(list,'p','hub-muted','Müşteri kaydı bulunamadı. Bu ekran sipariş veren müşterilerden otomatik oluşur.');
+ if(!list.children.length)put(list,'p','hub-muted','Müşteri kaydı bulunamadı.');
 }
 function render(){if(tab==='products')renderProducts();else if(tab==='workshop')renderWorkshop();else renderCustomers()}
 $('hub-org').onchange=async e=>{org=e.target.value;qs.set('org',org);history.replaceState(null,'',location.pathname+'?'+qs);if(window.parent!==window)window.parent.postMessage({type:'konak-erp-org-changed',org},location.origin);expanded.clear();await refresh()};
