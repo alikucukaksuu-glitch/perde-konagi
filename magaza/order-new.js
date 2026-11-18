@@ -1,6 +1,7 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY),$=id=>document.getElementById(id);
+const quoteMode=new URLSearchParams(location.search).get('quote')==='1';let quoteEditing=null;
 const categories=[{name:'TÜL PERDE',count:10},{name:'FON PERDE',count:5},{name:'GÜNEŞLİK',count:5},{name:'STOR PERDE',count:6,kind:'list'},{name:'PLİSE PERDE',count:6,kind:'list'},{name:'AHŞAP JALUZİ',count:6,kind:'list'},{name:'AKSESUAR',count:6,kind:'list'}];
 const fmt=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const asNum=v=>Number(v)||0;
@@ -410,7 +411,7 @@ function renderCustomers(){
 }
 function stage(next){
  $('stage1').hidden=next!==1;$('stage2').hidden=next!==2;
- $('step-label').textContent=next===1?'1 / 2 · Müşteri Bilgileri':'2 / 2 · Sipariş ve Ürünler';
+ $('step-label').textContent=next===1?'1 / 2 · Müşteri Bilgileri':(quoteMode?'2 / 2 · Teklif ve Ürünler':'2 / 2 · Sipariş ve Ürünler');
  if(next===2){
   $('order-status-display').value=editing?.status==='new'?'processing':editing?.status||'processing';
   $('editor-print-a4').hidden=!editing;
@@ -419,6 +420,7 @@ function stage(next){
   $('editor-print-label').title=editing?.barcode_printed_at?'Bu siparişin barkodu daha önce basılmış':'';
   $('editor-whatsapp').hidden=!editing||![...products.keys()].some(k=>['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ'].some(c=>k.startsWith(c+'|')));
   syncOrderStatusOptions();
+  if(quoteMode){$('editor-print-a4').hidden=true;$('editor-print-label').hidden=true;$('editor-whatsapp').hidden=true;}
   $('summary-customer').textContent=$('customer-name').value.trim();
   $('summary-phone').textContent=$('customer-phone').value.trim()||'—';
   $('summary-delivery').textContent=$('delivery-date').value?new Date($('delivery-date').value+'T12:00:00').toLocaleDateString('tr-TR'):'—';
@@ -459,7 +461,8 @@ async function start(){
   if(branches.length===1)selector.value=branches[0].id;
   if(!branches.length){$('auth-warning').hidden=false;alertText('Şirket Ayarlarından önce şube ekleyin.');return}
   setDate(7);$('stage1').hidden=false;
-  const editId=new URLSearchParams(location.search).get('edit');
+  if(quoteMode){configureQuoteMode();const quoteId=new URLSearchParams(location.search).get('quote_edit');if(quoteId)await loadQuoteForEdit(quoteId,selected.organization_id);}
+  const editId=quoteMode?null:new URLSearchParams(location.search).get('edit');
   if(editId){
    await loadForEdit(editId,selected.organization_id);
    if(new URLSearchParams(location.search).get('whatsapp')==='1'&&editing?.id){
@@ -470,6 +473,67 @@ async function start(){
   }
  }catch(e){$('auth-warning').hidden=false;alertText('Sipariş ekranı yüklenemedi: '+e.message)}
 }
+function configureQuoteMode(){
+ document.body.classList.add('quote-mode');
+ document.querySelector('.order-topline h1').textContent='Yeni Teklif';
+ document.querySelector('.order-topline p').textContent='Normal sipariş ekranındaki kutucuklarla fiyat teklifi hazırlayın.';
+ document.querySelector('.back-link').textContent='‹ Teklif Siparişleri';
+ document.querySelector('.back-link').href='./?view=quotes';
+ document.querySelector('.form-actions a').href='./?view=quotes';
+ $('submit-order').textContent='Teklifi Kaydet';
+ $('continue-btn').textContent='Teklife Devam Et →';
+ const field=document.createElement('div');field.className='quote-extra-fields';field.innerHTML='<div class="two"><label>Teklif Durumu<select id="quote-state"><option value="draft">Taslak</option><option value="pending">Onay Bekliyor</option><option value="rejected">Reddedildi</option></select></label><label>Teklif Geçerlilik Tarihi<input id="quote-valid" type="date"></label></div>';
+ $('order-type').closest('label').after(field);
+ $('paid-value').value='0';$('paid-value').disabled=true;
+ const finance=$('.finance-box');if(finance)finance.querySelector('h3').textContent='Teklif Özeti';
+ $('order-note').placeholder='Müşteriye verilen teklif notu';
+}
+async function loadQuoteForEdit(id,orgId){
+ if(!/^[0-9a-f-]{36}$/i.test(id)){alertText('Teklif bağlantısı geçersiz');return}
+ try{
+  const {data:order,error}=await sb.from('erp_quotes').select('*').eq('organization_id',orgId).eq('id',id).single();
+  if(error)throw error;
+  if(order.status==='approved')throw Error('Onaylanan teklif değiştirilemez.');
+  quoteEditing=order;products.clear();
+  const lines=(order.items||[]).map(line=>({...line,id:null,barcode:null,status:'processing',printed_at:null,cancellation_requested_at:null,waiting_reason:null}));
+  const taken=new Set();
+  for(const line of lines||[]){
+   const group=categories.find(x=>x.name===line.category);
+   if(!group)throw Error('Desteklenmeyen ürün kategorisi: '+line.category);
+   let idx=-1;
+   if(line.slot_key){
+    const match=line.slot_key.match(/\|(\d+)(?:-\d+)?$/);
+    if(match&&Number(match[1])<group.count&&!taken.has(key(group.name,Number(match[1]))))idx=Number(match[1]);
+   }
+   if(idx<0)idx=Array.from({length:group.count},(_,i)=>i).find(i=>!taken.has(key(group.name,i)))??-1;
+   if(idx<0)throw Error('Bu sipariş için '+group.name+' kutucuğu yetersiz. Kaydı değiştirmeden destek alın.');
+   const slotKey=key(group.name,idx);taken.add(slotKey);
+   const notes=line.production_note||'';
+   const spec=notes.startsWith('Özellikler: ')?notes.split('\n')[0].replace('Özellikler: ',''):'';
+   const specParts=spec.match(/^Pile:\s*([^;]+)(?:;\s*(.*))?$/);
+   const baseMatch=spec.match(/(?:^|;\s*)Baz Fiyat:\s*(\d+(?:\.\d+)?)/);
+   const parsedPile=specParts?.[1]||'';
+   const legacyBase=Number(line.unit_price)/pileFactor(parsedPile);
+   const basePrice=baseMatch?Number(baseMatch[1]):rounded(legacyBase);
+   const detailedSpec=(specParts?.[2]||(!specParts?spec:''))?.replace(/(?:^|;\s*)Baz Fiyat:\s*\d+(?:\.\d+)?/,'').trim().replace(/^;\s*|;\s*$/g,'');
+   products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,cancellationRequestedAt:line.cancellation_requested_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
+  }
+
+  $('store-select').value=order.branch_id;
+  $('customer-name').value=order.customer_name;
+  $('customer-phone').value=order.customer_phone||'';
+  $('delivery-date').value=order.delivery_date||'';
+  $('order-note').value=order.customer_note||'';
+  $('discount-percent').value=order.discount_percent??0;
+  $('discount-amount').value=order.discount_amount??0;
+  $('quote-state').value=order.status||'draft';
+  $('quote-valid').value=order.valid_until||'';
+  document.querySelector('.order-topline h1').textContent='Teklif #T-'+order.quote_number+' Düzenle';
+  $('submit-order').textContent='Teklifi Güncelle';
+  stage(2);
+ }catch(err){alertText('Teklif yüklenemedi: '+err.message)}
+}
+
 async function loadForEdit(orderId,orgId){
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId)){alertText('Geçersiz sipariş bağlantısı.');return}
  try{
@@ -535,8 +599,10 @@ async function submit(){
   const category=slot.split('|')[0],spec=[p.pile&&'Pile: '+p.pile, 'Baz Fiyat: '+(p.basePrice??p.price),p.spec].filter(Boolean).join('; '),fullNote=[spec&&'Özellikler: '+spec,p.note].filter(Boolean).join('\n');
   for(let i=0;i<p.qty;i++)payload.push({id:p.id||null,slot_key:key(category,Number(slot.split('|')[1]))+(p.qty>1?'-'+i:''),category,product_name:p.name,width_cm:p.width||null,height_cm:p.height||null,unit_price:p.price,production_note:fullNote});
  }
- saving=true;$('submit-order').disabled=true;$('save-message').textContent='Kaydediliyor...';
+ saving=true;$('submit-order').disabled=true;$('save-message').textContent=quoteMode?'Teklif kaydediliyor...':'Kaydediliyor...';
  try{
+  const quoteParams={p_org:org.id,p_branch:$('store-select').value,p_customer:$('customer-name').value.trim(),p_phone:$('customer-phone').value.trim(),p_delivery:$('delivery-copy').value||null,p_note:$('note-copy').value.trim(),p_items:payload,p_discount_percent:v.percent,p_discount_amount:v.fixed,p_status:$('quote-state')?.value||'draft',p_valid_until:$('quote-valid')?.value||null,p_quote:quoteEditing?.id||null};
+  if(quoteMode){const {error}=await sb.rpc('erp_save_quote',quoteParams);if(error)throw error;location.replace('./?view=quotes');return}
   const {data,error}=await sb.rpc(editing?'erp_update_order':'erp_create_order_v2',{
    ...(editing?{p_order:editing.id,p_expected_updated_at:editing.updated_at}:{p_org:org.id}),p_branch:$('store-select').value,p_customer:$('customer-name').value.trim(),
    p_phone:$('customer-phone').value.trim(),p_delivery:$('delivery-copy').value,
