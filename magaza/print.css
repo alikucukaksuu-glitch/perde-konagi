@@ -208,3 +208,5 @@
 .a4-new-customer{border:0;background:transparent;padding:0;min-width:0}
 .a4-new-customer .a4-new-logo{display:block;width:15mm;height:15mm;object-fit:contain;margin:0 0 1.5mm auto}
 .a4-new-customer dl{grid-template-columns:19mm minmax(0,1fr);font-size:8px;gap:.8mm 1mm}
+
+.a4-branch-social{display:flex;flex-wrap:wrap;gap:1mm 4mm;margin-top:2mm;color:#435648;font-size:7.5px}
