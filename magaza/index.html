@@ -13,9 +13,12 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
 .erp-shell-brand{flex-shrink:0;text-decoration:none;color:#203d32;font-size:22px;font-weight:800;line-height:1.1}
 .erp-shell-brand span{color:#a87538}
 .erp-shell-brand small{display:block;font-size:9px;font-weight:400;letter-spacing:1px;color:#8e948f;margin-top:5px}
-.erp-shell-nav{flex:1;display:flex;align-items:center;gap:10px;overflow:auto;scrollbar-width:none}
+.erp-shell-nav{flex:1;min-width:0;display:flex;align-items:center;gap:7px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;scroll-behavior:smooth}
+.erp-shell-scroll{flex:0 0 28px;width:28px;height:39px;border:1px solid #dce5de;border-radius:8px;background:#fff;color:#203d32;font-size:20px;font-weight:700;cursor:pointer}
+.erp-shell-scroll[hidden]{display:none!important}
+.erp-shell-scroll:disabled{opacity:.35;cursor:default}
 .erp-shell-nav::-webkit-scrollbar{display:none}
-.erp-shell-nav a{white-space:nowrap;background:#1e3c2f;border-radius:8px;color:white;text-decoration:none;padding:13px 14px;font-weight:700;font-size:13px}
+.erp-shell-nav a{white-space:nowrap;background:#1e3c2f;border-radius:8px;color:white;text-decoration:none;padding:12px 11px;font-weight:700;font-size:12px}
 .erp-shell-nav a[aria-current=page]{background:#b17b43}
 .erp-shell-nav a[hidden]{display:none}
 .erp-shell-account{color:#203a30;text-decoration:none;white-space:nowrap;border:1px solid #dce5de;border-radius:10px;padding:12px 20px;font-size:13px;font-weight:600}
@@ -39,6 +42,7 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
  .erp-shell-brand small{font-size:7px;letter-spacing:.6px}
  .erp-mobile-toggle{display:block;margin-left:auto;flex-shrink:0}
  .erp-shell-account{font-size:12px;padding:10px 11px}
+ .erp-shell-scroll{display:none!important}
  .erp-shell-nav{display:none!important;position:absolute;left:0;right:0;top:100%;background:#fff;border-top:1px solid #e4eae5;box-shadow:0 14px 24px #11291a22;padding:12px;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:min(65dvh,480px);overflow-y:auto}
  .erp-shell-nav.open{display:grid!important}
  .erp-shell-nav a{font-size:13px;text-align:center;padding:13px 7px;min-width:0}
@@ -54,6 +58,7 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
 <header class="erp-shell-top"><div class="erp-shell-bar">
 <a class="erp-shell-brand" href="../erp/">KONAK <span>ERP</span><small>Perde Mağazası Yönetimi</small></a>
 <button type="button" class="erp-mobile-toggle" aria-controls="erp-mobile-navigation" aria-expanded="false" aria-label="Menüyü aç">☰</button>
+<button type="button" class="erp-shell-scroll" id="erp-nav-prev" aria-label="Önceki menüler" hidden>‹</button>
 <nav id="erp-mobile-navigation" class="erp-shell-nav" aria-label="KONAK ERP menüsü" style="visibility:hidden">
 <a data-view="orders" href="./?view=orders">Siparişler</a>
 <a data-view="quotes" href="./?view=quotes">Teklif Siparişleri</a>
@@ -66,6 +71,7 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
 <a data-view="reports" href="./?view=reports">Raporlar</a>
 <a data-view="calendar" href="./?view=calendar">Takvim</a>
 </nav>
+<button type="button" class="erp-shell-scroll" id="erp-nav-next" aria-label="Sonraki menüler" hidden>›</button>
 <div class="erp-shell-account-wrap">
 <button type="button" class="erp-shell-account" id="erp-account-trigger" aria-expanded="false" aria-controls="erp-account-menu" aria-haspopup="true">☻ &nbsp; Hesabım <span aria-hidden="true">▾</span></button>
 <div class="erp-shell-account-menu" id="erp-account-menu" hidden>
@@ -77,4 +83,5 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
 <main class="erp-shell-stage" id="erp-shell-stage">
 <div class="erp-shell-notice" id="erp-shell-notice" role="status">KONAK ERP hazırlanıyor...</div>
 </main>
+<script>(function(){const nav=document.getElementById("erp-mobile-navigation"),prev=document.getElementById("erp-nav-prev"),next=document.getElementById("erp-nav-next");function refresh(){const isMobile=matchMedia("(max-width:760px)").matches;const overflow=!isMobile&&nav.scrollWidth>nav.clientWidth+2;prev.hidden=!overflow;next.hidden=!overflow;prev.disabled=nav.scrollLeft<3;next.disabled=nav.scrollLeft+nav.clientWidth>=nav.scrollWidth-3}prev.addEventListener("click",()=>nav.scrollBy({left:-Math.max(180,nav.clientWidth*.65),behavior:"smooth"}));next.addEventListener("click",()=>nav.scrollBy({left:Math.max(180,nav.clientWidth*.65),behavior:"smooth"}));nav.addEventListener("scroll",refresh,{passive:true});window.addEventListener("resize",refresh);new MutationObserver(refresh).observe(nav,{childList:true,subtree:true,attributes:true,attributeFilter:["hidden","style"]});requestAnimationFrame(refresh);setTimeout(refresh,700)})();</script>
 </body></html>
