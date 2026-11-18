@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
-const menus={orders:'orders.html?v=order-edit-nullfix-20261118',quotes:'quotes.html',appointments:'appointments.html',missing:'missing.html',products:'hub.html?tab=products',workshop:'hub.html?tab=workshop',customers:'hub.html?tab=customers',cash:'cash.html',reports:'reports.html',calendar:'calendar.html',company:'company.html#account'};
+const menus={orders:'orders.html?v=fon-cm-20261118',quotes:'quotes.html',appointments:'appointments.html',missing:'missing.html',products:'hub.html?tab=products',workshop:'hub.html?tab=workshop',customers:'hub.html?tab=customers',cash:'cash.html',reports:'reports.html',calendar:'calendar.html',company:'company.html#account'};
 const defaults={orders:true,quotes:true,appointments:true,missing:true,products:true,workshop:true,customers:true,cash:false,reports:false,calendar:true,company:true};
 const stage=document.getElementById('erp-shell-stage'),notice=document.getElementById('erp-shell-notice'),navigation=document.querySelector('.erp-shell-nav');
 const frames=new Map(),allowed={...defaults};let selected='',orgId='',authenticated=false;
