@@ -306,7 +306,7 @@ async function startBulk(){
  if(sessionError||!session?.user){fail('Etiket yazdırmak için giriş yapın.');return}
  try{
   const {data:membership,error:membershipError}=await sb.from('erp_members').select('role').eq('organization_id',orgId).eq('user_id',session.user.id).maybeSingle();
-  if(membershipError||!membership){fail('Bu işletme için etiket yazdırma yetkiniz yok.');return}
+  if(membershipError||!['owner','manager'].includes(membership?.role)){fail('Üretim etiketi yazdırma yalnızca yönetici yetkisiyle yapılabilir.');return}
   const [orders,branchList,{data:organization,error:companyError}]=await Promise.all([
    bulkSelect('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_note,status,barcode_printed_at,created_at',
     query=>query.eq('organization_id',orgId).in('status',['processing','new','partial_waiting','partial_ready']).is('barcode_printed_at',null).order('created_at',{ascending:true})),
@@ -400,6 +400,10 @@ async function start(){
  if(!sb||!id||!orgId){fail('Eksik bağlantı veya giriş bilgisi');return}
  const {data:user,error:authError}=await sb.auth.getUser();
  if(authError||!user?.user){fail('Giriş yapmanız gerekiyor');return}
+ if(mode==='label'){
+  const {data:membership,error:membershipError}=await sb.from('erp_members').select('role').eq('organization_id',orgId).eq('user_id',user.user.id).maybeSingle();
+  if(membershipError||!['owner','manager'].includes(membership?.role)){fail('Üretim etiketi yazdırma yalnızca yönetici yetkisiyle yapılabilir.');return}
+ }
  const [{data:o,error:e1},{data:rows,error:e2},{data:co,error:e3}]=await Promise.all([
   sb.from('erp_orders').select('id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,customer_note,total_amount,paid_amount,status,barcode_printed_at,created_at').eq('id',id).eq('organization_id',orgId).single(),
   sb.from('erp_order_items').select('id,category,product_name,width_cm,height_cm,unit_price,production_note,barcode,status').eq('order_id',id).eq('organization_id',orgId).order('created_at'),
