@@ -6,7 +6,7 @@ const $=id=>document.getElementById(id);
 const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const titles={new:'İşlemde',processing:'İşlemde',waiting:'Beklemede',partial_waiting:'Kısmi Beklemede',workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',delivered:'Teslim Edildi',cancelled:'Silinen',voided:'İptal Edildi'};
-let user=null,organizations=[],branches=[],orders=[],items=[],org='',filterStatus='',lineSeq=0,expandedOrders=new Set(),memberRole='staff';
+let user=null,organizations=[],branches=[],orders=[],items=[],refunds=[],org='',filterStatus='',lineSeq=0,expandedOrders=new Set(),memberRole='staff';
 function show(id){['auth-panel','setup-panel','erp-panel','initial-loading'].forEach(n=>$(n).hidden=n!==id)}
 function msg(id,message){$(id).textContent=message||''}
 function dateTR(s){return s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString('tr-TR'):'Belirtilmedi'}
@@ -63,9 +63,10 @@ async function load(){
  const version=++loadVersion,organization=org;
  msg('orders-message','Siparişler yükleniyor...');
  try{
-  const [nextBranches,nextOrders]=await Promise.all([
+  const [nextBranches,nextOrders,nextRefunds]=await Promise.all([
    fetchAll('erp_branches','id,name,organization_id',q=>q.eq('organization_id',organization).order('name')),
-   fetchPages('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method,waiting_reason,barcode_printed_at',q=>q.eq('organization_id',organization).order('created_at',{ascending:false}).order('id'))
+   fetchPages('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,status,customer_note,total_amount,paid_amount,created_at,subtotal_amount,discount_percent,discount_amount,payment_method,waiting_reason,barcode_printed_at',q=>q.eq('organization_id',organization).order('created_at',{ascending:false}).order('id')),
+   fetchPages('erp_order_refunds','id,order_id,amount,method,recorded_at',q=>q.eq('organization_id',organization).order('recorded_at',{ascending:false}))
   ]);
   const nextItems=[];
   for(let offset=0;offset<nextOrders.length;offset+=40){
@@ -78,6 +79,7 @@ async function load(){
   branches=nextBranches;
   orders=nextOrders;
   items=nextItems;
+  refunds=nextRefunds;
   const dropdown=$('filter-branch'),old=dropdown.value;
   dropdown.innerHTML='<option value="">Tüm Şubeler</option>';
   branches.forEach(b=>dropdown.add(new Option(b.name,b.id)));
@@ -107,7 +109,8 @@ function render(){
  });
  $('orders-list').innerHTML=subset.map(o=>{
   const rows=items.filter(i=>i.order_id===o.id);
-  const remaining=Number(o.total_amount)-Number(o.paid_amount);
+  const refunded=refunds.filter(r=>r.order_id===o.id).reduce((sum,r)=>sum+Number(r.amount||0),0);
+  const remaining=['voided','cancelled'].includes(o.status)?-(Math.max(0,Number(o.paid_amount||0)-refunded)):Number(o.total_amount)-Number(o.paid_amount);
   const base=Number(o.subtotal_amount)||Number(o.total_amount);
   const discount=Math.max(0,base-Number(o.total_amount));
   const expanded=expandedOrders.has(o.id);
@@ -139,6 +142,7 @@ function render(){
    '<button class="secondary" type="button" data-edit="'+escapeHtml(o.id)+'">✎ Önizleme / Düzenle</button>'+
    (o.status==='ready'?'<button class="primary" type="button" data-deliver="'+escapeHtml(o.id)+'">Teslim Et</button>':'')+
    '<button class="secondary" type="button" data-payment="'+escapeHtml(o.id)+'" '+(remaining<=0||['cancelled','voided'].includes(o.status)?'disabled':'')+'>◷ Ödeme Ekle</button>'+
+   (['voided','cancelled'].includes(o.status)&&remaining<0&&['owner','manager','admin'].includes(memberRole)?'<button class="primary" type="button" data-refund="'+escapeHtml(o.id)+'">↩ İade Kaydet</button>':'')+
    '<button class="secondary" type="button" data-void="'+escapeHtml(o.id)+'" '+(['cancelled','voided'].includes(o.status)?'disabled':'')+'>⊘ İptal Et</button>'+ 
    '<button class="secondary compact-delete" type="button" data-delete="'+escapeHtml(o.id)+'" '+(!['owner','manager'].includes(memberRole)||o.status==='cancelled'?'disabled title="Silme yetkisi yalnızca yöneticidedir; silinen sipariş tekrar silinemez"':'')+'>▤ Sil</button>'+
   '</div></div></div>'+
@@ -291,6 +295,32 @@ async function savePayment(e){
   closePayment();await load();msg('orders-message',money(value)+' tahsilat başarıyla kaydedildi.');
  }catch(err){$('payment-message').textContent='Ödeme kaydedilemedi: '+err.message}
  finally{paymentSubmitting=false;$('payment-submit').disabled=false}
+}
+async function recordRefund(id){
+ const order=orders.find(o=>o.id===id);
+ if(!order||!['voided','cancelled'].includes(order.status)||!['owner','manager','admin'].includes(memberRole))return;
+ const refunded=refunds.filter(r=>r.order_id===id).reduce((sum,r)=>sum+Number(r.amount||0),0);
+ const due=Math.max(0,Math.round((Number(order.paid_amount||0)-refunded)*100)/100);
+ if(!due){msg('orders-message','Bu sipariş için bekleyen iade bulunmuyor.');return;}
+ const amountText=prompt('#'+order.order_number+' — '+order.customer_name+'\\nİade edilecek tutar (en fazla '+money(due)+'):',String(due).replace('.',','));
+ if(amountText===null)return;
+ const amount=Number(amountText.trim().replace(/\\s/g,'').replace(',','.'));
+ if(!Number.isFinite(amount)||amount<=0||Math.round(amount*100)!==amount*100||amount>due){alert('Geçerli bir iade tutarı girin. Kalan: '+money(due));return;}
+ const methodInput=prompt('İade yöntemi seçin:\\n1 — Nakit\\n2 — Kredi Kartı\\n3 — Havale / EFT','1');
+ if(methodInput===null)return;
+ const method=({'1':'cash','2':'card','3':'transfer'})[methodInput.trim()];
+ if(!method){alert('Lütfen 1, 2 veya 3 seçin.');return;}
+ const note=prompt('İade açıklaması (isteğe bağlı):','');
+ if(note===null)return;
+ const label={cash:'Nakit',card:'Kredi Kartı',transfer:'Havale / EFT'}[method];
+ if(!confirm('DİKKAT: Bu işlem bankaya otomatik iade yapmaz.\\n\\n'+money(amount)+' müşteriye '+label+' yöntemiyle GERÇEKTEN iade edildi mi?\\n\\nOnaylarsanız kasa çıkışı kaydedilir ve geri alınamaz.'))return;
+ msg('orders-message','İade kaydediliyor...');
+ try{
+  const {error}=await sb.rpc('erp_record_order_refund',{p_org:org,p_order:id,p_amount:amount,p_method:method,p_note:note});
+  if(error)throw error;
+  await load();
+  msg('orders-message',money(amount)+' iade kaydı oluşturuldu. Kasa hareketine eksi olarak yansıdı.');
+ }catch(error){msg('orders-message','İade kaydedilemedi: '+error.message);}
 }
 async function archiveOrder(id){
  const o=orders.find(x=>x.id===id);if(!o)return;
@@ -477,6 +507,7 @@ $('orders-list').onclick=e=>{
  const printA4=e.target.closest('[data-print-a4]');if(printA4){openPrint(printA4.dataset.printA4,'a4');return;}
  const printLabel=e.target.closest('[data-print-label]');if(printLabel){openPrint(printLabel.dataset.printLabel,'label');return;}
  const payment=e.target.closest('[data-payment]');if(payment){addPayment(payment.dataset.payment);return;}
+ const refund=e.target.closest('[data-refund]');if(refund){recordRefund(refund.dataset.refund);return;}
  const voidButton=e.target.closest('[data-void]');if(voidButton){voidOrder(voidButton.dataset.void);return;}
  const cancelButton=e.target.closest('[data-item-cancel]');if(cancelButton){cancelItem(cancelButton.dataset.itemCancel);return;}
  const approveButton=e.target.closest('[data-approve-cancel]');if(approveButton){decideItemCancellation(approveButton.dataset.approveCancel,true);return;}
