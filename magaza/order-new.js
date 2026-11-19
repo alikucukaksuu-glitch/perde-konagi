@@ -14,12 +14,14 @@ const pileFactor=(pile)=>pileFactors[pile]??1;
 const rounded=(n)=>Math.round((Number(n)+Number.EPSILON)*100)/100;
 const priceFromBase=(base,pile)=>rounded(Number(base)*pileFactor(pile));
 const tulUnitPrice=(base,widthCm,pile)=>rounded((Number(widthCm)/100)*pileFactor(pile)*Number(base));
+const sunUnitPrice=(base,widthCm)=>rounded((Number(widthCm)/100)*Number(base));
 const storCaseColors={open:[],classic:['Beyaz','Krem'],colored:['Gri','Antrasit','Kahve']};
 let catalogCache=[],catalogOrg=null,catalogRequest=null,manualPrice=false;
 function isStor(){return $('product-category').value==='STOR PERDE'}
 function isPlise(){return $('product-category').value==='PLİSE PERDE'}
 function isWood(){return $('product-category').value==='AHŞAP JALUZİ'}
 function isFon(){return $('product-category').value==='FON PERDE'}
+function isSun(){return $('product-category').value==='GÜNEŞLİK'}
 function isTul(){return $('product-category').value.trim().toLocaleUpperCase('tr-TR')==='TÜL PERDE'}
 const fonSizes=['60','65','70','75','80','85','90','95','100'];
 function syncFonSizes(selected=''){
@@ -126,8 +128,8 @@ function syncCategoryUI(){
   pileControlSelect.disabled=false;
  }
  unitRow.classList.toggle('stor-price-only',stor||plise||wood);
- $('product-price').closest('label').firstChild.textContent=(stor||plise||wood)?'m² Birim Fiyatı (₺) *':isTul()?'Metre Fiyatı (₺ / m) *':'Temel Birim Fiyat (₺) *';
- $('product-width').required=stor||plise||wood||isTul();$('product-height').required=stor||plise||wood;
+ $('product-price').closest('label').firstChild.textContent=(stor||plise||wood)?'m² Birim Fiyatı (₺) *':(isTul()||isSun())?'Metre Fiyatı (₺ / m) *':'Temel Birim Fiyat (₺) *';
+ $('product-width').required=stor||plise||wood||isTul()||isSun();$('product-height').required=stor||plise||wood;
  $('product-width').step=wood?'0.5':plise?'0.1':'0.01';$('product-height').step=wood?'0.5':plise?'0.1':'0.01';
  if(stor)syncStorColor($('stor-case').value);
 }
@@ -420,6 +422,10 @@ function calculateItemTotal(){
   const unit=width>0?tulUnitPrice(base,width,p):0;
   $('product-total').textContent=width>0?fmt(unit*qty):'—';
   $('pile-price-hint').textContent=width>0?'Hesap: '+width+' cm ÷ 100 × '+String(factor).replace('.',',')+' (pile) × '+fmt(base)+' / metre × '+qty+' adet = '+fmt(unit*qty):'Tül perde en ölçüsünü cm olarak girin; fiyat en (metre) × pile × metre fiyatıdır.';
+ }else if(isSun()){
+  const width=asNum($('product-width').value),unit=width>0?sunUnitPrice(base,width):0;
+  $('product-total').textContent=width>0?fmt(unit*qty):'—';
+  $('pile-price-hint').textContent=width>0?'Hesap: '+width+' cm ÷ 100 × '+fmt(base)+' / metre × '+qty+' adet = '+fmt(unit*qty)+' · Pile seçimi fiyatı değiştirmez.':'Güneşlik en ölçüsünü cm olarak girin; fiyat en (metre) × metre fiyatı × adettir.';
  }else if(isFon()){
   $('product-total').textContent=fmt(base*qty);
   $('pile-price-hint').textContent='Hesap: '+fmt(base)+' × '+qty+' adet = '+fmt(base*qty)+' · Pile seçimi fiyatı değiştirmez.';
@@ -431,7 +437,7 @@ function calculateItemTotal(){
 }
 function storeItem(e){
  e.preventDefault();
- const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise()||isWood())?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):isWood()?woodPrice(basePrice,$('product-width').value,$('product-height').value):isTul()?tulUnitPrice(basePrice,$('product-width').value,pile):isFon()?rounded(basePrice):priceFromBase(basePrice,pile);
+ const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise()||isWood())?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):isWood()?woodPrice(basePrice,$('product-width').value,$('product-height').value):isTul()?tulUnitPrice(basePrice,$('product-width').value,pile):isFon()?rounded(basePrice):isSun()?sunUnitPrice(basePrice,$('product-width').value):priceFromBase(basePrice,pile);
  const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value;
  if(!catalogMatch(category,name)){
   $('product-status-message').textContent='Bu ürün seçili kategori kataloğunda kayıtlı değil. Önce + Hızlı Ürün Ekle ile kaydedin veya arama listesinden kayıtlı bir ürün seçin.';
@@ -626,7 +632,7 @@ async function loadQuoteForEdit(id,orgId){
    const specParts=spec.match(/^Pile:\s*([^;]+)(?:;\s*(.*))?$/);
    const baseMatch=spec.match(/(?:^|;\s*)Baz Fiyat:\s*(\d+(?:\.\d+)?)/);
    const parsedPile=specParts?.[1]||'';
-   const legacyBase=Number(line.unit_price)/(line.category==='TÜL PERDE'&&Number(line.width_cm)>0?(Number(line.width_cm)/100)*pileFactor(parsedPile):pileFactor(parsedPile));
+   const legacyBase=Number(line.unit_price)/(line.category==='TÜL PERDE'&&Number(line.width_cm)>0?(Number(line.width_cm)/100)*pileFactor(parsedPile):line.category==='GÜNEŞLİK'&&Number(line.width_cm)>0?(Number(line.width_cm)/100):pileFactor(parsedPile));
    const basePrice=baseMatch?Number(baseMatch[1]):rounded(legacyBase);
    const detailedSpec=(specParts?.[2]||(!specParts?spec:''))?.replace(/(?:^|;\s*)Baz Fiyat:\s*\d+(?:\.\d+)?/,'').trim().replace(/^;\s*|;\s*$/g,'');
    products.set(slotKey,{id:line.id,barcode:line.barcode,name:line.product_name,qty:line.qty||1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:detailedSpec,plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,cancellationRequestedAt:line.cancellation_requested_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
