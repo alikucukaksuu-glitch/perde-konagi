@@ -9,7 +9,7 @@ const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 let memberRole='staff';
 let user=null,org=null,branches=[],existingCustomers=[],products=new Map(),active=null,saving=false,editing=null;
 const key=(category,index)=>category+'|'+index;
-const pileFactors={'1.0x':1,'2.0x':2,'3.0x':3,'3.5x':3.5,'4.5x':4.5,'Özel':1,'':1};
+const pileFactors={'1.0x':1,'2.0x':2,'2.5x':2.5,'3.0x':3,'3.5x':3.5,'4.5x':4.5,'Özel':1,'':1};
 const pileFactor=(pile)=>pileFactors[pile]??1;
 const rounded=(n)=>Math.round((Number(n)+Number.EPSILON)*100)/100;
 const priceFromBase=(base,pile)=>rounded(Number(base)*pileFactor(pile));
@@ -109,6 +109,14 @@ function syncStorColor(value){
 const pileControlRow=document.getElementById('pile-selection-row');
 const pileControlSelect=document.getElementById('product-pile');
 function syncCategoryUI(){
+ const tulPileOption=pileControlSelect.querySelector('option[value="2.5x"]');
+ if(isTul()&&!tulPileOption){
+  const option=new Option('2,5x · Orta Sık Pile','2.5x');
+  pileControlSelect.querySelector('option[value="3.0x"]')?.before(option);
+ }else if(!isTul()&&tulPileOption){
+  if(pileControlSelect.value==='2.5x')pileControlSelect.value='';
+  tulPileOption.remove();
+ }
  const stor=isStor(),plise=isPlise(),wood=isWood();
  $('stor-options').hidden=!stor;
  $('plise-options').hidden=!plise;
