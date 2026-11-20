@@ -2,12 +2,12 @@
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY),$=id=>document.getElementById(id);
 const q=new URLSearchParams(location.search),id=q.get('id'),orgId=q.get('org'),mode=q.get('type')==='bulk'?'bulk':q.get('type')==='label'?'label':'a4',reprint=q.get('reprint')==='1';
-let order=null,company=null,branch=null,allBranches=[],items=[],printedRequested=false;
+let order=null,company=null,branch=null,allBranches=[],items=[];
 const fmt=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const date=s=>s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString('tr-TR'):'—';
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=String(text??'');return e}
 function txt(parent,tag,cls,text){const n=el(tag,cls,text);parent.append(n);return n}
-function fail(t){$('warning').textContent=t;$('print-btn').disabled=true;$('confirm-label').disabled=true}
+function fail(t){$('warning').textContent=t;$('print-btn').disabled=true}
 function pair(parent,key,val){txt(parent,'dt','',key);txt(parent,'dd','',val||'—')}
 function a4OrderItem(card,item,index){
  const product=el('article','a4-product'+(item?' is-filled':' is-empty'));
@@ -179,6 +179,7 @@ function makeLabel(item){
  txt(notes,'strong','','ÜRÜN / SİPARİŞ NOTU');
  const noteText=[details.detail&&'Ürün: '+details.detail,order.customer_note&&'Sipariş: '+order.customer_note].filter(Boolean).join('\n');
  txt(notes,'p','',noteText||'—');
+ if(details.detail||order.customer_note)notes.classList.add('has-note');
  box.append(notes);
  return box;
 }
@@ -300,7 +301,6 @@ async function bulkSelect(table,columns,apply){
 async function startBulk(){
  $('print-title').textContent='İşlemdeki Siparişlerin Üretim Etiketleri';
  $('print-btn').disabled=true;
- $('confirm-label').hidden=true;
  if(!sb||!orgId){fail('İşletme bilgisi eksik.');return}
  const {data:session,error:sessionError}=await sb.auth.getUser();
  if(sessionError||!session?.user){fail('Etiket yazdırmak için giriş yapın.');return}
@@ -358,23 +358,15 @@ async function startBulk(){
   if($('warning').textContent&&$('warning').textContent.includes('QR oluşturulamadı'))return;
   $('warning').textContent=eligible.length+' sipariş, '+all.length+' etiket baskıya hazır.'+
    (excluded.length?' '+excluded.length+' sipariş ürün durumları nedeniyle hariç tutuldu.':'');
-  $('print-hint').textContent='Tüm uygun etiketler tek baskı işinde açılır. Yazıcıdan çıktıyı kontrol ettikten sonra toplu onay verin. Baskı ekranını açmak tek başına sipariş durumunu değiştirmez.';
+  $('print-hint').textContent='Yazdır ile baskı penceresi açılır ve seçili ürünler doğrudan Atölyeye geçirilir. Yazıcı işlemini tamamladığınızı kontrol edin.';
   const flow=$('label-flow');flow.hidden=false;
   flow.querySelector('h2').textContent='Toplu Baskı Akışı';
   flow.querySelector('#label-order-no').textContent=String(eligible.length)+' sipariş';
   flow.querySelector('#label-count').textContent=String(all.length);
   $('print-btn').disabled=false;
-  $('print-btn').onclick=()=>{
-   printedRequested=true;
-   $('confirm-label').hidden=false;
-   $('confirm-label').disabled=false;
+  $('print-btn').onclick=async()=>{
+   $('print-btn').disabled=true;
    window.print();
-  };
-  $('confirm-label').textContent='Yazdırıldı · Seçili Ürünleri Atölyeye Gönder';
-  $('confirm-label').onclick=async()=>{
-   if(!printedRequested)return;
-   if(!confirm(eligible.length+' siparişin '+all.length+' etiketi gerçekten basıldı mı? Onay, yalnızca bu etiketlerin ürünlerini Atölyeye geçirir; bekleyen ürünlere dokunmaz ve tekrar toplu baskıyı engeller.'))return;
-   $('confirm-label').disabled=true;$('print-btn').disabled=true;
    let ok=0;const failures=[];
    for(const group of eligible){
     const {error}=await sb.rpc('erp_mark_selected_items_printed',{p_org:orgId,p_order:group.order.id,p_items:group.items.map(item=>item.id)});
@@ -388,7 +380,6 @@ async function startBulk(){
     $('warning').textContent=ok+' siparişin seçili ürünlerinin etiket baskısı onaylandı. Bekleyen ürünler yerinde kaldı.';
     $('print-hint').textContent='Toplu baskı tamamlandı. Siparişler sayfasına dönebilirsiniz.';
    }
-   $('confirm-label').hidden=true;
   };
  }catch(e){fail('Toplu baskı hazırlanamadı: '+e.message)}
 }
@@ -437,7 +428,7 @@ async function start(){
   }catch(e){fail('QR kod hazırlanamadı: '+e.message);return}
   addLabels();
   if($('warning').textContent)return;
-  $('print-hint').textContent=reprint?'Yönetici yeniden baskısıdır. Sipariş ve üretim durumu değişmez. Baskı gerekçesi işlem geçmişine kaydedilir.':'Baskıyı başlatın. Çıktının gerçekten alındığını kontrol ettikten sonra “Yazdırıldı · Atölyeye Gönder” düğmesine basın. Bu onay barkodu kilitler ve siparişi Atölyede durumuna geçirir.';
+  $('print-hint').textContent=reprint?'Yönetici yeniden baskısıdır. Sipariş ve üretim durumu değişmez. Baskı gerekçesi işlem geçmişine kaydedilir.':'Yazdır düğmesine basınca baskı penceresi açılır; işlem sonrasında sipariş doğrudan Atölyede durumuna alınır. Yazıcıdan çıktıyı kontrol edin.';
   const flow=$('label-flow');
   if(flow){flow.hidden=false;flow.querySelector('#label-order-no').textContent='#'+order.order_number;flow.querySelector('#label-count').textContent=String(items.filter(i=>i.status!=='cancelled').length);}
  }else{
@@ -458,20 +449,16 @@ async function start(){
    $('print-btn').disabled=false;
    if(error){$('warning').textContent='Yeniden baskı kaydı oluşturulamadı: '+error.message;return}
   }
-  printedRequested=true;
-  if(mode==='label'&&!reprint){$('confirm-label').hidden=false;$('confirm-label').disabled=false}
   window.print();
- };
- $('confirm-label').onclick=async()=>{
-  if(!printedRequested||!confirm('Etiketlerin gerçekten yazdırıldığını onaylıyor musunuz? Sipariş Atölyede durumuna geçecek ve aynı barkod tekrar basılamayacak.'))return;
-  $('confirm-label').disabled=true;
-  try{
-   const {error}=await sb.rpc('erp_mark_barcode_printed',{p_org:orgId,p_order:id});
-   if(error)throw error;
-   $('warning').textContent='Barkod baskısı onaylandı. Sipariş Atölyede durumuna geçirildi.';
-   $('print-btn').disabled=true;$('confirm-label').hidden=true;
-   $('print-hint').textContent='Barkod işlemi tamamlandı. Siparişler sayfasına dönebilirsiniz.';
-  }catch(e){$('warning').textContent='Baskı onaylanamadı: '+e.message;$('confirm-label').disabled=false}
+  if(mode==='label'&&!reprint){
+   $('print-btn').disabled=true;
+   try{
+    const {error}=await sb.rpc('erp_mark_barcode_printed',{p_org:orgId,p_order:id});
+    if(error)throw error;
+    $('warning').textContent='Barkod işlemi kaydedildi. Sipariş Atölyede durumuna geçirildi.';
+    $('print-hint').textContent='Sipariş Atölyede. Siparişler sayfasına dönebilirsiniz.';
+   }catch(e){$('warning').textContent='Atölye durumu kaydedilemedi: '+e.message+' Lütfen tekrar yazdırmadan önce sipariş durumunu kontrol edin.'}
+  }
  };
 }
 start().catch(e=>fail(e.message));
