@@ -108,6 +108,13 @@ function syncStorColor(value){
 }
 const pileControlRow=document.getElementById('pile-selection-row');
 const pileControlSelect=document.getElementById('product-pile');
+function syncProductRequiredFields(){
+ const waiting=$('product-status').value==='waiting';
+ const measureCategory=isStor()||isPlise()||isWood();
+ $('product-width').required=!waiting&&(measureCategory||isTul()||isSun());
+ $('product-height').required=!waiting&&measureCategory;
+ $('product-price').required=!waiting;
+}
 function syncCategoryUI(){
  const tulPileOption=pileControlSelect.querySelector('option[value="2.5x"]');
  if(isTul()&&!tulPileOption){
@@ -137,7 +144,7 @@ function syncCategoryUI(){
  }
  unitRow.classList.toggle('stor-price-only',stor||plise||wood);
  $('product-price').closest('label').firstChild.textContent=(stor||plise||wood)?'m² Birim Fiyatı (₺) *':(isTul()||isSun())?'Metre Fiyatı (₺ / m) *':'Temel Birim Fiyat (₺) *';
- $('product-width').required=stor||plise||wood||isTul()||isSun();$('product-height').required=stor||plise||wood;
+ syncProductRequiredFields();
  $('product-width').step=wood?'0.5':plise?'0.1':'0.01';$('product-height').step=wood?'0.5':plise?'0.1':'0.01';
  if(stor)syncStorColor($('stor-case').value);
 }
@@ -400,7 +407,7 @@ function openItem(category,index){
   else option.disabled=false;
  }
  $('product-status-wrapper').title=value?.id?'Durum değişikliği seçildiğinde anında kaydedilir.':'Yeni ürün İşlemde veya Beklemede olarak kaydedilebilir.';
- $('product-price').required=($('product-status').value!=='waiting');
+ syncProductRequiredFields();
  $('delete-product').hidden=!value;
  $('delete-product').disabled=!!value&&(['workshop','ready','delivered','waiting','cancelled'].includes(value.status)||value.printedAt);
  $('product-quantity').disabled=!!value?.id;
@@ -816,8 +823,9 @@ function syncOrderStatusOptions(){
 $('product-status').onchange=async()=>{
  if(!active)return;
  const item=products.get(key(active.category,active.index)),select=$('product-status');
- if(!item?.id){$('product-price').required=select.value!=='waiting';$('product-status-message').textContent=select.value==='waiting'?'Eksik ölçü ve özelleştirme bilgileri olmadan kaydedebilirsiniz.':' ';calculateItemTotal();return;}
+ if(!item?.id){syncProductRequiredFields();$('product-status-message').textContent=select.value==='waiting'?'Eksik ölçü ve özelleştirme bilgileri olmadan kaydedebilirsiniz.':' ';calculateItemTotal();return;}
  const before=item.status,next=select.value;
+ syncProductRequiredFields();
  if(next==='workshop'&&!['owner','manager'].includes(memberRole)){select.value=before;$('product-status-message').textContent='Atölyeye aktarma yalnızca yöneticiler tarafından yapılabilir.';return;}
  if(next==='cancelled'){select.disabled=true;try{await cancelItemInEditor(item);}catch(e){select.value=before;$('product-status-message').textContent='İptal edilemedi: '+e.message;}finally{select.disabled=false;}return;}
  if(next==='processing'&&(before!=='processing'&&before!=='waiting'||Boolean(editing?.barcode_printed_at))){select.value=before;$('product-status-message').textContent='Atölyeye alınan ürün tekrar İşlemde durumuna geçirilemez.';return}
