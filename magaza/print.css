@@ -159,7 +159,9 @@
  margin:0!important;padding:.4mm 0 0!important;overflow:hidden!important;
 }
 .label-mode .qr-notes strong{font-size:6.6px!important}
-.label-mode .qr-notes p{font-size:6.5px!important;line-height:1.05!important;max-height:3.6mm!important}
+.label-mode .qr-notes p{font-size:7.4px!important;line-height:1.12!important;max-height:9mm!important}
+.label-mode .qr-notes.has-note strong{font-size:7.3px!important}
+.label-mode .qr-notes.has-note p{font-weight:700!important;overflow-wrap:anywhere!important}
 @media print{
  .label-mode .qr-label{grid-template-rows:6mm 4.5mm 6.5mm 22mm minmax(0,1fr)!important}
 }
@@ -170,6 +172,13 @@
 .label-mode .qr-image{width:22mm!important;height:22mm!important;padding:.5mm!important}
 .label-mode .qr-image img,.label-mode .qr-image canvas{width:21mm!important;height:21mm!important}
 @media print{.label-mode .qr-label{grid-template-rows:5.8mm 4.5mm 6.2mm 24mm minmax(0,1fr)!important}}
+
+/* Reserve a readable area for per-item production notes on 80 × 50 mm labels. */
+.label-mode .qr-label{grid-template-rows:5.8mm 4.5mm 6.2mm 20mm minmax(0,1fr)!important}
+.label-mode .qr-label-mid{height:20mm!important;grid-template-columns:minmax(0,1fr) 21mm!important}
+.label-mode .qr-image{width:19mm!important;height:19mm!important}
+.label-mode .qr-image img,.label-mode .qr-image canvas{width:18mm!important;height:18mm!important}
+@media print{.label-mode .qr-label{grid-template-rows:5.8mm 4.5mm 6.2mm 20mm minmax(0,1fr)!important}}
 
 /* A4 PDF and customer WhatsApp actions; hidden for thermal labels and on paper. */
 #pdf-btn{border-color:#b6c7bb;background:#f4f8f4;color:#1d4230}
