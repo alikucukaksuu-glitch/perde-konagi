@@ -189,3 +189,6 @@
 
 /* Tüm kategorilerde ürün kutucuğunun özel satır notu */
 .slot-record-detail .slot-special-note{display:block;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:110px;overflow:auto;padding:5px 6px;border-radius:5px;background:rgba(255,255,255,.8);border:1px solid rgba(44,77,78,.14);font-size:10px;line-height:1.35;font-weight:600}
+
+/* Tül ve fon perde S Pile ek ücreti */
+.s-pile-options{margin:12px 0;padding:12px 14px;border:1px solid #dbe5dc;border-radius:12px;background:#f7faf7;display:grid;grid-template-columns:minmax(110px,1fr) minmax(150px,1.5fr);gap:10px 14px;align-items:center}.s-pile-options[hidden]{display:none!important}.s-pile-check{display:flex;align-items:center;gap:9px;cursor:pointer}.s-pile-check input{width:18px;height:18px;accent-color:#234735}.s-pile-price{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600}.s-pile-price input{width:100%;min-width:0}.s-pile-price input:disabled{background:#eef2ee;color:#78857c}.s-pile-hint{grid-column:1/-1;color:#53665b;font-size:11px}@media(max-width:430px){.s-pile-options{grid-template-columns:1fr}.s-pile-hint{grid-column:1}}
