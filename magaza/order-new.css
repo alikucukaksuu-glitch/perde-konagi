@@ -181,3 +181,8 @@
 .business-id #branch-heading[hidden],.business-id #company-contact[hidden]{display:none!important}
 
 .order-social{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:10px;color:#59665d;font-size:10px;line-height:1.3}
+
+/* Ürün özelleştirme: sayı alanları yazılabilir kalır, tarayıcı artır/azalt okları gizlenir. */
+#product-overlay input[type="number"]{-moz-appearance:textfield;appearance:textfield}
+#product-overlay input[type="number"]::-webkit-inner-spin-button,
+#product-overlay input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
