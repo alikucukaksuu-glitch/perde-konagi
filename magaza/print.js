@@ -163,7 +163,7 @@ function makeLabel(item){
   lines.push('Kanat Ölçüsü: '+(details.field('Kanat Ölçüsü')||'—'));
   if(details.pile)lines.push('Pile: '+details.pile);
  }else lines.push('Pile: '+(details.pile||'—'));
- if(item.category==='TÜL PERDE'||item.category==='FON PERDE')lines.push('S Pile: '+(details.field('S Pile')==='Var'?'Var':'Yok'));
+ if(item.category==='TÜL PERDE'||item.category==='FON PERDE')lines.push('Dikim Türü: '+(details.field('Dikim Türü')||(details.field('S Pile')==='Var'?'S Pile':'Yok')));
  for(const x of lines)txt(specs,'span','',x);
  left.append(specs);
  txt(right,'strong','qr-code-heading','MAĞAZAYA KABUL QR');
