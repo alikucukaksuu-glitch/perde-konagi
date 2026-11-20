@@ -391,9 +391,16 @@ function openItem(category,index){
  fetchCatalog().then(()=>{if(active?.category===category)showCatalog()});
  $('product-note').value=value?.note||'';
  $('product-status').value=value?.status||'processing';
- $('product-status').disabled=!value?.id||['ready','delivered'].includes(value.status)||(editing?.status==='waiting'&&value?.status!=='waiting'||['delivered','cancelled'].includes(editing?.status));
- for(const option of $('product-status').options){if(option.value==='processing'&&(value?.status!=='processing'&&value?.status!=='waiting'||Boolean(editing?.barcode_printed_at)))option.disabled=true;else if(option.value==='waiting')option.disabled=value?.status!=='processing'||Boolean(editing?.barcode_printed_at);else if(value?.status==='waiting')option.disabled=option.value!=='waiting'&&option.value!=='processing'&&option.value!=='cancelled';else option.disabled=false;}
- $('product-status-wrapper').title=value?.id?'Durum değişikliği seçildiğinde anında kaydedilir.':'Sipariş kaydedilince ürün İşlemde durumunda başlar.';
+ $('product-status').disabled=!!value?.id&&(['ready','delivered'].includes(value.status)||(editing?.status==='waiting'&&value?.status!=='waiting')||['delivered','cancelled'].includes(editing?.status));
+ for(const option of $('product-status').options){
+  if(!value?.id){option.disabled=!['processing','waiting'].includes(option.value);continue;}
+  if(option.value==='processing'&&(value.status!=='processing'&&value.status!=='waiting'||Boolean(editing?.barcode_printed_at)))option.disabled=true;
+  else if(option.value==='waiting')option.disabled=value.status!=='processing'||Boolean(editing?.barcode_printed_at);
+  else if(value.status==='waiting')option.disabled=!['waiting','processing','cancelled'].includes(option.value);
+  else option.disabled=false;
+ }
+ $('product-status-wrapper').title=value?.id?'Durum değişikliği seçildiğinde anında kaydedilir.':'Yeni ürün İşlemde veya Beklemede olarak kaydedilebilir.';
+ $('product-price').required=($('product-status').value!=='waiting');
  $('delete-product').hidden=!value;
  $('delete-product').disabled=!!value&&(['workshop','ready','delivered','waiting','cancelled'].includes(value.status)||value.printedAt);
  $('product-quantity').disabled=!!value?.id;
@@ -451,20 +458,20 @@ function calculateItemTotal(){
 function storeItem(e){
  e.preventDefault();
  const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise()||isWood())?'':pileControlSelect.value,price=isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):isWood()?woodPrice(basePrice,$('product-width').value,$('product-height').value):isTul()?tulUnitPrice(basePrice,$('product-width').value,pile):isFon()?rounded(basePrice):isSun()?sunUnitPrice(basePrice,$('product-width').value):priceFromBase(basePrice,pile);
- const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value;
+ const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value,waitingLine=$('product-status').value==='waiting'&&(!products.get(key(active.category,active.index))?.id||products.get(key(active.category,active.index))?.status==='waiting');
  if(!catalogMatch(category,name)){
   $('product-status-message').textContent='Bu ürün seçili kategori kataloğunda kayıtlı değil. Önce + Hızlı Ürün Ekle ile kaydedin veya arama listesinden kayıtlı bir ürün seçin.';
   openQuickAdd();return;
  }
  if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(basePrice)||basePrice<0||!Number.isFinite(price)||price<0||price>99999999){$('product-status-message').textContent='Ürün adı, fiyatı veya adedi geçersiz.';return}
  if((width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))||(height!==''&&(!Number.isFinite(Number(height))||Number(height)<0))){$('product-status-message').textContent='En ve boy negatif olamaz.';return}
- if(category==='TÜL PERDE'&&(!Number.isFinite(Number(width))||Number(width)<=0)){$('product-status-message').textContent='Tül perde için en (cm) sıfırdan büyük olmalıdır.';return}
- if(category==='STOR PERDE'&&(!Number.isFinite(Number(width))||Number(width)<=0||!Number.isFinite(Number(height))||Number(height)<=0)){$('product-status-message').textContent='Stor perdede gerçek en ve boy ölçüsü sıfırdan büyük olmalı.';return}
- if(category==='PLİSE PERDE'&&(!validPliseMeasure(width)||!validPliseMeasure(height))){$('product-status-message').textContent='Plise perde en ve boy ölçüleri pozitif ve 0,1 cm hassasiyetinde olmalıdır (örn. 80,1 cm).';return}
- if(category==='AHŞAP JALUZİ'&&(!validWoodMeasure(width)||!validWoodMeasure(height))){$('product-status-message').textContent='Ahşap Jaluzi ölçülerini 0,5 cm aralıklarla girin (örn. 40,5; 41; 41,5).';return}
- if(category==='FON PERDE'&&(!$('fon-wing-type').value||!$('fon-wing-size').value)){$('product-status-message').textContent='Fon perde için kanat tipi ve kanat ölçüsünü seçin.';return}
+ if(!waitingLine&&category==='TÜL PERDE'&&(!Number.isFinite(Number(width))||Number(width)<=0)){$('product-status-message').textContent='Tül perde için en (cm) sıfırdan büyük olmalıdır.';return}
+ if(!waitingLine&&category==='STOR PERDE'&&(!Number.isFinite(Number(width))||Number(width)<=0||!Number.isFinite(Number(height))||Number(height)<=0)){$('product-status-message').textContent='Stor perdede gerçek en ve boy ölçüsü sıfırdan büyük olmalı.';return}
+ if(!waitingLine&&category==='PLİSE PERDE'&&(!validPliseMeasure(width)||!validPliseMeasure(height))){$('product-status-message').textContent='Plise perde en ve boy ölçüleri pozitif ve 0,1 cm hassasiyetinde olmalıdır (örn. 80,1 cm).';return}
+ if(!waitingLine&&category==='AHŞAP JALUZİ'&&(!validWoodMeasure(width)||!validWoodMeasure(height))){$('product-status-message').textContent='Ahşap Jaluzi ölçülerini 0,5 cm aralıklarla girin (örn. 40,5; 41; 41,5).';return}
+ if(!waitingLine&&category==='FON PERDE'&&(!$('fon-wing-type').value||!$('fon-wing-size').value)){$('product-status-message').textContent='Fon perde için kanat tipi ve kanat ölçüsünü seçin.';return}
  const missingMeasures=[width===''?'En':null,height===''?'Boy':null].filter(Boolean);
- if(missingMeasures.length&& !confirm(missingMeasures.join(' ve ')+' ölçüsünü girmediniz. Yine de kaydetmek ister misiniz?')){
+ if(!waitingLine&&missingMeasures.length&& !confirm(missingMeasures.join(' ve ')+' ölçüsünü girmediniz. Yine de kaydetmek ister misiniz?')){
   $('product-status-message').textContent='Eksik ölçüyü tamamlayıp tekrar kaydedebilirsiniz.';
   (width===''?$('product-width'):$('product-height')).focus();return;
  }
@@ -482,8 +489,8 @@ function storeItem(e){
  const cfg=category==='STOR PERDE'?storSettings():null;
  const plise=category==='PLİSE PERDE'?pliseConfiguration():null;
  const wood=category==='AHŞAP JALUZİ'?woodConfiguration():null;
- const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):plise?['Montaj: '+plise.mount,'Kasa Rengi: '+plise.caseColor,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):wood?['Kurdela: '+(wood.ribbon?'Var':'Yok'),'Mekanizma: '+wood.mechanism,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):category==='FON PERDE'?['Kanat Tipi: '+$('fon-wing-type').value,'Kanat Ölçüsü: '+$('fon-wing-size').value,$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
- const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,plise,wood,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||'processing',printedAt:old?.printedAt||null};
+ const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):plise?['Montaj: '+plise.mount,'Kasa Rengi: '+plise.caseColor,width!==''?'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm':'',height!==''?'Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm':'',$('product-spec').value.trim()].filter(Boolean).join('; '):wood?['Kurdela: '+(wood.ribbon?'Var':'Yok'),'Mekanizma: '+wood.mechanism,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):category==='FON PERDE'?['Kanat Tipi: '+$('fon-wing-type').value,'Kanat Ölçüsü: '+$('fon-wing-size').value,$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
+ const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,plise,wood,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:old?.status||(waitingLine?'waiting':'processing'),waitingReason:old?.waitingReason||(waitingLine?($('product-note').value.trim().slice(0,1500)||'Ürün bilgileri bekleniyor'):''),printedAt:old?.printedAt||null};
  products.delete(oldKey);products.set(key(category,index),record);
  closeItem();drawSlots();
 }
@@ -734,7 +741,7 @@ async function submit(){
  const payload=[];
  for(const [slot,p] of products){
   const category=slot.split('|')[0],spec=[p.pile&&'Pile: '+p.pile, 'Baz Fiyat: '+(p.basePrice??p.price),p.spec].filter(Boolean).join('; '),fullNote=[spec&&'Özellikler: '+spec,p.note].filter(Boolean).join('\n');
-  for(let i=0;i<p.qty;i++)payload.push({id:p.id||null,slot_key:key(category,Number(slot.split('|')[1]))+(p.qty>1?'-'+i:''),category,product_name:p.name,width_cm:p.width||null,height_cm:p.height||null,unit_price:p.price,production_note:fullNote});
+  for(let i=0;i<p.qty;i++)payload.push({id:p.id||null,slot_key:key(category,Number(slot.split('|')[1]))+(p.qty>1?'-'+i:''),category,product_name:p.name,width_cm:p.width||null,height_cm:p.height||null,unit_price:p.price,production_note:fullNote,status:p.status==='waiting'?'waiting':'processing',waiting_reason:p.status==='waiting'?(p.waitingReason||'Ürün bilgileri bekleniyor'):null});
  }
  saving=true;$('submit-order').disabled=true;$('save-message').textContent=quoteMode?'Teklif kaydediliyor...':'Kaydediliyor...';
  try{
@@ -809,7 +816,7 @@ function syncOrderStatusOptions(){
 $('product-status').onchange=async()=>{
  if(!active)return;
  const item=products.get(key(active.category,active.index)),select=$('product-status');
- if(!item?.id)return;
+ if(!item?.id){$('product-price').required=select.value!=='waiting';$('product-status-message').textContent=select.value==='waiting'?'Eksik ölçü ve özelleştirme bilgileri olmadan kaydedebilirsiniz.':' ';calculateItemTotal();return;}
  const before=item.status,next=select.value;
  if(next==='workshop'&&!['owner','manager'].includes(memberRole)){select.value=before;$('product-status-message').textContent='Atölyeye aktarma yalnızca yöneticiler tarafından yapılabilir.';return;}
  if(next==='cancelled'){select.disabled=true;try{await cancelItemInEditor(item);}catch(e){select.value=before;$('product-status-message').textContent='İptal edilemedi: '+e.message;}finally{select.disabled=false;}return;}
