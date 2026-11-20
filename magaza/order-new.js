@@ -265,6 +265,11 @@ function drawSlots(){
    details.append(newElement('strong','',record.name));
    details.append(newElement('small','',record.qty+' adet · '+(record.width||'—')+' × '+(record.height||'—')+' cm'));
    if(record.pile)details.append(newElement('small','',record.pile));
+   if(record.note?.trim()){
+    const noteLabel=newElement('small','slot-special-note','Özel Not: '+record.note.trim());
+    noteLabel.title=record.note.trim();
+    details.append(noteLabel);
+   }
    if(group.name==='FON PERDE'){const fon=parseFonConfiguration(record.spec);if(fon.kind&&fon.size)details.append(newElement('small','',fon.kind+' · '+fon.size+' cm'));}
    if(record.status==='waiting'&&record.waitingReason)details.append(newElement('small','', 'Bekleme nedeni: '+record.waitingReason));
    if(record.cancellationRequestedAt&&record.status!=='cancelled')details.append(newElement('small','', 'İptal talebi: Yönetici onayı bekleniyor.'));
