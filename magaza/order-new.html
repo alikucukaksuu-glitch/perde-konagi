@@ -1,4 +1,4 @@
-<!doctype html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Yeni Sipariş | KONAK ERP</title><link rel="stylesheet" href="./style.css?v=mobile-fit-1"><link rel="stylesheet" href="./order-new.css?v=unified-product-20261120"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="./order-new.js?v=unified-product-20261120"></script><script defer src="./access.js?v=staff-access-1"></script><style id="restore-original-slot-columns">
+<!doctype html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Yeni Sipariş | KONAK ERP</title><link rel="stylesheet" href="./style.css?v=mobile-fit-1"><link rel="stylesheet" href="./order-new.css?v=remove-extra-spec-20261120"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script><script defer src="./order-new.js?v=remove-extra-spec-20261120"></script><script defer src="./access.js?v=staff-access-1"></script><style id="restore-original-slot-columns">
 /* Orijinal KONAK ERP ürün kutusu sütun sayısı */
 .workspace .category-section .slot-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:8px!important;width:100%;min-width:0} .workspace .category-section .slot-grid>*{min-width:0;max-width:100%;box-sizing:border-box}
 @media(max-width:700px){.workspace .category-section .slot-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
@@ -71,7 +71,7 @@
 <label>Mekanizma Seçeneği<select id="wood-mechanism"><option value="İpli">İpli Mekanizma</option><option value="Redüktörlü">Redüktörlü Mekanizma</option></select></label>
 <div id="wood-calculation" class="stor-calculation">En ve boy ölçülerini girin.</div>
 </section>
-<p id="pile-price-hint" class="pile-price-hint">Pile seçildiğinde fiyat otomatik hesaplanır.</p><label>Ek Dikim / Mekanizma Bilgisi<input id="product-spec" maxlength="500" placeholder="Örn. Korniş düğmeli veya mekanizma rengi"></label>
+<p id="pile-price-hint" class="pile-price-hint">Pile seçildiğinde fiyat otomatik hesaplanır.</p><input id="product-spec" type="hidden" maxlength="500">
 <label id="product-status-wrapper">Satır Durumu<select id="product-status"><option value="processing">İşlemde</option><option value="waiting">Beklemede</option><option value="workshop">Atölyede</option><option value="ready" disabled>Mağazada – Teslime Hazır (barkodla)</option><option value="delivered" disabled>Teslim Edildi</option><option value="cancelled">İptal</option></select></label>
 <label>Ürüne Özel Satır Notu<textarea id="product-note" rows="3" maxlength="950" placeholder="Ürün barkodunda görünecek üretim notu"></textarea></label>
 <div class="sheet-total"><span>Satır Ara Toplamı</span><strong id="product-total">₺0</strong></div>
