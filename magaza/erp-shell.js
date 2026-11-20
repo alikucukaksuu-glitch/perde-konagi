@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
-const menus={orders:'orders.html?v=refund-ledger-20261118',quotes:'quotes.html',appointments:'appointments.html?v=whatsapp-popup-fix-20261118',missing:'missing.html',products:'hub.html?tab=products',workshop:'hub.html?tab=workshop',customers:'hub.html?tab=customers',cash:'cash.html',reports:'reports.html',calendar:'calendar.html',company:'company.html#account'};
-const defaults={orders:true,quotes:true,appointments:true,missing:true,products:true,workshop:true,customers:true,cash:false,reports:false,calendar:true,company:true};
+const menus={orders:'orders.html?v=refund-ledger-20261118',quotes:'quotes.html',appointments:'appointments.html?v=whatsapp-popup-fix-20261118',missing:'missing.html',products:'hub.html?tab=products',workshop:'hub.html?tab=workshop',customers:'hub.html?tab=customers',cash:'cash.html',reports:'reports.html',calendar:'calendar.html',notifications:'notifications.html?v=notify-20261120',company:'company.html#account'};
+const defaults={orders:true,quotes:true,appointments:true,missing:true,products:true,workshop:true,customers:true,cash:false,reports:false,calendar:true,notifications:true,company:true};
 const stage=document.getElementById('erp-shell-stage'),notice=document.getElementById('erp-shell-notice'),navigation=document.querySelector('.erp-shell-nav');
 const frames=new Map(),allowed={...defaults};let selected='',orgId='',authenticated=false;
 const mobileToggle=document.querySelector('.erp-mobile-toggle');
@@ -21,6 +21,7 @@ function routeFromUrl(raw){
  if(path.endsWith('/cash.html'))return 'cash';
  if(path.endsWith('/reports.html'))return 'reports';
  if(path.endsWith('/calendar.html'))return 'calendar';
+ if(path.endsWith('/notifications.html'))return 'notifications';
  if(path.endsWith('/company.html'))return 'company';
  if(path.endsWith('/hub.html'))return ['products','workshop','customers'].includes(url.searchParams.get('tab'))?url.searchParams.get('tab'):'products';
  if(path.endsWith('/orders.html')||path.endsWith('/index.html')||path==='/magaza/')return 'orders';
@@ -80,7 +81,7 @@ function navigate(view,push){
  if(record.loaded){showFrame(view);notice.hidden=true}
  else{notice.textContent='Bölüm açılıyor...';notice.hidden=false}
  if(push){const url=new URL(location.href);url.searchParams.set('view',view);history.pushState({view},'',url.pathname+url.search+url.hash)}
- document.title='KONAK ERP | '+({orders:'Siparişler',quotes:'Teklif Siparişleri',appointments:'Montaj Randevu',missing:'Eksik Ürünler',products:'Ürünler',workshop:'Atölye',customers:'Müşteriler',cash:'Kasa',reports:'Raporlar',calendar:'Takvim',company:'Hesabım'}[view]||'Mağaza');
+ document.title='KONAK ERP | '+({orders:'Siparişler',quotes:'Teklif Siparişleri',appointments:'Montaj Randevu',missing:'Eksik Ürünler',products:'Ürünler',workshop:'Atölye',customers:'Müşteriler',cash:'Kasa',reports:'Raporlar',calendar:'Takvim',notifications:'Bildirim Merkezi',company:'Hesabım'}[view]||'Mağaza');
 }
 async function initialize(){
  authenticated=false;
@@ -103,6 +104,7 @@ async function initialize(){
      if(!savedKeys.has('missing'))allowed.missing=allowed.workshop;
      if(!savedKeys.has('quotes'))allowed.quotes=allowed.orders;
      if(!savedKeys.has('appointments'))allowed.appointments=allowed.orders;
+     if(!savedKeys.has('notifications'))allowed.notifications=allowed.orders;
      allowed.company=true;
     }
    }else Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));
