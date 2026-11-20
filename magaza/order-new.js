@@ -458,6 +458,11 @@ function storeItem(e){
  if(category==='PLİSE PERDE'&&(!validPliseMeasure(width)||!validPliseMeasure(height))){$('product-status-message').textContent='Plise perde en ve boy ölçüleri pozitif ve 0,1 cm hassasiyetinde olmalıdır (örn. 80,1 cm).';return}
  if(category==='AHŞAP JALUZİ'&&(!validWoodMeasure(width)||!validWoodMeasure(height))){$('product-status-message').textContent='Ahşap Jaluzi ölçülerini 0,5 cm aralıklarla girin (örn. 40,5; 41; 41,5).';return}
  if(category==='FON PERDE'&&(!$('fon-wing-type').value||!$('fon-wing-size').value)){$('product-status-message').textContent='Fon perde için kanat tipi ve kanat ölçüsünü seçin.';return}
+ const missingMeasures=[width===''?'En':null,height===''?'Boy':null].filter(Boolean);
+ if(missingMeasures.length&& !confirm(missingMeasures.join(' ve ')+' ölçüsünü girmediniz. Yine de kaydetmek ister misiniz?')){
+  $('product-status-message').textContent='Eksik ölçüyü tamamlayıp tekrar kaydedebilirsiniz.';
+  (width===''?$('product-width'):$('product-height')).focus();return;
+ }
  const oldKey=key(active.category,active.index),old=products.get(oldKey);
  if(old&&['ready','delivered'].includes(old.status)){ $('product-status-message').textContent='Teslim alınmış ürün üretim bilgilerinde değişiklik yapılamaz.';return }
  const group=categories.find(c=>c.name===category);
