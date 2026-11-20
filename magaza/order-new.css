@@ -189,14 +189,3 @@
 
 /* Tüm kategorilerde ürün kutucuğunun özel satır notu */
 .slot-record-detail .slot-special-note{display:block;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:110px;overflow:auto;padding:5px 6px;border-radius:5px;background:rgba(255,255,255,.8);border:1px solid rgba(44,77,78,.14);font-size:10px;line-height:1.35;font-weight:600}
-
-/* Ürün kartlarında uzun özel notlar için geniş ve hizalı düzen. */
-.slot-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));align-items:stretch;gap:12px}
-.slot-grid .slot-record{min-width:0;width:100%;box-sizing:border-box;min-height:150px;border-radius:9px;padding:10px;overflow:hidden}
-.slot-grid .slot-record-detail{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0;flex:1}
-.slot-grid .slot-record-detail>*{min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
-.slot-grid .slot-special-note{box-sizing:border-box;width:100%;max-width:100%;min-height:0;max-height:115px;overflow-y:auto;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;line-height:1.45;padding:7px 8px}
-.slot-grid .slot-controls{margin-top:auto;flex-wrap:wrap;justify-content:flex-end}
-.slot-grid .slot-status{width:100%;box-sizing:border-box}
-@media(max-width:700px){.slot-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.slot-grid .slot-record{padding:8px}}
-@media(max-width:460px){.slot-grid{grid-template-columns:minmax(0,1fr)}.slot-grid .slot-record{min-height:135px}}
