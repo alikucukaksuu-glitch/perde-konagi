@@ -15,10 +15,10 @@ const rounded=(n)=>Math.round((Number(n)+Number.EPSILON)*100)/100;
 const priceFromBase=(base,pile)=>rounded(Number(base)*pileFactor(pile));
 const tulUnitPrice=(base,widthCm,pile)=>rounded((Number(widthCm)/100)*pileFactor(pile)*Number(base));
 const sunUnitPrice=(base,widthCm)=>rounded((Number(widthCm)/100)*Number(base));
-const sPileMetadata=spec=>{const t=String(spec||'');return {enabled:/(?:^|;\s*)S Pile:\s*Var(?:;|$)/i.test(t),rate:Number(t.match(/(?:^|;\s*)S Pile Ücreti:\s*(\d+(?:\.\d+)?)(?:;|$)/i)?.[1]||0)};};
-const stripSPileMetadata=spec=>String(spec||'').split(/;\s*/).filter(s=>!/^S Pile(?: Ücreti)?:/i.test(s)).join('; ').trim();
-function sPileSurcharge(widthCm){if(!(isTul()||isFon())||!$('s-pile-enabled').checked)return 0;return rounded(Math.max(0,Number(widthCm)||0)/100*(Number($('s-pile-rate').value)||0));}
-function syncSPileUI(){$('s-pile-options').hidden=!(isTul()||isFon());$('s-pile-rate').disabled=!$('s-pile-enabled').checked;}
+const sPileMetadata=spec=>{const t=String(spec||'');const legacy=/(?:^|;\s*)S Pile:\s*Var(?:;|$)/i.test(t);const type=t.match(/(?:^|;\s*)Dikim Türü:\s*([^;]+)(?:;|$)/i)?.[1]?.trim()||(legacy?'S Pile':'');return {enabled:!!type,type,rate:Number(t.match(/(?:^|;\s*)S Pile Ücreti:\s*(\d+(?:\.\d+)?)(?:;|$)/i)?.[1]||0)};};
+const stripSPileMetadata=spec=>String(spec||'').split(/;\s*/).filter(s=>!/^(?:S Pile(?: Ücreti)?|Dikim Türü):/i.test(s)).join('; ').trim();
+function sPileSurcharge(widthCm){if(!(isTul()||isFon())||!Boolean($('sewing-type').value))return 0;return rounded(Math.max(0,Number(widthCm)||0)/100*(Number($('s-pile-rate').value)||0));}
+function syncSPileUI(){$('s-pile-options').hidden=!(isTul()||isFon());$('s-pile-rate').disabled=!$('sewing-type').value;}
 const storCaseColors={open:[],classic:['Beyaz','Krem'],colored:['Gri','Antrasit','Kahve']};
 let catalogCache=[],catalogOrg=null,catalogRequest=null,manualPrice=false;
 function isStor(){return $('product-category').value==='STOR PERDE'}
@@ -277,7 +277,7 @@ function drawSlots(){
    details.append(newElement('strong','',record.name));
    details.append(newElement('small','',record.qty+' adet · '+(record.width||'—')+' × '+(record.height||'—')+' cm'));
    if(record.pile)details.append(newElement('small','',record.pile));
-   if(group.name==='TÜL PERDE'||group.name==='FON PERDE')details.append(newElement('small','', 'S Pile: '+(record.sPile?'Var':'Yok')));
+   if(group.name==='TÜL PERDE'||group.name==='FON PERDE')details.append(newElement('small','', 'Dikim Türü: '+(record.sewingType||(record.sPile?'S Pile':'Yok'))));
    if(record.note?.trim()){
     const noteLabel=newElement('small','slot-special-note','Özel Not: '+record.note.trim());
     noteLabel.title=record.note.trim();
@@ -374,7 +374,7 @@ function openItem(category,index){
  $('plise-mount').value=pliseMounts[0];$('plise-case-color').value=pliseCaseColors[0];
  $('wood-ribbon').checked=false;$('wood-mechanism').value='İpli';
  $('fon-wing-type').value='';syncFonSizes();
- $('s-pile-enabled').checked=!!value?.sPile;
+ $('sewing-type').value=value?.sewingType||(value?.sPile?'S Pile':'');
  $('s-pile-rate').value=value?.sPileRate??0;
  syncCategoryUI();
  syncSPileUI();
@@ -457,7 +457,7 @@ function calculateItemTotal(){
   const width=asNum($('product-width').value),p=pileControlSelect.value,factor=pileFactor(p);
   const baseUnit=width>0?tulUnitPrice(base,width,p):0,extra=sPileSurcharge(width),unit=rounded(baseUnit+extra);
   $('product-total').textContent=width>0?fmt(unit*qty):'—';
-  $('pile-price-hint').textContent=width>0?'Hesap: '+width+' cm ÷ 100 × '+String(factor).replace('.',',')+' (pile) × '+fmt(base)+' / metre + S Pile: '+fmt(extra)+' × '+qty+' adet = '+fmt(unit*qty):'Tül perde en ölçüsünü cm olarak girin; fiyat en (metre) × pile × metre fiyatıdır.';
+  $('pile-price-hint').textContent=width>0?'Hesap: '+width+' cm ÷ 100 × '+String(factor).replace('.',',')+' (pile) × '+fmt(base)+' / metre + Ek Dikim: '+fmt(extra)+' × '+qty+' adet = '+fmt(unit*qty):'Tül perde en ölçüsünü cm olarak girin; fiyat en (metre) × pile × metre fiyatıdır.';
  }else if(isSun()){
   const width=asNum($('product-width').value),unit=width>0?sunUnitPrice(base,width):0;
   $('product-total').textContent=width>0?fmt(unit*qty):'—';
@@ -465,7 +465,7 @@ function calculateItemTotal(){
  }else if(isFon()){
   const extra=sPileSurcharge($('product-width').value),unit=rounded(base+extra);
   $('product-total').textContent=fmt(unit*qty);
-  $('pile-price-hint').textContent='Hesap: ('+fmt(base)+' + S Pile '+fmt(extra)+') × '+qty+' adet = '+fmt(unit*qty)+' · Normal pile seçimi fiyatı değiştirmez.';
+  $('pile-price-hint').textContent='Hesap: ('+fmt(base)+' + Ek Dikim '+fmt(extra)+') × '+qty+' adet = '+fmt(unit*qty)+' · Normal pile seçimi fiyatı değiştirmez.';
  }else{
   const p=pileControlSelect.value,factor=pileFactor(p);
   $('product-total').textContent=fmt(priceFromBase(base,p)*qty);
@@ -480,7 +480,7 @@ function storeItem(e){
   $('product-status-message').textContent='Bu ürün seçili kategori kataloğunda kayıtlı değil. Önce + Hızlı Ürün Ekle ile kaydedin veya arama listesinden kayıtlı bir ürün seçin.';
   openQuickAdd();return;
  }
- if($('s-pile-enabled').checked&&(isTul()||isFon())&&(!Number.isFinite(Number($('s-pile-rate').value))||Number($('s-pile-rate').value)<0||$('s-pile-rate').value.trim()==='')){$('product-status-message').textContent='S Pile ücreti geçersiz.';return}
+ if(Boolean($('sewing-type').value)&&(isTul()||isFon())&&(!Number.isFinite(Number($('s-pile-rate').value))||Number($('s-pile-rate').value)<0||$('s-pile-rate').value.trim()==='')){$('product-status-message').textContent='Ek dikim ücreti geçersiz.';return}
  if(!waitingLine&&$('product-price').value.trim()===''){$('product-status-message').textContent='İşlemdeki ürün için birim fiyat girilmelidir.';return}
  if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(basePrice)||basePrice<0||!Number.isFinite(price)||price<0||price>99999999){$('product-status-message').textContent='Ürün adı, fiyatı veya adedi geçersiz.';return}
  if((width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))||(height!==''&&(!Number.isFinite(Number(height))||Number(height)<0))){$('product-status-message').textContent='En ve boy negatif olamaz.';return}
@@ -510,8 +510,8 @@ function storeItem(e){
  const wood=category==='AHŞAP JALUZİ'?woodConfiguration():null;
  const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):plise?['Montaj: '+plise.mount,'Kasa Rengi: '+plise.caseColor,width!==''?'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm':'',height!==''?'Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm':'',$('product-spec').value.trim()].filter(Boolean).join('; '):wood?['Kurdela: '+(wood.ribbon?'Var':'Yok'),'Mekanizma: '+wood.mechanism,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):category==='FON PERDE'?['Kanat Tipi: '+$('fon-wing-type').value,'Kanat Ölçüsü: '+$('fon-wing-size').value,$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
  const desiredStatus=$('product-status').value,transitionFromWaiting=!!old&&old.status==='waiting'&&desiredStatus==='processing';
- const sPile=(isTul()||isFon())&&$('s-pile-enabled').checked,sPileRate=sPile?Number($('s-pile-rate').value):0;
- const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,plise,wood,sPile,sPileRate,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:transitionFromWaiting?'processing':old?.status||(waitingLine?'waiting':'processing'),waitingReason:transitionFromWaiting?'':old?.waitingReason||(waitingLine?($('product-note').value.trim().slice(0,1500)||'Ürün bilgileri bekleniyor'):''),printedAt:old?.printedAt||null};
+ const sewingType=(isTul()||isFon())?$('sewing-type').value:'',sPile=!!sewingType,sPileRate=sPile?Number($('s-pile-rate').value):0;
+ const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,plise,wood,sPile,sewingType,sPileRate,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:transitionFromWaiting?'processing':old?.status||(waitingLine?'waiting':'processing'),waitingReason:transitionFromWaiting?'':old?.waitingReason||(waitingLine?($('product-note').value.trim().slice(0,1500)||'Ürün bilgileri bekleniyor'):''),printedAt:old?.printedAt||null};
  products.delete(oldKey);products.set(key(category,index),record);
  closeItem();drawSlots();
  if(transitionFromWaiting&&editing&&old?.id)submit();
@@ -682,7 +682,7 @@ async function loadQuoteForEdit(id,orgId){
    const legacyBase=Number(line.unit_price)/(line.category==='TÜL PERDE'&&Number(line.width_cm)>0?(Number(line.width_cm)/100)*pileFactor(parsedPile):line.category==='GÜNEŞLİK'&&Number(line.width_cm)>0?(Number(line.width_cm)/100):pileFactor(parsedPile));
    const basePrice=baseMatch?Number(baseMatch[1]):rounded(legacyBase);
    const detailedSpec=(specParts?.[2]||(!specParts?spec:''))?.replace(/(?:^|;\s*)Baz Fiyat:\s*\d+(?:\.\d+)?/,'').trim().replace(/^;\s*|;\s*$/g,'');
-   products.set(slotKey,{sPile:sPileMetadata(detailedSpec).enabled,sPileRate:sPileMetadata(detailedSpec).rate,id:line.id,barcode:line.barcode,name:line.product_name,qty:line.qty||1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:stripSPileMetadata(detailedSpec),plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,cancellationRequestedAt:line.cancellation_requested_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
+   products.set(slotKey,{sPile:sPileMetadata(detailedSpec).enabled,sewingType:sPileMetadata(detailedSpec).type,sPileRate:sPileMetadata(detailedSpec).rate,id:line.id,barcode:line.barcode,name:line.product_name,qty:line.qty||1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:stripSPileMetadata(detailedSpec),plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,cancellationRequestedAt:line.cancellation_requested_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
   }
 
   $('store-select').value=order.branch_id;
@@ -729,7 +729,7 @@ async function loadForEdit(orderId,orgId){
    const legacyBase=Number(line.unit_price)/pileFactor(parsedPile);
    const basePrice=baseMatch?Number(baseMatch[1]):rounded(legacyBase);
    const detailedSpec=(specParts?.[2]||(!specParts?spec:''))?.replace(/(?:^|;\s*)Baz Fiyat:\s*\d+(?:\.\d+)?/,'').trim().replace(/^;\s*|;\s*$/g,'');
-   products.set(slotKey,{sPile:sPileMetadata(detailedSpec).enabled,sPileRate:sPileMetadata(detailedSpec).rate,id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:stripSPileMetadata(detailedSpec),plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,cancellationRequestedAt:line.cancellation_requested_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
+   products.set(slotKey,{sPile:sPileMetadata(detailedSpec).enabled,sewingType:sPileMetadata(detailedSpec).type,sPileRate:sPileMetadata(detailedSpec).rate,id:line.id,barcode:line.barcode,name:line.product_name,qty:1,price:Number(line.unit_price),width:line.width_cm??'',height:line.height_cm??'',pile:parsedPile,basePrice,spec:stripSPileMetadata(detailedSpec),plise:line.category==='PLİSE PERDE'?parsePliseConfiguration(detailedSpec):null,wood:line.category==='AHŞAP JALUZİ'?parseWoodConfiguration(detailedSpec):null,status:line.status||'processing',waitingReason:line.waiting_reason||'',printedAt:line.printed_at||null,cancellationRequestedAt:line.cancellation_requested_at||null,note:spec?notes.split('\n').slice(1).join('\n'):notes});
   }
   $('store-select').value=order.branch_id;
   $('customer-name').value=order.customer_name;
@@ -762,7 +762,7 @@ async function submit(){
  if(!$('delivery-copy').value||!org||!branches.some(b=>b.id===$('store-select').value)){alertText('Teslim tarihini ve şubeyi kontrol edin.');return}
  const payload=[];
  for(const [slot,p] of products){
-  const category=slot.split('|')[0],spec=[p.pile&&'Pile: '+p.pile, 'Baz Fiyat: '+(p.basePrice??p.price),(category==='TÜL PERDE'||category==='FON PERDE')&&'S Pile: '+(p.sPile?'Var':'Yok'),p.sPile&&'S Pile Ücreti: '+(p.sPileRate||0),p.spec].filter(Boolean).join('; '),fullNote=[spec&&'Özellikler: '+spec,p.note].filter(Boolean).join('\n');
+  const category=slot.split('|')[0],spec=[p.pile&&'Pile: '+p.pile, 'Baz Fiyat: '+(p.basePrice??p.price),(category==='TÜL PERDE'||category==='FON PERDE')&&'Dikim Türü: '+(p.sewingType||(p.sPile?'S Pile':'Yok')),p.sPile&&'S Pile Ücreti: '+(p.sPileRate||0),p.spec].filter(Boolean).join('; '),fullNote=[spec&&'Özellikler: '+spec,p.note].filter(Boolean).join('\n');
   for(let i=0;i<p.qty;i++)payload.push({id:p.id||null,slot_key:key(category,Number(slot.split('|')[1]))+(p.qty>1?'-'+i:''),category,product_name:p.name,width_cm:p.width||null,height_cm:p.height||null,unit_price:p.price,production_note:fullNote,status:p.status==='waiting'?'waiting':'processing',waiting_reason:p.status==='waiting'?(p.waitingReason||'Ürün bilgileri bekleniyor'):null});
  }
  saving=true;$('submit-order').disabled=true;$('save-message').textContent=quoteMode?'Teklif kaydediliyor...':'Kaydediliyor...';
@@ -865,7 +865,7 @@ $('product-shade').onclick=$('close-product').onclick=closeItem;
  ['stor-chain','stor-side','stor-tube','stor-foot','stor-color','stor-hem'].forEach(id=>$(id).onchange=calculateItemTotal);
  $('stor-case').onchange=()=>{syncStorColor($('stor-case').value);calculateItemTotal()};
  $('fon-wing-type').onchange=()=>syncFonSizes();
- $('s-pile-enabled').onchange=()=>{syncSPileUI();calculateItemTotal()};
+ $('sewing-type').onchange=()=>{syncSPileUI();calculateItemTotal()};
  $('s-pile-rate').oninput=calculateItemTotal;
  $('quick-add-toggle').onclick=openQuickAdd;
  $('quick-add-cancel').onclick=closeQuickAdd;
