@@ -498,11 +498,11 @@ function storeItem(e){
  const plise=category==='PLİSE PERDE'?pliseConfiguration():null;
  const wood=category==='AHŞAP JALUZİ'?woodConfiguration():null;
  const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):plise?['Montaj: '+plise.mount,'Kasa Rengi: '+plise.caseColor,width!==''?'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm':'',height!==''?'Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm':'',$('product-spec').value.trim()].filter(Boolean).join('; '):wood?['Kurdela: '+(wood.ribbon?'Var':'Yok'),'Mekanizma: '+wood.mechanism,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):category==='FON PERDE'?['Kanat Tipi: '+$('fon-wing-type').value,'Kanat Ölçüsü: '+$('fon-wing-size').value,$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
- const desiredStatus=$('product-status').value,transitionFromWaiting=!!old?.id&&old.status==='waiting'&&desiredStatus==='processing';
+ const desiredStatus=$('product-status').value,transitionFromWaiting=!!old&&old.status==='waiting'&&desiredStatus==='processing';
  const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,plise,wood,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:transitionFromWaiting?'processing':old?.status||(waitingLine?'waiting':'processing'),waitingReason:transitionFromWaiting?'':old?.waitingReason||(waitingLine?($('product-note').value.trim().slice(0,1500)||'Ürün bilgileri bekleniyor'):''),printedAt:old?.printedAt||null};
  products.delete(oldKey);products.set(key(category,index),record);
  closeItem();drawSlots();
- if(transitionFromWaiting&&editing)submit();
+ if(transitionFromWaiting&&editing&&old?.id)submit();
 }
 function toggleCustomer(which){
  const existing=which==='existing';
