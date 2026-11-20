@@ -470,6 +470,7 @@ function storeItem(e){
   $('product-status-message').textContent='Bu ürün seçili kategori kataloğunda kayıtlı değil. Önce + Hızlı Ürün Ekle ile kaydedin veya arama listesinden kayıtlı bir ürün seçin.';
   openQuickAdd();return;
  }
+ if(!waitingLine&&$('product-price').value.trim()===''){$('product-status-message').textContent='İşlemdeki ürün için birim fiyat girilmelidir.';return}
  if(name.length<2||!Number.isInteger(qty)||qty<1||qty>20||!Number.isFinite(basePrice)||basePrice<0||!Number.isFinite(price)||price<0||price>99999999){$('product-status-message').textContent='Ürün adı, fiyatı veya adedi geçersiz.';return}
  if((width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))||(height!==''&&(!Number.isFinite(Number(height))||Number(height)<0))){$('product-status-message').textContent='En ve boy negatif olamaz.';return}
  if(!waitingLine&&category==='TÜL PERDE'&&(!Number.isFinite(Number(width))||Number(width)<=0)){$('product-status-message').textContent='Tül perde için en (cm) sıfırdan büyük olmalıdır.';return}
