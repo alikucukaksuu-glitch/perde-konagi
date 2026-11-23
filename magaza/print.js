@@ -124,7 +124,7 @@ function parseProductionInfo(note){
  const extra=parts.filter(part=>!/^(Pile|Baz Fiyat):\s*/i.test(part)).join('; ');
  const noteLines=prefix?lines.slice(1):lines;
  const cleanNote=noteLines.join('\n').replace(/(?:^|[;\n]\s*)Baz Fiyat:\s*[\d.,]+/gi,'').trim();
- return {pile,detail:[extra,cleanNote].filter(Boolean).join(' · '),field:label=>(parts.find(p=>p.startsWith(label+': '))||'').slice(label.length+2)};
+ return {pile,userNote:cleanNote,detail:[extra,cleanNote].filter(Boolean).join(' · '),field:label=>(parts.find(p=>p.startsWith(label+': '))||'').slice(label.length+2)};
 }
 // Keep production notes complete on paper. A long note gets a matching note-only
 // continuation sticker rather than being silently cropped by the 80x50mm QR label.
@@ -184,15 +184,40 @@ function makeLabel(item){
  split.append(left,right);box.append(split);
  const notes=el('div','qr-notes');
  txt(notes,'strong','','ÜRÜN / SİPARİŞ NOTU');
- const noteText=[details.detail&&'Ürün: '+details.detail,order.customer_note&&'Sipariş: '+order.customer_note].filter(Boolean).join('\n');
+ const visibleNote=(item.category==='TÜL PERDE'||item.category==='FON PERDE')?details.userNote:details.detail;
+ const noteText=[visibleNote&&'Ürün: '+visibleNote,order.customer_note&&'Sipariş: '+order.customer_note].filter(Boolean).join('\n');
  txt(notes,'p','',noteText||'—');
- if(details.detail||order.customer_note)notes.classList.add('has-note');
+ if(visibleNote||order.customer_note)notes.classList.add('has-note');
  if(noteText.length>170)box.classList.add('qr-long-note');
  else if(noteText.length>85)box.classList.add('qr-medium-note');
  box.append(notes);
  return box;
 }
 
+// Fit the real label content to its fixed paper size. Never print clipped notes.
+function fitPrintLabels(){
+ let allFit=true;
+ for(const label of document.querySelectorAll('.label-mode .qr-label')){
+  const note=label.querySelector('.qr-notes p');
+  if(!note)continue;
+  note.style.fontSize='';
+  const boundary=()=>label.getBoundingClientRect().bottom-5;
+  let current=parseFloat(getComputedStyle(note).fontSize)||8;
+  while(note.getBoundingClientRect().bottom>boundary()&&current>5.5){
+   current=Math.max(5.5,current-.4);
+   note.style.setProperty('font-size',current+'px','important');
+  }
+  if(note.getBoundingClientRect().bottom>boundary()+1)allFit=false;
+ }
+ return allFit;
+}
+function verifyLabelFitBeforePrint(){
+ if(!fitPrintLabels()){
+  alert('Üretim notu 80 × 50 mm etikete sığmıyor. Bilgiler kesilmesin diye baskı durduruldu. Ürün notunu kısaltıp yeniden deneyin.');
+  return false;
+ }
+ return true;
+}
 function customerPhoneDigits(value){
  let digits=String(value||'').replace(/\D/g,'');
  if(digits.length===10&&digits.startsWith('5'))digits='90'+digits;
@@ -375,6 +400,7 @@ async function startBulk(){
   $('print-btn').disabled=false;
   $('print-btn').onclick=async()=>{
    $('print-btn').disabled=true;
+   if(!verifyLabelFitBeforePrint()){ $('print-btn').disabled=false;return; }
    window.print();
    let ok=0;const failures=[];
    for(const group of eligible){
@@ -458,7 +484,8 @@ async function start(){
    $('print-btn').disabled=false;
    if(error){$('warning').textContent='Yeniden baskı kaydı oluşturulamadı: '+error.message;return}
   }
-  window.print();
+  if(!verifyLabelFitBeforePrint()){ $('print-btn').disabled=false;return; }
+   window.print();
   if(mode==='label'&&!reprint){
    $('print-btn').disabled=true;
    try{
