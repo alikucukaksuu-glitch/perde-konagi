@@ -126,6 +126,41 @@ function parseProductionInfo(note){
  const cleanNote=noteLines.join('\n').replace(/(?:^|[;\n]\s*)Baz Fiyat:\s*[\d.,]+/gi,'').trim();
  return {pile,detail:[extra,cleanNote].filter(Boolean).join(' · '),field:label=>(parts.find(p=>p.startsWith(label+': '))||'').slice(label.length+2)};
 }
+// Keep production notes complete on paper. A long note gets a matching note-only
+// continuation sticker rather than being silently cropped by the 80x50mm QR label.
+function fullLabelNote(item){
+ const details=parseProductionInfo(item.production_note);
+ return [details.detail&&'Ürün: '+details.detail,order.customer_note&&'Sipariş: '+order.customer_note].filter(Boolean).join('\n');
+}
+function noteChunks(source,maxLength=170){
+ const output=[];let text=String(source||'').trim();
+ while(text.length>maxLength){
+  let boundary=text.lastIndexOf(' ',maxLength);
+  if(boundary<Math.floor(maxLength*.55))boundary=maxLength;
+  output.push(text.slice(0,boundary).trim());text=text.slice(boundary).trimStart();
+ }
+ if(text)output.push(text);
+ return output;
+}
+function makeNoteContinuation(item,part,index,total){
+ const box=el('article','thermal-label qr-label note-continuation');
+ txt(box,'strong','note-continuation-title','ÜRETİM NOTU · DEVAM '+index+'/'+total);
+ txt(box,'div','note-continuation-meta','#'+order.order_number+' · '+(order.customer_name||'—'));
+ txt(box,'div','note-continuation-product',item.product_name+' · '+(item.width_cm??'—')+' × '+(item.height_cm??'—')+' cm');
+ txt(box,'p','note-continuation-body',part);
+ return box;
+}
+function appendLabelWithNotes(target,item){
+ const text=fullLabelNote(item);
+ const chunks=noteChunks(text);
+ const main=makeLabel(item);
+ if(chunks.length>1){
+  const p=main.querySelector('.qr-notes p');
+  if(p)p.textContent='Üretim notunun tamamı arkasındaki '+chunks.length+' devam etiketinde.';
+ }
+ target.append(main);
+ if(chunks.length>1)chunks.forEach((part,index)=>target.append(makeNoteContinuation(item,part,index+1,chunks.length)));
+}
 function makeLabel(item){
  const box=el('article','thermal-label qr-label');
  const details=parseProductionInfo(item.production_note);
@@ -285,7 +320,7 @@ function addLabels(){
  const sheet=document.createElement('style');sheet.textContent='@media print{@page{size:80mm 50mm;margin:0}}';document.head.append(sheet);
  const page=$('page');page.replaceChildren();
  const labels=items.filter(i=>i.status!=='cancelled');
- for(const item of labels)page.append(makeLabel(item));
+ for(const item of labels)appendLabelWithNotes(page,item);
  if(!labels.length)fail('Yazdırılacak etkin ürün bulunamadı');
 }
 
@@ -354,7 +389,7 @@ async function startBulk(){
   const page=$('page');page.replaceChildren();
   for(const group of eligible){
    order=group.order;branch=group.branch;
-   for(const item of group.items)page.append(makeLabel(item));
+   for(const item of group.items)appendLabelWithNotes(page,item);
   }
   if($('warning').textContent&&$('warning').textContent.includes('QR oluşturulamadı'))return;
   $('warning').textContent=eligible.length+' sipariş, '+all.length+' etiket baskıya hazır.'+
@@ -363,7 +398,7 @@ async function startBulk(){
   const flow=$('label-flow');flow.hidden=false;
   flow.querySelector('h2').textContent='Toplu Baskı Akışı';
   flow.querySelector('#label-order-no').textContent=String(eligible.length)+' sipariş';
-  flow.querySelector('#label-count').textContent=String(all.length);
+  flow.querySelector('#label-count').textContent=String(page.querySelectorAll('.qr-label').length);
   $('print-btn').disabled=false;
   $('print-btn').onclick=async()=>{
    $('print-btn').disabled=true;
@@ -431,7 +466,7 @@ async function start(){
   if($('warning').textContent)return;
   $('print-hint').textContent=reprint?'Yönetici yeniden baskısıdır. Sipariş ve üretim durumu değişmez. Baskı gerekçesi işlem geçmişine kaydedilir.':'Yazdır düğmesine basınca baskı penceresi açılır; işlem sonrasında sipariş doğrudan Atölyede durumuna alınır. Yazıcıdan çıktıyı kontrol edin.';
   const flow=$('label-flow');
-  if(flow){flow.hidden=false;flow.querySelector('#label-order-no').textContent='#'+order.order_number;flow.querySelector('#label-count').textContent=String(items.filter(i=>i.status!=='cancelled').length);}
+  if(flow){flow.hidden=false;flow.querySelector('#label-order-no').textContent='#'+order.order_number;flow.querySelector('#label-count').textContent=String(page.querySelectorAll('.qr-label').length);}
  }else{
   addA4();$('print-hint').textContent='A4 müşteri formu. Üretim barkodlarını ayrıca Barkod Yazdır üzerinden alın.';
   $('pdf-btn').hidden=false;$('customer-whatsapp-btn').hidden=false;
