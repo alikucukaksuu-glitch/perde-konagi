@@ -470,7 +470,7 @@ function handlers(){
 
  $('filter-search').oninput=render;$('filter-branch').onchange=render;$('filter-payment').onchange=render;
  $('status-filters').onclick=e=>{const b=e.target.closest('button[data-status]');if(!b)return;filterStatus=b.dataset.status;document.querySelectorAll('#status-filters button').forEach(x=>x.classList.toggle('active',x===b));render()};
- $('new-order').onclick=()=>{location.href='./order-new.html?org='+encodeURIComponent(org)+'&v=fon-fixed-price-20261118'};$('close-editor').onclick=$('cancel-editor').onclick=()=>$('order-editor').hidden=true;
+ $('new-order').onclick=()=>{location.href='./order-new.html?org='+encodeURIComponent(org)+'&v=manager-workflow-20261123'};$('close-editor').onclick=$('cancel-editor').onclick=()=>$('order-editor').hidden=true;
  $('close-detail').onclick=()=>$('order-detail').hidden=true;
  $('add-item').onclick=addLine;
  $('order-form').onsubmit=saveOrder;
@@ -516,7 +516,7 @@ $('orders-list').onclick=e=>{
  const resume=e.target.closest('[data-resume]');
  if(resume){setWaiting(resume.dataset.resume,'resume');return;}
  const whatsappOrder=e.target.closest('[data-whatsapp-order]');
- if(whatsappOrder){location.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(whatsappOrder.dataset.whatsappOrder)+'&whatsapp=1';return;}
+ if(whatsappOrder){location.href='./order-new.html?org='+encodeURIComponent(org)+'&v=manager-workflow-20261123&edit='+encodeURIComponent(whatsappOrder.dataset.whatsappOrder)+'&whatsapp=1';return;}
  const printA4=e.target.closest('[data-print-a4]');if(printA4){openPrint(printA4.dataset.printA4,'a4');return;}
  const printLabel=e.target.closest('[data-print-label]');if(printLabel){openPrint(printLabel.dataset.printLabel,'label');return;}
  const payment=e.target.closest('[data-payment]');if(payment){addPayment(payment.dataset.payment);return;}
@@ -526,7 +526,7 @@ $('orders-list').onclick=e=>{
  const approveButton=e.target.closest('[data-approve-cancel]');if(approveButton){decideItemCancellation(approveButton.dataset.approveCancel,true);return;}
  const rejectButton=e.target.closest('[data-reject-cancel]');if(rejectButton){decideItemCancellation(rejectButton.dataset.rejectCancel,false);return;}
  const deletion=e.target.closest('[data-delete]');if(deletion){archiveOrder(deletion.dataset.delete);return;}
- const expand=e.target.closest('[data-expand]');if(expand){const id=expand.dataset.expand;if(expandedOrders.has(id))expandedOrders.delete(id);else expandedOrders.add(id);render();if(expandedOrders.has(id))loadHistory(id);return}const edit=e.target.closest('[data-edit]');if(edit){location.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(edit.dataset.edit);return}const button=e.target.closest('[data-detail]');if(button)openDetail(button.dataset.detail)};
+ const expand=e.target.closest('[data-expand]');if(expand){const id=expand.dataset.expand;if(expandedOrders.has(id))expandedOrders.delete(id);else expandedOrders.add(id);render();if(expandedOrders.has(id))loadHistory(id);return}const edit=e.target.closest('[data-edit]');if(edit){location.href='./order-new.html?org='+encodeURIComponent(org)+'&v=manager-workflow-20261123&edit='+encodeURIComponent(edit.dataset.edit);return}const button=e.target.closest('[data-detail]');if(button)openDetail(button.dataset.detail)};
  $('payment-form').onsubmit=savePayment;
  $('payment-close').onclick=$('payment-cancel').onclick=closePayment;
  $('payment-modal').addEventListener('click',e=>{if(e.target===$('payment-modal'))closePayment()});
