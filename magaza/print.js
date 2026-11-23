@@ -396,9 +396,15 @@ async function startBulk(){
   if($('warning').textContent&&$('warning').textContent.includes('QR oluşturulamadı'))return;
   $('warning').textContent=(bulkReprint?'YENİDEN BASKI · ':'İLK BASKI · ')+eligible.length+' sipariş, '+all.length+' etiket baskıya hazır.'+
    (excluded.length?' '+excluded.length+' sipariş ürün durumları nedeniyle hariç tutuldu.':'');
-  $('print-hint').textContent=bulkReprint?'Yönetici yeniden baskısı. Seçili İşlemde ürünler için yeniden etiket basılır; mevcut durum ve önceki baskı kayıtları değişmez.':'İlk baskı: Yazdır ile seçili ürünler Atölyeye geçirilir. Önceden basılmış ürünler hariç tutulur.';
+  $('print-hint').textContent=bulkReprint?'Yönetici yeniden baskısı: Yazdır sonrası seçilen İşlemde ürünler Atölyede durumuna alınır. Önceki baskı geçmişi korunur.':'İlk baskı: Yazdır ile seçili ürünler Atölyeye geçirilir. Önceden basılmış ürünler hariç tutulur.';
   const flow=$('label-flow');flow.hidden=false;
-  flow.querySelector('h2').textContent='Toplu Baskı Akışı';
+  flow.querySelector('h2').textContent=bulkReprint?'Toplu Yeniden Baskı Akışı':'Toplu Baskı Akışı';
+  if(bulkReprint){
+   const rules=flow.querySelector('ol');
+   if(rules)rules.innerHTML='<li>1 · Yeniden Yazdır → Seçilen ürünler Atölyede</li><li>2 · Mağazada Okut → Teslime Hazır</li>';
+   const description=flow.querySelector('ol + p');
+   if(description)description.textContent='Yönetici yeniden baskısında İşlemde ürünler Atölyeye aktarılır. Eski baskı kayıtları korunur.';
+  }
   flow.querySelector('#label-order-no').textContent=String(eligible.length)+' sipariş';
   flow.querySelector('#label-count').textContent=String($('page').querySelectorAll('.qr-label').length);
   $('print-btn').disabled=false;
@@ -419,11 +425,11 @@ async function startBulk(){
     else ok++;
    }
    if(failures.length){
-    $('warning').textContent=ok+(bulkReprint?' siparişin yeniden baskısı kaydedildi; ':' siparişin seçili ürünleri Atölyeye geçirildi; ')+failures.length+' sipariş güncellenemedi. '+failures.slice(0,4).join(' | ')+'. Sayfayı yenileyerek kalanları kontrol edin.';
+    $('warning').textContent=ok+(bulkReprint?' siparişin yeniden baskısı kaydedildi ve ürünler Atölyeye alındı; ':' siparişin seçili ürünleri Atölyeye geçirildi; ')+failures.length+' sipariş güncellenemedi. '+failures.slice(0,4).join(' | ')+'. Sayfayı yenileyerek kalanları kontrol edin.';
     $('print-hint').textContent='Tekrar baskıya geçmeden önce güncellenmeyen ürünleri kontrol edin. Onaylanan etiketler toplu baskıya yeniden alınmaz.';
    }else{
-    $('warning').textContent=bulkReprint?ok+' siparişin yeniden baskı kaydı oluşturuldu. Ürün durumları değiştirilmedi.':ok+' siparişin seçili ürünlerinin etiket baskısı onaylandı. Bekleyen ürünler yerinde kaldı.';
-    $('print-hint').textContent=bulkReprint?'Yeniden baskı tamamlandı; önceki baskı ve aşama kayıtları korundu.':'Toplu baskı tamamlandı. Siparişler sayfasına dönebilirsiniz.';
+    $('warning').textContent=bulkReprint?ok+' siparişin yeniden basılan ürünleri Atölyede durumuna alındı. Eski baskı kayıtları korundu.':ok+' siparişin seçili ürünlerinin etiket baskısı onaylandı. Bekleyen ürünler yerinde kaldı.';
+    $('print-hint').textContent=bulkReprint?'Yeniden baskı tamamlandı. Seçili ürünler Atölyede; eski baskı geçmişi korundu.':'Toplu baskı tamamlandı. Siparişler sayfasına dönebilirsiniz.';
    }
   };
  }catch(e){fail('Toplu baskı hazırlanamadı: '+e.message)}
