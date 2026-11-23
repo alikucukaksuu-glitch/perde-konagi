@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY),$=id=>document.getElementById(id);
-const q=new URLSearchParams(location.search),id=q.get('id'),orgId=q.get('org'),mode=q.get('type')==='bulk'?'bulk':q.get('type')==='label'?'label':'a4',reprint=q.get('reprint')==='1';
+const q=new URLSearchParams(location.search),id=q.get('id'),orgId=q.get('org'),mode=q.get('type')==='bulk'?'bulk':q.get('type')==='label'?'label':'a4',reprint=q.get('reprint')==='1',bulkReprint=mode==='bulk'&&q.get('bulk_reprint')==='1';
 let order=null,company=null,branch=null,allBranches=[],items=[];
 const fmt=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(n)||0);
 const date=s=>s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString('tr-TR'):'—';
@@ -335,7 +335,9 @@ async function bulkSelect(table,columns,apply){
  throw Error('Çok sayıda sipariş var; toplu yazdırma sınırı aşıldı.');
 }
 async function startBulk(){
- $('print-title').textContent='İşlemdeki Siparişlerin Üretim Etiketleri';
+ $('print-title').textContent=bulkReprint?'İşlemdeki Ürünler · Yeniden Barkod Baskısı':'İşlemdeki Siparişlerin Üretim Etiketleri';
+ const switcher=$('bulk-reprint-toggle');
+ if(switcher){switcher.hidden=false;switcher.textContent=bulkReprint?'İlk Baskı Etiketlerine Dön':'Önceden Basılanları Yeniden Yazdır';switcher.onclick=()=>{const url=new URL(location.href);if(bulkReprint)url.searchParams.delete('bulk_reprint');else url.searchParams.set('bulk_reprint','1');location.href=url.toString();};}
  $('print-btn').disabled=true;
  if(!sb||!orgId){fail('İşletme bilgisi eksik.');return}
  const {data:session,error:sessionError}=await sb.auth.getUser();
@@ -345,12 +347,12 @@ async function startBulk(){
   if(membershipError||!['owner','manager'].includes(membership?.role)){fail('Üretim etiketi yazdırma yalnızca yönetici yetkisiyle yapılabilir.');return}
   const [orders,branchList,{data:organization,error:companyError}]=await Promise.all([
    bulkSelect('erp_orders','id,organization_id,branch_id,order_number,customer_name,customer_note,status,barcode_printed_at,created_at',
-    query=>query.eq('organization_id',orgId).in('status',['processing','new','partial_waiting','partial_ready']).is('barcode_printed_at',null).order('created_at',{ascending:true})),
+    query=>query.eq('organization_id',orgId).in('status',['processing','new','partial_waiting','partial_ready']).order('created_at',{ascending:true})),
    bulkSelect('erp_branches','id,name',query=>query.eq('organization_id',orgId)),
    sb.from('erp_organizations').select('id,name,logo_url').eq('id',orgId).single()
   ]);
   if(companyError)throw companyError;
-  if(!orders.length){fail('Yazdırılmamış İşlemde ürünü bulunan sipariş bulunamadı.');return}
+  if(!orders.length){fail('Baskıya uygun aktif sipariş bulunamadı.');return}
   company=organization;
   const orderIds=orders.map(o=>o.id),allItems=[];
   for(let start=0;start<orderIds.length;start+=100){
@@ -367,13 +369,13 @@ async function startBulk(){
   const byBranch=new Map(branchList.map(b=>[b.id,b]));
   const eligible=[],excluded=[];
   for(const o of orders){
-   const group=byOrder.get(o.id)||[],active=group.filter(i=>i.status==='processing'&&!i.printed_at&&!isAccessoryItem(i));
+   const group=byOrder.get(o.id)||[],active=group.filter(i=>i.status==='processing'&&(bulkReprint?!!i.printed_at:!i.printed_at)&&!isAccessoryItem(i));
    if(!active.length||!byBranch.has(o.branch_id)){
     excluded.push('#'+o.order_number);continue;
    }
    eligible.push({order:o,branch:byBranch.get(o.branch_id),items:active});
   }
-  if(!eligible.length){fail('Toplu baskıya uygun İşlemde ürünü bulunamadı. Durumları kontrol edin.');return}
+  if(!eligible.length){fail(bulkReprint?'Önceden etiket basılmış ve hâlen İşlemde olan ürün bulunamadı.':'İlk baskıya uygun yazdırılmamış İşlemde ürünü bulunamadı. Önceden basılanlar için Yeniden Yazdır seçeneğini kullanın.');return}
   // Tokens remain stable per item, so scanning the printed label still uses the existing receive workflow.
   const all=eligible.flatMap(e=>e.items);
   for(let start=0;start<all.length;start+=10){
@@ -392,9 +394,9 @@ async function startBulk(){
    for(const item of group.items)appendLabelWithNotes(page,item);
   }
   if($('warning').textContent&&$('warning').textContent.includes('QR oluşturulamadı'))return;
-  $('warning').textContent=eligible.length+' sipariş, '+all.length+' etiket baskıya hazır.'+
+  $('warning').textContent=(bulkReprint?'YENİDEN BASKI · ':'İLK BASKI · ')+eligible.length+' sipariş, '+all.length+' etiket baskıya hazır.'+
    (excluded.length?' '+excluded.length+' sipariş ürün durumları nedeniyle hariç tutuldu.':'');
-  $('print-hint').textContent='Yazdır ile baskı penceresi açılır ve seçili ürünler doğrudan Atölyeye geçirilir. Yazıcı işlemini tamamladığınızı kontrol edin.';
+  $('print-hint').textContent=bulkReprint?'Yönetici yeniden baskısı. Seçili İşlemde ürünler için yeniden etiket basılır; mevcut durum ve önceki baskı kayıtları değişmez.':'İlk baskı: Yazdır ile seçili ürünler Atölyeye geçirilir. Önceden basılmış ürünler hariç tutulur.';
   const flow=$('label-flow');flow.hidden=false;
   flow.querySelector('h2').textContent='Toplu Baskı Akışı';
   flow.querySelector('#label-order-no').textContent=String(eligible.length)+' sipariş';
@@ -402,20 +404,26 @@ async function startBulk(){
   $('print-btn').disabled=false;
   $('print-btn').onclick=async()=>{
    $('print-btn').disabled=true;
+   let reprintReason=null;
+   if(bulkReprint){
+    reprintReason=prompt('Toplu yeniden baskı nedeni (en az 5 karakter):','Üretim etiketi yeniden gerekli');
+    if(reprintReason===null){$('print-btn').disabled=false;return}
+    if(reprintReason.trim().length<5||reprintReason.trim().length>250){$('warning').textContent='Yeniden baskı nedeni 5-250 karakter olmalı';$('print-btn').disabled=false;return}
+   }
    if(!verifyLabelFitBeforePrint()){ $('print-btn').disabled=false;return; }
    window.print();
    let ok=0;const failures=[];
    for(const group of eligible){
-    const {error}=await sb.rpc('erp_mark_selected_items_printed',{p_org:orgId,p_order:group.order.id,p_items:group.items.map(item=>item.id)});
+    const {error}=bulkReprint?await sb.rpc('erp_log_selected_label_reprint',{p_org:orgId,p_order:group.order.id,p_items:group.items.map(item=>item.id),p_reason:reprintReason.trim()}):await sb.rpc('erp_mark_selected_items_printed',{p_org:orgId,p_order:group.order.id,p_items:group.items.map(item=>item.id)});
     if(error)failures.push('#'+group.order.order_number+': '+error.message);
     else ok++;
    }
    if(failures.length){
-    $('warning').textContent=ok+' siparişin seçili ürünleri Atölyeye geçirildi; '+failures.length+' sipariş güncellenemedi. '+failures.slice(0,4).join(' | ')+'. Sayfayı yenileyerek kalanları kontrol edin.';
+    $('warning').textContent=ok+(bulkReprint?' siparişin yeniden baskısı kaydedildi; ':' siparişin seçili ürünleri Atölyeye geçirildi; ')+failures.length+' sipariş güncellenemedi. '+failures.slice(0,4).join(' | ')+'. Sayfayı yenileyerek kalanları kontrol edin.';
     $('print-hint').textContent='Tekrar baskıya geçmeden önce güncellenmeyen ürünleri kontrol edin. Onaylanan etiketler toplu baskıya yeniden alınmaz.';
    }else{
-    $('warning').textContent=ok+' siparişin seçili ürünlerinin etiket baskısı onaylandı. Bekleyen ürünler yerinde kaldı.';
-    $('print-hint').textContent='Toplu baskı tamamlandı. Siparişler sayfasına dönebilirsiniz.';
+    $('warning').textContent=bulkReprint?ok+' siparişin yeniden baskı kaydı oluşturuldu. Ürün durumları değiştirilmedi.':ok+' siparişin seçili ürünlerinin etiket baskısı onaylandı. Bekleyen ürünler yerinde kaldı.';
+    $('print-hint').textContent=bulkReprint?'Yeniden baskı tamamlandı; önceki baskı ve aşama kayıtları korundu.':'Toplu baskı tamamlandı. Siparişler sayfasına dönebilirsiniz.';
    }
   };
  }catch(e){fail('Toplu baskı hazırlanamadı: '+e.message)}
