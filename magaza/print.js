@@ -183,11 +183,11 @@ function makeLabel(item){
  }catch(e){fail('QR oluşturulamadı: '+e.message)}
  split.append(left,right);box.append(split);
  const notes=el('div','qr-notes');
- txt(notes,'strong','','ÜRÜN / SİPARİŞ NOTU');
+ txt(notes,'strong','','ÜRÜN NOTU');
  const visibleNote=(item.category==='TÜL PERDE'||item.category==='FON PERDE')?details.userNote:details.detail;
- const noteText=[visibleNote&&'Ürün: '+visibleNote,order.customer_note&&'Sipariş: '+order.customer_note].filter(Boolean).join('\n');
+ const noteText=visibleNote||'';
  txt(notes,'p','',noteText||'—');
- if(visibleNote||order.customer_note)notes.classList.add('has-note');
+ if(visibleNote)notes.classList.add('has-note');
  if(noteText.length>170)box.classList.add('qr-long-note');
  else if(noteText.length>85)box.classList.add('qr-medium-note');
  box.append(notes);
