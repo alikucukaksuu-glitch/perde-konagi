@@ -7,6 +7,13 @@ const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const titles={new:'İşlemde',processing:'İşlemde',waiting:'Beklemede',partial_waiting:'Kısmi Beklemede',workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',delivered:'Teslim Edildi',cancelled:'Silinen',voided:'İptal Edildi'};
 let user=null,organizations=[],branches=[],orders=[],items=[],refunds=[],org='',filterStatus='',lineSeq=0,expandedOrders=new Set(),memberRole='staff';
+function refreshBulkPrintPermission(){
+ const button=$('bulk-print-labels');
+ if(!button)return;
+ const allowed=!!user&&!!org&&['owner','manager'].includes(memberRole);
+ button.disabled=!allowed;
+ button.title=allowed?'':'Etiket yazdırma yalnızca yönetici yetkisiyle yapılabilir';
+}
 function show(id){['auth-panel','setup-panel','erp-panel','initial-loading'].forEach(n=>$(n).hidden=n!==id)}
 function msg(id,message){$(id).textContent=message||''}
 function dateTR(s){return s?new Date(s.length===10?s+'T12:00:00':s).toLocaleDateString('tr-TR'):'Belirtilmedi'}
@@ -35,6 +42,7 @@ async function initialize(){
   const requestedOrg=new URLSearchParams(location.search).get('org');
   org=organizations.some(o=>o.id===requestedOrg)?requestedOrg:(valid?org:organizations[0].id);
   memberRole=window.__erpMembers.find(m=>m.organization_id===org)?.role||'staff';
+  refreshBulkPrintPermission();
   $('organization-select').replaceChildren();
   organizations.forEach(o=>{const opt=new Option(o.name,o.id);$('organization-select').add(opt)});
   $('organization-select').value=org;
@@ -43,7 +51,7 @@ async function initialize(){
   const params=new URLSearchParams(location.search);
   if(params.get('scan')==='1'){
    const requestedOrg=params.get('org');
-   if(requestedOrg&&organizations.some(o=>o.id===requestedOrg)&&org!==requestedOrg){org=requestedOrg;memberRole=window.__erpMembers.find(m=>m.organization_id===org)?.role||'staff';$('organization-select').value=org;await load()}
+   if(requestedOrg&&organizations.some(o=>o.id===requestedOrg)&&org!==requestedOrg){org=requestedOrg;memberRole=window.__erpMembers.find(m=>m.organization_id===org)?.role||'staff';refreshBulkPrintPermission();$('organization-select').value=org;await load()}
    history.replaceState(null,'',location.pathname);
    await openQr();
    if(params.get('received')==='1')qrMessage('Önceki ürün mağazaya kabul edildi. Sıradaki QR kodunu okutun.');
@@ -438,13 +446,12 @@ async function openQr(){
 }
 function handlers(){
  $('login-form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget);msg('login-message','Giriş yapılıyor...');const {error}=await sb.auth.signInWithPassword({email:f.get('email'),password:f.get('password')});if(error)msg('login-message',error.message);else{msg('login-message','');await initialize()}};
- $('logout').onclick=async()=>{await sb.auth.signOut();user=null;org='';$('logout').hidden=true;$('session-user').textContent='';show('auth-panel')};
+ $('logout').onclick=async()=>{await sb.auth.signOut();user=null;org='';memberRole='staff';refreshBulkPrintPermission();$('logout').hidden=true;$('session-user').textContent='';show('auth-panel')};
  $('setup-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,f=new FormData(form);msg('setup-message','İşletme oluşturuluyor...');const {error}=await sb.rpc('erp_create_organization',{p_name:f.get('organization'),p_branch:f.get('branch')});if(error)msg('setup-message','Oluşturulamadı: '+error.message);else{msg('setup-message','');await initialize()}};
- $('organization-select').onchange=async e=>{org=e.target.value;memberRole=window.__erpMembers?.find(m=>m.organization_id===org)?.role||'staff';if(window.parent!==window)window.parent.postMessage({type:'konak-erp-org-changed',org},location.origin);await load()};
+ $('organization-select').onchange=async e=>{org=e.target.value;memberRole=window.__erpMembers?.find(m=>m.organization_id===org)?.role||'staff';refreshBulkPrintPermission();if(window.parent!==window)window.parent.postMessage({type:'konak-erp-org-changed',org},location.origin);await load()};
  $('refresh').onclick=load;
  $('scan-qr').onclick=openQr;
- $('bulk-print-labels').disabled=!['owner','manager'].includes(memberRole);
- $('bulk-print-labels').title=$('bulk-print-labels').disabled?'Etiket yazdırma yalnızca yönetici yetkisiyle yapılabilir':'';
+ refreshBulkPrintPermission();
  $('bulk-print-labels').onclick=()=>{
   if(!['owner','manager'].includes(memberRole)){msg('orders-message','Üretim etiketi yalnızca yöneticiler tarafından yazdırılabilir.');return;}
   if(!org||!user){msg('orders-message','Önce işletme hesabıyla giriş yapın.');return}
