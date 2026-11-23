@@ -128,39 +128,9 @@ function parseProductionInfo(note){
 }
 // Keep production notes complete on paper. A long note gets a matching note-only
 // continuation sticker rather than being silently cropped by the 80x50mm QR label.
-function fullLabelNote(item){
- const details=parseProductionInfo(item.production_note);
- return [details.detail&&'Ürün: '+details.detail,order.customer_note&&'Sipariş: '+order.customer_note].filter(Boolean).join('\n');
-}
-function noteChunks(source,maxLength=170){
- const output=[];let text=String(source||'').trim();
- while(text.length>maxLength){
-  let boundary=text.lastIndexOf(' ',maxLength);
-  if(boundary<Math.floor(maxLength*.55))boundary=maxLength;
-  output.push(text.slice(0,boundary).trim());text=text.slice(boundary).trimStart();
- }
- if(text)output.push(text);
- return output;
-}
-function makeNoteContinuation(item,part,index,total){
- const box=el('article','thermal-label qr-label note-continuation');
- txt(box,'strong','note-continuation-title','ÜRETİM NOTU · DEVAM '+index+'/'+total);
- txt(box,'div','note-continuation-meta','#'+order.order_number+' · '+(order.customer_name||'—'));
- txt(box,'div','note-continuation-product',item.product_name+' · '+(item.width_cm??'—')+' × '+(item.height_cm??'—')+' cm');
- txt(box,'p','note-continuation-body',part);
- return box;
-}
+// Always render exactly one physical 80x50mm label per product.
 function appendLabelWithNotes(target,item){
- const text=fullLabelNote(item);
- const needsContinuation=text.length>75;
- const chunks=needsContinuation?noteChunks(text,170):[];
- const main=makeLabel(item);
- if(needsContinuation){
-  const p=main.querySelector('.qr-notes p');
-  if(p)p.textContent='Üretim notunun tamamı arkasındaki '+chunks.length+' devam etiketinde.';
- }
- target.append(main);
- if(needsContinuation)chunks.forEach((part,index)=>target.append(makeNoteContinuation(item,part,index+1,chunks.length)));
+ target.append(makeLabel(item));
 }
 function makeLabel(item){
  const box=el('article','thermal-label qr-label');
@@ -217,6 +187,8 @@ function makeLabel(item){
  const noteText=[details.detail&&'Ürün: '+details.detail,order.customer_note&&'Sipariş: '+order.customer_note].filter(Boolean).join('\n');
  txt(notes,'p','',noteText||'—');
  if(details.detail||order.customer_note)notes.classList.add('has-note');
+ if(noteText.length>170)box.classList.add('qr-long-note');
+ else if(noteText.length>85)box.classList.add('qr-medium-note');
  box.append(notes);
  return box;
 }
