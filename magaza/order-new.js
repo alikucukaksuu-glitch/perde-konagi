@@ -113,14 +113,17 @@ function syncStorColor(value){
 }
 const pileControlRow=document.getElementById('pile-selection-row');
 const pileControlSelect=document.getElementById('product-pile');
+function isAccessory(){return $('product-category').value==='AKSESUAR';}
 function syncProductRequiredFields(){
- const waiting=$('product-status').value==='waiting';
+ const waiting=!isAccessory()&&$('product-status').value==='waiting';
  const measureCategory=isStor()||isPlise()||isWood();
  $('product-width').required=!waiting&&(measureCategory||isTul()||isSun());
  $('product-height').required=!waiting&&measureCategory;
  $('product-price').required=!waiting;
 }
 function syncCategoryUI(){
+ $('product-status-wrapper').hidden=isAccessory();
+ if(isAccessory())$('product-status').value='processing';
  const tulPileOption=pileControlSelect.querySelector('option[value="2.5x"]');
  if(isTul()&&!tulPileOption){
   const option=new Option('2,5x · Orta Sık Pile','2.5x');
@@ -290,7 +293,7 @@ function drawSlots(){
    if(record.status==='cancelled')details.append(newElement('small','', 'Bu ürün iptal edildi.'));
    details.append(newElement('small','',fmt(record.price*record.qty)));
    wrapper.append(details);
-   if(editing&&record.id){
+   if(group.name!=='AKSESUAR'&&editing&&record.id){
     const select=newElement('select','slot-status');select.setAttribute('aria-label','Satır durumu: '+record.name);
     for(const v of ['processing','waiting','workshop','ready','delivered','cancelled']){
      const option=new Option(statusNames[v],v);
@@ -306,7 +309,7 @@ function drawSlots(){
       catch(e){record.status=prev;drawSlots();alertText('Satır durumu değiştirilemedi: '+e.message);}
     };
     wrapper.append(select);
-   }else{
+   }else if(group.name!=='AKSESUAR'){
     wrapper.append(newElement('span','status-label',quoteMode?'Teklif Kalemi':statusNames[record.status||'processing']));
    }
    const controls=newElement('div','slot-controls');
@@ -417,7 +420,7 @@ function openItem(category,index){
  manualPrice=false;
  fetchCatalog().then(()=>{if(active?.category===category)showCatalog()});
  $('product-note').value=value?.note||'';
- $('product-status').value=value?.status||'processing';
+ $('product-status').value=category==='AKSESUAR'?'processing':value?.status||'processing';
  $('product-status').disabled=!!value?.id&&(['ready','delivered'].includes(value.status)||(!isManager()&&editing?.status==='waiting'&&value?.status!=='waiting')||['ready','delivered','cancelled','voided'].includes(editing?.status));
  for(const option of $('product-status').options){
   if(!value?.id){option.disabled=!['processing','waiting'].includes(option.value);continue;}
@@ -487,7 +490,7 @@ function calculateItemTotal(){
 function storeItem(e){
  e.preventDefault();
  const name=$('product-name').value.trim(),qty=Number($('product-quantity').value),basePrice=Number($('product-price').value),pile=(isStor()||isPlise()||isWood())?'':pileControlSelect.value,extraSPile=sPileSurcharge($('product-width').value),price=rounded(extraSPile+(isStor()?storUnitPrice(basePrice,$('product-width').value,$('product-height').value,storSettings()):isPlise()?plisePrice(basePrice,$('product-width').value,$('product-height').value):isWood()?woodPrice(basePrice,$('product-width').value,$('product-height').value):isTul()?tulUnitPrice(basePrice,$('product-width').value,pile):isFon()?rounded(basePrice):isSun()?sunUnitPrice(basePrice,$('product-width').value):priceFromBase(basePrice,pile)));
- const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value,waitingLine=$('product-status').value==='waiting'&&(!products.get(key(active.category,active.index))?.id||products.get(key(active.category,active.index))?.status==='waiting');
+ const width=$('product-width').value,height=$('product-height').value,category=$('product-category').value,waitingLine=$('product-category').value!=='AKSESUAR'&&$('product-status').value==='waiting'&&(!products.get(key(active.category,active.index))?.id||products.get(key(active.category,active.index))?.status==='waiting');
  if(!catalogMatch(category,name)){
   $('product-status-message').textContent='Bu ürün seçili kategori kataloğunda kayıtlı değil. Önce + Hızlı Ürün Ekle ile kaydedin veya arama listesinden kayıtlı bir ürün seçin.';
   openQuickAdd();return;
@@ -521,7 +524,7 @@ function storeItem(e){
  const plise=category==='PLİSE PERDE'?pliseConfiguration():null;
  const wood=category==='AHŞAP JALUZİ'?woodConfiguration():null;
  const spec=cfg?[storSpecs(cfg,width,height),$('product-spec').value.trim()].filter(Boolean).join('; '):plise?['Montaj: '+plise.mount,'Kasa Rengi: '+plise.caseColor,width!==''?'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm':'',height!==''?'Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm':'',$('product-spec').value.trim()].filter(Boolean).join('; '):wood?['Kurdela: '+(wood.ribbon?'Var':'Yok'),'Mekanizma: '+wood.mechanism,'Hesap En: '+Math.ceil(Number(width)-1e-9)+' cm','Hesap Boy: '+Math.ceil(Number(height)-1e-9)+' cm',$('product-spec').value.trim()].filter(Boolean).join('; '):category==='FON PERDE'?['Kanat Tipi: '+$('fon-wing-type').value,'Kanat Ölçüsü: '+$('fon-wing-size').value,$('product-spec').value.trim()].filter(Boolean).join('; '):$('product-spec').value.trim();
- const desiredStatus=$('product-status').value,transitionFromWaiting=!!old&&old.status==='waiting'&&desiredStatus==='processing';
+ const desiredStatus=category==='AKSESUAR'?'processing':$('product-status').value,transitionFromWaiting=!!old&&old.status==='waiting'&&desiredStatus==='processing';
  const sewingType=(isTul()||isFon())?$('sewing-type').value:'',sPile=!!sewingType,sPileRate=sPile?Number($('s-pile-rate').value):0;
  const record={name,qty,price,basePrice,width,height,pile,spec,stor:cfg,plise,wood,sPile,sewingType,sPileRate,note:$('product-note').value.trim(),id:old?.id||null,barcode:old?.barcode||null,status:transitionFromWaiting?'processing':old?.status||(waitingLine?'waiting':'processing'),waitingReason:transitionFromWaiting?'':old?.waitingReason||(waitingLine?($('product-note').value.trim().slice(0,1500)||'Ürün bilgileri bekleniyor'):''),printedAt:old?.printedAt||null};
  products.delete(oldKey);products.set(key(category,index),record);
