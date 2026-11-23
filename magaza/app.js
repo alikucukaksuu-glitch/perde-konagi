@@ -275,7 +275,7 @@ function openPrint(id,type){
  if(type==='label'&&!['owner','manager'].includes(memberRole)){alert('Üretim etiketi yazdırma yalnızca yönetici yetkisiyle yapılabilir.');return}
  const o=orders.find(x=>x.id===id);
  if(!o)return;
- const url='./print.html?type='+encodeURIComponent(type)+'&org='+encodeURIComponent(org)+'&id='+encodeURIComponent(id)+(type==='label'&&o.barcode_printed_at?'&reprint=1':'');
+ const url='./print.html?template=product-note-only-v3&type='+encodeURIComponent(type)+'&org='+encodeURIComponent(org)+'&id='+encodeURIComponent(id)+(type==='label'&&o.barcode_printed_at?'&reprint=1':'');
  const win=window.open(url,'_blank','noopener');
  if(!win)location.href=url;
 }
@@ -458,7 +458,7 @@ function handlers(){
  $('bulk-print-labels').onclick=()=>{
   if(!['owner','manager'].includes(memberRole)){msg('orders-message','Üretim etiketi yalnızca yöneticiler tarafından yazdırılabilir.');return;}
   if(!org||!user){msg('orders-message','Önce işletme hesabıyla giriş yapın.');return}
-  const url='./print.html?type=bulk&org='+encodeURIComponent(org);
+  const url='./print.html?template=product-note-only-v3&type=bulk&org='+encodeURIComponent(org);
   const win=window.open(url,'_blank');
   if(win){try{win.opener=null}catch(_){}}
   else location.href=url;
