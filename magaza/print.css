@@ -261,3 +261,30 @@
 .label-mode .qr-label .qr-notes p{font-size:8px!important;line-height:1.06!important;max-height:none!important;overflow:visible!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important}
 .label-mode .qr-label.qr-medium-note .qr-notes p{font-size:7px!important;line-height:1.05!important}
 .label-mode .qr-label.qr-long-note .qr-notes p{font-size:6px!important;line-height:1.03!important}
+
+
+/* 2026-11-23: override legacy fixed grid rows that clipped the production notes. */
+.label-mode .qr-label{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr)!important;
+ grid-template-rows:5mm 4mm 5mm 17mm minmax(0,1fr)!important;
+ gap:.35mm!important;
+ padding:1.4mm 2mm!important;
+ align-content:stretch!important;
+}
+.label-mode .qr-label .qr-label-head{min-height:0!important;max-height:5mm!important;overflow:hidden!important}
+.label-mode .qr-label .qr-customer{min-height:0!important;font-size:8.4px!important;white-space:normal!important;overflow:hidden!important}
+.label-mode .qr-label h3{min-height:0!important;max-height:5mm!important;font-size:8.6px!important;overflow:hidden!important}
+.label-mode .qr-label .qr-label-mid{height:17mm!important;min-height:0!important;max-height:17mm!important;grid-template-columns:minmax(0,1fr) 18.5mm!important;gap:.6mm!important}
+.label-mode .qr-label .qr-label-info .label-specs{font-size:7.7px!important;line-height:1.08!important;gap:.4mm!important}
+.label-mode .qr-label .qr-code-heading{font-size:5.6px!important;line-height:1!important}
+.label-mode .qr-label .qr-image{width:17mm!important;height:17mm!important;padding:.35mm!important;box-sizing:border-box!important}
+.label-mode .qr-label .qr-image img,.label-mode .qr-label .qr-image canvas{width:16.3mm!important;height:16.3mm!important}
+.label-mode .qr-label .qr-notes{min-height:0!important;max-height:none!important;height:auto!important;overflow:visible!important;margin:0!important;padding:.35mm 0 0!important}
+.label-mode .qr-label .qr-notes strong{font-size:7.6px!important;line-height:1!important}
+.label-mode .qr-label .qr-notes p{margin:.25mm 0 0!important;max-height:none!important;overflow:visible!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;font-size:8px!important;line-height:1.08!important}
+.label-mode .qr-label.qr-medium-note .qr-notes p{font-size:7.5px!important}
+.label-mode .qr-label.qr-long-note .qr-notes p{font-size:7px!important}
+@media print{
+ .label-mode .qr-label{grid-template-rows:5mm 4mm 5mm 17mm minmax(0,1fr)!important}
+}
