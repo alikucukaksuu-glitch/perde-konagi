@@ -91,6 +91,7 @@ async function load(){
 function branchName(id){return branches.find(b=>b.id===id)?.name||'Şube'}
 function render(){
  $('stat-total').textContent=orders.filter(o=>!['cancelled','voided'].includes(o.status)).length;
+ $('stat-total').title=memberRole==='staff'?'Yetkili olduğunuz şubelerdeki aktif sipariş sayısı':'İşletmenizin tüm şubelerindeki aktif sipariş sayısı';
  $('stat-workshop').textContent=orders.filter(o=>o.status==='workshop'||o.status==='partial_ready').length;
  $('stat-ready').textContent=orders.filter(o=>o.status==='ready').length;
  $('stat-balance').textContent=money(orders.filter(o=>!['cancelled','voided'].includes(o.status)).reduce((s,o)=>s+Number(o.total_amount)-Number(o.paid_amount),0));
@@ -521,5 +522,13 @@ $('orders-list').onclick=e=>{
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('order-editor').hidden=true;$('order-detail').hidden=true;closePayment();if(!$('qr-scan-modal').hidden)closeQr()}});
 }
 if(!sb){show('auth-panel');msg('login-message','Supabase bağlantı kütüphanesi yüklenemedi.');return}
+// The outer KONAK ERP shell keeps sections mounted. Refresh when returning to Orders,
+// so old figures never remain on screen after a payment or new order in another section.
+window.addEventListener('message',event=>{
+ if(event.origin!==location.origin||event.data?.type!=='konak-erp-refresh-orders')return;
+ if(!user||!org||document.visibilityState==='hidden')return;
+ if(!$('order-editor').hidden||!$('payment-modal').hidden||!$('qr-scan-modal').hidden)return;
+ load();
+});
 handlers();initialize();
 })();
