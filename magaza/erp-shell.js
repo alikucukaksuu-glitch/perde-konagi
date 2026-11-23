@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
-const menus={orders:'orders.html?v=refund-ledger-20261118',quotes:'quotes.html',appointments:'appointments.html?v=whatsapp-popup-fix-20261118',missing:'missing.html',products:'hub.html?tab=products',workshop:'hub.html?tab=workshop',customers:'hub.html?tab=customers',cash:'cash.html',reports:'reports.html',calendar:'calendar.html',notifications:'notifications.html?v=notify-client-v2-20261120',company:'company.html#account'};
+const menus={orders:'orders.html?v=orders-refresh-scope-20261123',quotes:'quotes.html',appointments:'appointments.html?v=whatsapp-popup-fix-20261118',missing:'missing.html',products:'hub.html?tab=products',workshop:'hub.html?tab=workshop',customers:'hub.html?tab=customers',cash:'cash.html',reports:'reports.html',calendar:'calendar.html',notifications:'notifications.html?v=notify-client-v2-20261120',company:'company.html#account'};
 const defaults={orders:true,quotes:true,appointments:true,missing:true,products:true,workshop:true,customers:true,cash:false,reports:false,calendar:true,notifications:true,company:true};
 const stage=document.getElementById('erp-shell-stage'),notice=document.getElementById('erp-shell-notice'),navigation=document.querySelector('.erp-shell-nav');
 const frames=new Map(),allowed={...defaults};let selected='',orgId='',authenticated=false;
@@ -78,7 +78,7 @@ function navigate(view,push){
   }
  }
  const record=ensureFrame(view);
- if(record.loaded){showFrame(view);notice.hidden=true}
+ if(record.loaded){showFrame(view);notice.hidden=true;if(view==='orders')record.frame.contentWindow.postMessage({type:'konak-erp-refresh-orders'},location.origin)}
  else{notice.textContent='Bölüm açılıyor...';notice.hidden=false}
  if(push){const url=new URL(location.href);url.searchParams.set('view',view);history.pushState({view},'',url.pathname+url.search+url.hash)}
  document.title='KONAK ERP | '+({orders:'Siparişler',quotes:'Teklif Siparişleri',appointments:'Montaj Randevu',missing:'Eksik Ürünler',products:'Ürünler',workshop:'Atölye',customers:'Müşteriler',cash:'Kasa',reports:'Raporlar',calendar:'Takvim',notifications:'Bildirim Merkezi',company:'Hesabım'}[view]||'Mağaza');
