@@ -352,7 +352,6 @@
 }
 .label-mode .qr-label .qr-image img,
 .label-mode .qr-label .qr-image canvas{
- display:block!important;
  flex:none!important;
  width:17.5mm!important;
  height:17.5mm!important;
