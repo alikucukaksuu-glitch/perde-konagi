@@ -10,7 +10,7 @@ let user=null,organizations=[],branches=[],orders=[],items=[],refunds=[],org='',
 function refreshBulkPrintPermission(){
  const button=$('bulk-print-labels');
  if(!button)return;
- const allowed=!!user&&!!org&&['owner','manager'].includes(memberRole);
+ const allowed=!!user&&!!org&&['owner','manager'].includes(String(memberRole||'').toLowerCase());
  button.disabled=!allowed;
  button.title=allowed?'':'Etiket yazdırma yalnızca yönetici yetkisiyle yapılabilir';
 }
@@ -88,6 +88,8 @@ async function load(){
   orders=nextOrders;
   items=nextItems;
   refunds=nextRefunds;
+  // Re-evaluate after each successful load; the initial click handlers run before auth resolves.
+  refreshBulkPrintPermission();
   const dropdown=$('filter-branch'),old=dropdown.value;
   dropdown.innerHTML='<option value="">Tüm Şubeler</option>';
   branches.forEach(b=>dropdown.add(new Option(b.name,b.id)));
@@ -98,6 +100,7 @@ async function load(){
 }
 function branchName(id){return branches.find(b=>b.id===id)?.name||'Şube'}
 function render(){
+ refreshBulkPrintPermission();
  $('stat-total').textContent=orders.filter(o=>!['cancelled','voided'].includes(o.status)).length;
  $('stat-total').title=memberRole==='staff'?'Yetkili olduğunuz şubelerdeki aktif sipariş sayısı':'İşletmenizin tüm şubelerindeki aktif sipariş sayısı';
  const scopeDescription=document.querySelector('.banner p');
