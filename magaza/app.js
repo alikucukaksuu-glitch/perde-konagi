@@ -92,6 +92,8 @@ function branchName(id){return branches.find(b=>b.id===id)?.name||'Şube'}
 function render(){
  $('stat-total').textContent=orders.filter(o=>!['cancelled','voided'].includes(o.status)).length;
  $('stat-total').title=memberRole==='staff'?'Yetkili olduğunuz şubelerdeki aktif sipariş sayısı':'İşletmenizin tüm şubelerindeki aktif sipariş sayısı';
+ const scopeDescription=document.querySelector('.banner p');
+ if(scopeDescription)scopeDescription.textContent=memberRole==='staff'?'Yetkili olduğunuz şubelerin siparişleri, üretim durumları ve tahsilatları gösterilir.':'İşletmenizin tüm şubelerindeki siparişleri, üretim durumlarını ve tahsilatlarını tek ekranda takip edin.';
  $('stat-workshop').textContent=orders.filter(o=>o.status==='workshop'||o.status==='partial_ready').length;
  $('stat-ready').textContent=orders.filter(o=>o.status==='ready').length;
  $('stat-balance').textContent=money(orders.filter(o=>!['cancelled','voided'].includes(o.status)).reduce((s,o)=>s+Number(o.total_amount)-Number(o.paid_amount),0));
