@@ -219,3 +219,23 @@
 .a4-new-customer dl{grid-template-columns:19mm minmax(0,1fr);font-size:8px;gap:.8mm 1mm}
 
 .a4-branch-social{display:flex;flex-wrap:wrap;gap:1mm 4mm;margin-top:2mm;color:#435648;font-size:7.5px}
+
+
+/* Thermal QR label note legibility / no silent truncation. A4 remains unchanged. */
+.label-mode .qr-label:not(.note-continuation){gap:.45mm!important;padding:1.25mm 2mm!important}
+.label-mode .qr-label:not(.note-continuation) .qr-label-head{min-height:5.5mm;padding-bottom:.3mm}
+.label-mode .qr-label:not(.note-continuation) .qr-customer{font-size:8.5px;line-height:1.1}
+.label-mode .qr-label:not(.note-continuation) h3{font-size:8.5px;max-height:4.5mm}
+.label-mode .qr-label:not(.note-continuation) .qr-label-mid{min-height:19mm;max-height:19mm;grid-template-columns:minmax(0,1fr) 21mm}
+.label-mode .qr-label:not(.note-continuation) .qr-label-info .label-specs{font-size:8.2px;line-height:1.13;gap:.65mm}
+.label-mode .qr-label:not(.note-continuation) .qr-label-code{gap:.2mm}
+.label-mode .qr-label:not(.note-continuation) .qr-code-heading{font-size:6.5px}
+.label-mode .qr-label:not(.note-continuation) .qr-image{width:20mm!important;height:20mm!important;padding:.6mm!important}
+.label-mode .qr-label:not(.note-continuation) .qr-image img,.label-mode .qr-label:not(.note-continuation) .qr-image canvas{width:18.8mm!important;height:18.8mm!important}
+.label-mode .qr-label:not(.note-continuation) .qr-notes{margin-top:0;min-height:0;max-height:none;flex:1;overflow:hidden;border-top:1px solid #111;padding-top:.4mm}
+.label-mode .qr-label:not(.note-continuation) .qr-notes strong{font-size:8px}
+.label-mode .qr-label:not(.note-continuation) .qr-notes p{max-height:none;font-size:8px!important;line-height:1.15;overflow-wrap:anywhere}
+.label-mode .qr-label.note-continuation{display:flex;flex-direction:column;gap:1.5mm;padding:3mm!important;overflow:hidden}
+.note-continuation-title{font-size:12px;border-bottom:1px solid #111;padding-bottom:1mm}
+.note-continuation-meta,.note-continuation-product{font-size:9px;font-weight:700;overflow-wrap:anywhere}
+.label-mode .note-continuation .note-continuation-body{margin:1mm 0 0!important;white-space:pre-wrap;overflow-wrap:anywhere;font-size:10px!important;line-height:1.24}
