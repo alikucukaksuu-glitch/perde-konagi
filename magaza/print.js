@@ -152,14 +152,15 @@ function makeNoteContinuation(item,part,index,total){
 }
 function appendLabelWithNotes(target,item){
  const text=fullLabelNote(item);
- const chunks=noteChunks(text);
+ const needsContinuation=text.length>75;
+ const chunks=needsContinuation?noteChunks(text,170):[];
  const main=makeLabel(item);
- if(chunks.length>1){
+ if(needsContinuation){
   const p=main.querySelector('.qr-notes p');
   if(p)p.textContent='Üretim notunun tamamı arkasındaki '+chunks.length+' devam etiketinde.';
  }
  target.append(main);
- if(chunks.length>1)chunks.forEach((part,index)=>target.append(makeNoteContinuation(item,part,index+1,chunks.length)));
+ if(needsContinuation)chunks.forEach((part,index)=>target.append(makeNoteContinuation(item,part,index+1,chunks.length)));
 }
 function makeLabel(item){
  const box=el('article','thermal-label qr-label');
