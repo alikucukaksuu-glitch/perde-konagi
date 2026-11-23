@@ -7,6 +7,7 @@ const fmt=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).fo
 const asNum=v=>Number(v)||0;
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let memberRole='staff';
+const isManager=()=>['owner','manager'].includes(memberRole);
 let user=null,org=null,branches=[],existingCustomers=[],products=new Map(),active=null,saving=false,editing=null;
 const key=(category,index)=>category+'|'+index;
 const pileFactors={'1.0x':1,'2.0x':2,'2.5x':2.5,'3.0x':3,'3.5x':3.5,'4.5x':4.5,'Özel':1,'':1};
@@ -293,12 +294,13 @@ function drawSlots(){
     const select=newElement('select','slot-status');select.setAttribute('aria-label','Satır durumu: '+record.name);
     for(const v of ['processing','waiting','workshop','ready','delivered','cancelled']){
      const option=new Option(statusNames[v],v);
-     if(v==='workshop'&&!['owner','manager'].includes(memberRole))option.disabled=true;
+     if(v==='workshop'&&!isManager())option.disabled=true;
+     if(isManager()&&['processing','waiting','workshop'].includes(v)&&!['ready','delivered','cancelled'].includes(record.status)&&!['ready','delivered','cancelled','voided'].includes(editing.status)){select.add(option);continue;}
      if(v==='ready'||v==='delivered'||record.status==='ready'||record.status==='delivered'||record.status==='cancelled'||(v==='processing'&&(record.status!=='processing'&&record.status!=='waiting'||Boolean(editing.barcode_printed_at)))||(v==='waiting'&&(record.status!=='processing'||Boolean(editing.barcode_printed_at)))||(record.status==='waiting'&&v!=='waiting'&&v!=='processing'&&v!=='cancelled'))option.disabled=v!==record.status;
      select.add(option);
     }
     select.value=record.status||'processing';
-    if(record.status==='ready'||record.status==='delivered'||record.status==='cancelled'||editing.status==='delivered'||editing.status==='cancelled'||editing.status==='voided'||(editing.status==='waiting'&&record.status!=='waiting'))select.disabled=true;
+    if(record.status==='ready'||record.status==='delivered'||record.status==='cancelled'||['ready','delivered','cancelled','voided'].includes(editing.status)||(!isManager()&&editing.status==='waiting'&&record.status!=='waiting'))select.disabled=true;
     select.onchange=async()=>{const prev=record.status,next=select.value;select.disabled=true;
       try{if(next==='cancelled'){await cancelItemInEditor(record);return;}await updateItemStatus(record,next);record.status=next;drawSlots();}
       catch(e){record.status=prev;drawSlots();alertText('Satır durumu değiştirilemedi: '+e.message);}
@@ -333,7 +335,16 @@ async function cancelItemInEditor(record){
 async function updateItemStatus(record,next){
  if(!editing||!record.id)throw Error('Kaydedilmemiş ürünün durumu değiştirilemez.');
  let result,waitingReason='';
- if(next==='waiting'||record.status==='waiting'){
+ if(isManager()&&['processing','waiting','workshop'].includes(next)){
+  let reason=null;
+  if(next==='waiting'){
+   reason=prompt('Ürün için bekleme nedeni (en az 3 karakter):','');
+   if(reason===null)throw Error('İşlem iptal edildi');
+   if(reason.trim().length<3)throw Error('Bekleme nedeni en az 3 karakter olmalı');
+  }
+  result=await sb.rpc('erp_manager_set_workflow_status',{p_org:org.id,p_target:'item',p_record:record.id,p_status:next,p_reason:reason?.trim()||null});
+  waitingReason=reason?.trim()||'';
+ }else if(next==='waiting'||record.status==='waiting'){
   let reason=null;
   if(next==='waiting'){
    reason=prompt('Ürün için bekleme nedeni (en az 3 karakter):','');
@@ -344,7 +355,7 @@ async function updateItemStatus(record,next){
   result=await sb.rpc('erp_set_item_waiting',{p_org:org.id,p_item:record.id,p_action:next==='waiting'?'wait':'resume',p_reason:reason?.trim()||null});
  }else result=await sb.rpc('erp_set_item_workflow_status',{p_org:org.id,p_item:record.id,p_status:next});
  if(result.error)throw result.error;
- if(next==='waiting'||record.status==='waiting')record.waitingReason=waitingReason;
+ if(isManager()||next==='waiting'||record.status==='waiting')record.waitingReason=waitingReason;
  const {data,error:readError}=await sb.from('erp_orders').select('updated_at,status,waiting_reason').eq('organization_id',org.id).eq('id',editing.id).single();
  if(readError)throw readError;
  Object.assign(editing,data);
@@ -407,9 +418,10 @@ function openItem(category,index){
  fetchCatalog().then(()=>{if(active?.category===category)showCatalog()});
  $('product-note').value=value?.note||'';
  $('product-status').value=value?.status||'processing';
- $('product-status').disabled=!!value?.id&&(['ready','delivered'].includes(value.status)||(editing?.status==='waiting'&&value?.status!=='waiting')||['delivered','cancelled'].includes(editing?.status));
+ $('product-status').disabled=!!value?.id&&(['ready','delivered'].includes(value.status)||(!isManager()&&editing?.status==='waiting'&&value?.status!=='waiting')||['ready','delivered','cancelled','voided'].includes(editing?.status));
  for(const option of $('product-status').options){
   if(!value?.id){option.disabled=!['processing','waiting'].includes(option.value);continue;}
+  if(isManager()&&['processing','waiting','workshop'].includes(option.value)&&!['ready','delivered','cancelled'].includes(value.status)&&!['ready','delivered','cancelled','voided'].includes(editing?.status)){option.disabled=false;continue;}
   if(option.value==='processing'&&(value.status!=='processing'&&value.status!=='waiting'||Boolean(editing?.barcode_printed_at)))option.disabled=true;
   else if(option.value==='waiting')option.disabled=value.status!=='processing'||Boolean(editing?.barcode_printed_at);
   else if(value.status==='waiting')option.disabled=!['waiting','processing','cancelled'].includes(option.value);
@@ -798,6 +810,21 @@ $('order-status-display').onchange=async()=>{
  const select=$('order-status-display'),previous=editing?.status||'processing',next=select.value;
  if(!editing){select.value='processing';return}
  if(previous===next)return;
+ if(isManager()&&['processing','waiting','workshop'].includes(next)){
+  let reason=null;
+  if(next==='waiting'){
+   reason=prompt('Sipariş için bekleme nedeni (en az 3 karakter):','');
+   if(reason===null||reason.trim().length<3){select.value=previous;$('order-status-help').textContent='Bekleme nedeni en az 3 karakter olmalı.';return;}
+  }
+  if(!confirm('Siparişin uygun ürünleri '+statusNames[next]+' durumuna alınacak. Devam edilsin mi?')){select.value=previous;return;}
+  select.disabled=true;$('order-status-help').textContent='Yönetici durum değişikliği kaydediliyor...';
+  try{
+   const {error}=await sb.rpc('erp_manager_set_workflow_status',{p_org:org.id,p_target:'order',p_record:editing.id,p_status:next,p_reason:reason?.trim()||null});
+   if(error)throw error;
+   window.location.reload();
+  }catch(e){select.value=previous;$('order-status-help').textContent='Durum değiştirilemedi: '+e.message;select.disabled=false;syncOrderStatusOptions();}
+  return;
+ }
  if(next==='cancelled'){
   const reason=prompt('Siparişin tamamı için iptal nedeni (en az 3 karakter):','');
   if(reason===null){select.value=previous;return;}
@@ -831,6 +858,7 @@ $('order-status-display').onchange=async()=>{
 function syncOrderStatusOptions(){
  const select=$('order-status-display'),current=editing?.status||'processing';
  for(const option of select.options){
+  if(isManager()&&editing&&!['ready','delivered','cancelled','voided'].includes(current)&&['processing','waiting','workshop'].includes(option.value)){option.disabled=false;continue;}
   option.disabled=editing?!(option.value==='cancelled'||(current==='processing'||current==='waiting'&&![...products.values()].some(p=>p.status==='waiting'))&&(option.value==='processing'||option.value==='waiting')||option.value===current):option.value!=='processing';
  }
  select.disabled=!editing||['cancelled','voided'].includes(current);
@@ -841,10 +869,10 @@ $('product-status').onchange=async()=>{
  if(!item?.id){syncProductRequiredFields();$('product-status-message').textContent=select.value==='waiting'?'Eksik ölçü ve özelleştirme bilgileri olmadan kaydedebilirsiniz.':' ';calculateItemTotal();return;}
  const before=item.status,next=select.value;
  syncProductRequiredFields();
- if(before==='waiting'&&next==='processing'){$('product-status-message').textContent='Ölçüleri ve özelleştirmeyi tamamlayıp Kaydet’e basın. Durum ve ölçüler birlikte güncellenecek.';calculateItemTotal();return;}
+ if(!isManager()&&before==='waiting'&&next==='processing'){$('product-status-message').textContent='Ölçüleri ve özelleştirmeyi tamamlayıp Kaydet’e basın. Durum ve ölçüler birlikte güncellenecek.';calculateItemTotal();return;}
  if(next==='workshop'&&!['owner','manager'].includes(memberRole)){select.value=before;$('product-status-message').textContent='Atölyeye aktarma yalnızca yöneticiler tarafından yapılabilir.';return;}
  if(next==='cancelled'){select.disabled=true;try{await cancelItemInEditor(item);}catch(e){select.value=before;$('product-status-message').textContent='İptal edilemedi: '+e.message;}finally{select.disabled=false;}return;}
- if(next==='processing'&&(before!=='processing'&&before!=='waiting'||Boolean(editing?.barcode_printed_at))){select.value=before;$('product-status-message').textContent='Atölyeye alınan ürün tekrar İşlemde durumuna geçirilemez.';return}
+ if(!isManager()&&next==='processing'&&(before!=='processing'&&before!=='waiting'||Boolean(editing?.barcode_printed_at))){select.value=before;$('product-status-message').textContent='Atölyeye alınan ürün tekrar İşlemde durumuna geçirilemez.';return}
  select.disabled=true;$('product-status-message').textContent='Durum kaydediliyor...';
  try{
   await updateItemStatus(item,next);
@@ -855,7 +883,7 @@ $('product-status').onchange=async()=>{
   select.value=before;
   $('product-status-message').textContent='Durum değiştirilemedi: '+err.message;
  }finally{
-  select.disabled=['ready','delivered'].includes(item.status)||(editing?.status==='waiting'&&item.status!=='waiting'||['delivered','cancelled'].includes(editing?.status));
+  select.disabled=['ready','delivered'].includes(item.status)||(!isManager()&&editing?.status==='waiting'&&item.status!=='waiting')||['ready','delivered','cancelled','voided'].includes(editing?.status);
  }
 };
 $('delete-product').onclick=()=>{if(!active)return;removeItem(active.category,active.index)};
