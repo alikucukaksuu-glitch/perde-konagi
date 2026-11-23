@@ -145,8 +145,12 @@ async function init(){
 async function load(){
  if(loading)return;loading=true;selectedOrg=$('org').value;feedback('Kasa verileri yükleniyor...');
  const role=members.find(m=>m.organization_id===selectedOrg)?.role;
- $('expense-btn').disabled=!['owner','manager','admin'].includes(role);
- $('expense-btn').title=$('expense-btn').disabled?'Gider ekleme yetkisi yalnızca işletme yöneticisindedir':'';
+ // Payment outflows may be added by staff with Cash viewing permission.
+ // The database repeats the permission and branch checks on every write.
+ const {data:canRecordExpense,error:expensePermissionError}=await sb.rpc('erp_has_menu_permission',{p_org:selectedOrg,p_menu:'cash',p_edit:false});
+ const expenseAllowed=!expensePermissionError&&canRecordExpense===true&&['owner','manager','staff','admin'].includes(role);
+ $('expense-btn').disabled=!expenseAllowed;
+ $('expense-btn').title=expenseAllowed?'Kasadan ödeme/gider kaydı ekle':'Ödeme eklemek için Kasa görüntüleme yetkisi gereklidir';
  try{
   const [b,o,p,m]=await Promise.all([
    readAll('erp_branches','id,name',q=>q.eq('organization_id',selectedOrg)),
