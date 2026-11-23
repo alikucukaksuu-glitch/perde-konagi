@@ -184,7 +184,7 @@ function makeLabel(item){
  split.append(left,right);box.append(split);
  const notes=el('div','qr-notes');
  txt(notes,'strong','','ÜRÜN NOTU');
- const visibleNote=(item.category==='TÜL PERDE'||item.category==='FON PERDE')?details.userNote:details.detail;
+ const visibleNote=details.userNote; // Only product-specific free-text note; structured metadata remains in specifications.
  const noteText=visibleNote||'';
  txt(notes,'p','',noteText||'—');
  if(visibleNote)notes.classList.add('has-note');
