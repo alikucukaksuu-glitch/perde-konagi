@@ -573,8 +573,10 @@ function stage(next){
   $('order-status-display').value=editing?.status==='new'?'processing':editing?.status||'processing';
   $('editor-print-a4').hidden=!editing;
   $('editor-print-label').hidden=!editing||!['owner','manager'].includes(memberRole);
-  $('editor-print-label').disabled=!editing||!['processing','new'].includes(editing.status)||Boolean(editing.barcode_printed_at);
-  $('editor-print-label').title=editing?.barcode_printed_at?'Bu siparişin barkodu daha önce basılmış':'';
+  const printAllowed=!!editing&&isManager()&&!['cancelled','voided','delivered'].includes(editing.status);
+  $('editor-print-label').disabled=!printAllowed;
+  $('editor-print-label').textContent=editing?.barcode_printed_at?'▥ Barkod Yeniden Yazdır':'▥ Barkod Yazdır';
+  $('editor-print-label').title=!printAllowed?'İptal veya teslim edilmiş sipariş yazdırılamaz':editing?.barcode_printed_at?'Yönetici yeniden baskısı: eski etiket kaydı korunur':'Üretim barkodlarını yazdır';
   $('editor-whatsapp').hidden=!editing||![...products.keys()].some(k=>['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ'].some(c=>k.startsWith(c+'|')));
   syncOrderStatusOptions();
   if(quoteMode){$('editor-print-a4').hidden=true;$('editor-print-label').hidden=true;$('editor-whatsapp').hidden=true;}
@@ -906,7 +908,7 @@ pileControlSelect.onchange=calculateItemTotal;
 $('submit-order').onclick=submit;
 function openEditorPrint(type){
  if(!editing||!org)return;
- const url='./print.html?type='+encodeURIComponent(type)+'&org='+encodeURIComponent(org.id)+'&id='+encodeURIComponent(editing.id);
+ const url='./print.html?type='+encodeURIComponent(type)+'&org='+encodeURIComponent(org.id)+'&id='+encodeURIComponent(editing.id)+(type==='label'&&editing.barcode_printed_at?'&reprint=1':'')+'&template=manager-reprint-20261123';
  const win=window.open(url,'_blank','noopener');
  if(!win)location.href=url;
 }
