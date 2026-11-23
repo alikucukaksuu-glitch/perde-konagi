@@ -288,3 +288,85 @@
 @media print{
  .label-mode .qr-label{grid-template-rows:5mm 4mm 5mm 17mm minmax(0,1fr)!important}
 }
+
+
+/* QR SCAN SAFETY 2026-11-23 — no clipping in the 80 × 50 mm print area.
+   Keep QR heading + artwork inside the SAME reserved grid row. */
+.label-mode .qr-label{
+ grid-template-rows:5mm 4mm 5mm 22.5mm minmax(0,1fr)!important;
+ padding:1.4mm 2mm!important;
+ column-gap:0!important;
+ row-gap:.35mm!important;
+}
+.label-mode .qr-label .qr-label-mid{
+ height:22.5mm!important;
+ min-height:22.5mm!important;
+ max-height:22.5mm!important;
+ grid-template-columns:minmax(0,1fr) 24mm!important;
+ gap:.6mm!important;
+ overflow:visible!important;
+}
+.label-mode .qr-label .qr-label-code{
+ display:flex!important;
+ flex-direction:column!important;
+ align-items:center!important;
+ justify-content:flex-start!important;
+ gap:.6mm!important;
+ width:24mm!important;
+ min-width:24mm!important;
+ padding:0 2mm 0 0!important;
+ margin:0!important;
+ border:0!important;
+ overflow:visible!important;
+ box-sizing:border-box!important;
+}
+.label-mode .qr-label .qr-code-heading{
+ display:block!important;
+ height:2mm!important;
+ min-height:2mm!important;
+ line-height:2mm!important;
+ width:22mm!important;
+ max-width:22mm!important;
+ font-size:5.6px!important;
+ font-weight:800!important;
+ white-space:nowrap!important;
+ text-align:center!important;
+ padding:0!important;
+ margin:0!important;
+}
+.label-mode .qr-label .qr-image{
+ display:flex!important;
+ flex:0 0 19.9mm!important;
+ align-items:center!important;
+ justify-content:center!important;
+ width:19.9mm!important;
+ height:19.9mm!important;
+ min-width:19.9mm!important;
+ min-height:19.9mm!important;
+ max-width:19.9mm!important;
+ max-height:19.9mm!important;
+ padding:1.2mm!important;
+ background:#fff!important;
+ overflow:visible!important;
+ box-sizing:border-box!important;
+}
+.label-mode .qr-label .qr-image img,
+.label-mode .qr-label .qr-image canvas{
+ display:block!important;
+ flex:none!important;
+ width:17.5mm!important;
+ height:17.5mm!important;
+ min-width:17.5mm!important;
+ min-height:17.5mm!important;
+ max-width:17.5mm!important;
+ max-height:17.5mm!important;
+ margin:0!important;
+ padding:0!important;
+ image-rendering:pixelated!important;
+ object-fit:fill!important;
+}
+@media print{
+ .label-mode .qr-label{grid-template-rows:5mm 4mm 5mm 22.5mm minmax(0,1fr)!important}
+ .label-mode .qr-label .qr-label-mid{height:22.5mm!important;max-height:22.5mm!important}
+ .label-mode .qr-label .qr-image{overflow:visible!important}
+}
