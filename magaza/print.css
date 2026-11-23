@@ -369,3 +369,88 @@
  .label-mode .qr-label .qr-label-mid{height:22.5mm!important;max-height:22.5mm!important}
  .label-mode .qr-label .qr-image{overflow:visible!important}
 }
+
+
+/* QR SAFE PRINT V4 — final override after the legacy QR rules.
+   The white quiet zone is 2mm on ALL four sides, with extra printer margins. */
+.label-mode .qr-label {
+ grid-template-rows:5mm 4mm 4.5mm 23mm minmax(0,1fr)!important;
+ gap:.3mm!important;
+ padding:1.5mm 2.5mm!important;
+}
+.label-mode .qr-label .qr-label-mid {
+ height:23mm!important;
+ min-height:23mm!important;
+ max-height:23mm!important;
+ grid-template-columns:minmax(0,1fr) 23mm!important;
+ gap:.5mm!important;
+ overflow:visible!important;
+}
+.label-mode .qr-label .qr-label-code {
+ box-sizing:border-box!important;
+ width:23mm!important;
+ min-width:23mm!important;
+ padding:0 2mm 0 0!important;
+ border:0!important;
+ margin:0!important;
+ display:flex!important;
+ flex-direction:column!important;
+ align-items:center!important;
+ justify-content:flex-start!important;
+ gap:.3mm!important;
+ overflow:visible!important;
+}
+.label-mode .qr-label .qr-code-heading {
+ display:block!important;
+ height:1.8mm!important;
+ min-height:1.8mm!important;
+ width:21mm!important;
+ line-height:1.8mm!important;
+ margin:0!important;
+ padding:0!important;
+ font-size:5.5px!important;
+ white-space:nowrap!important;
+ text-align:center!important;
+}
+.label-mode .qr-label .qr-image {
+ box-sizing:border-box!important;
+ display:flex!important;
+ align-items:center!important;
+ justify-content:center!important;
+ flex:0 0 20mm!important;
+ width:20mm!important;
+ height:20mm!important;
+ min-width:20mm!important;
+ min-height:20mm!important;
+ max-width:20mm!important;
+ max-height:20mm!important;
+ padding:2mm!important;
+ margin:0!important;
+ background:white!important;
+ overflow:visible!important;
+}
+.label-mode .qr-label .qr-image img,
+.label-mode .qr-label .qr-image canvas {
+ box-sizing:content-box!important;
+ flex:none!important;
+ width:16mm!important;
+ height:16mm!important;
+ min-width:16mm!important;
+ min-height:16mm!important;
+ max-width:16mm!important;
+ max-height:16mm!important;
+ margin:0!important;
+ padding:0!important;
+ object-fit:fill!important;
+ image-rendering:auto!important;
+}
+.label-mode .qr-label .qr-notes {
+ border-top:1px solid #111!important;
+ margin:0!important;
+ padding-top:.5mm!important;
+ overflow:visible!important;
+}
+@media print{
+ .label-mode .qr-label {grid-template-rows:5mm 4mm 4.5mm 23mm minmax(0,1fr)!important}
+ .label-mode .qr-label .qr-image {background:#fff!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}
