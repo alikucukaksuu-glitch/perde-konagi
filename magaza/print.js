@@ -313,13 +313,15 @@ async function sendCustomerPdfWhatsapp(){
  finally{pdfBusy=false;$('pdf-btn').disabled=false;$('customer-whatsapp-btn').disabled=false}
 }
 
+function isAccessoryItem(item){return String(item?.category||'').trim().toLocaleUpperCase('tr-TR')==='AKSESUAR';}
+function isPrintableItem(item){return !isAccessoryItem(item)&&item.status!=='cancelled';}
 function addLabels(){
  document.body.classList.add('label-mode');
  const sheet=document.createElement('style');sheet.textContent='@media print{@page{size:80mm 50mm;margin:0}}';document.head.append(sheet);
  const page=$('page');page.replaceChildren();
- const labels=items.filter(i=>i.status!=='cancelled');
+ const labels=items.filter(isPrintableItem);
  for(const item of labels)appendLabelWithNotes(page,item);
- if(!labels.length)fail('Yazdırılacak etkin ürün bulunamadı');
+ if(!labels.length)fail('Bu siparişte etiket basılabilecek ürün bulunamadı. AKSESUAR ürünlerine etiket basılmaz.');
 }
 
 async function bulkSelect(table,columns,apply){
@@ -365,7 +367,7 @@ async function startBulk(){
   const byBranch=new Map(branchList.map(b=>[b.id,b]));
   const eligible=[],excluded=[];
   for(const o of orders){
-   const group=byOrder.get(o.id)||[],active=group.filter(i=>i.status==='processing'&&!i.printed_at);
+   const group=byOrder.get(o.id)||[],active=group.filter(i=>i.status==='processing'&&!i.printed_at&&!isAccessoryItem(i));
    if(!active.length||!byBranch.has(o.branch_id)){
     excluded.push('#'+o.order_number);continue;
    }
@@ -396,7 +398,7 @@ async function startBulk(){
   const flow=$('label-flow');flow.hidden=false;
   flow.querySelector('h2').textContent='Toplu Baskı Akışı';
   flow.querySelector('#label-order-no').textContent=String(eligible.length)+' sipariş';
-  flow.querySelector('#label-count').textContent=String(page.querySelectorAll('.qr-label').length);
+  flow.querySelector('#label-count').textContent=String($('page').querySelectorAll('.qr-label').length);
   $('print-btn').disabled=false;
   $('print-btn').onclick=async()=>{
    $('print-btn').disabled=true;
@@ -454,7 +456,7 @@ async function start(){
    if(items.some(i=>!['processing','cancelled'].includes(i.status))){fail('Bazı ürünlerin durumu farklı, baskıdan önce kontrol edin.');return}
   }
   try{
-   const active=items.filter(i=>i.status!=='cancelled');
+   const active=items.filter(isPrintableItem);
    const tokens=await Promise.all(active.map(i=>sb.rpc('erp_get_item_receive_token',{p_org:orgId,p_item:i.id})));
    for(let index=0;index<tokens.length;index++){
     if(tokens[index].error||!tokens[index].data)throw tokens[index].error||new Error('QR erişim kodu üretilemedi');
