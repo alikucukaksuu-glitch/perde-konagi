@@ -239,3 +239,25 @@
 .note-continuation-title{font-size:12px;border-bottom:1px solid #111;padding-bottom:1mm}
 .note-continuation-meta,.note-continuation-product{font-size:9px;font-weight:700;overflow-wrap:anywhere}
 .label-mode .note-continuation .note-continuation-body{margin:1mm 0 0!important;white-space:pre-wrap;overflow-wrap:anywhere;font-size:10px!important;line-height:1.24}
+
+
+/* Single-label 80x50mm layout: reserve the bottom for the complete note. */
+.label-mode .qr-label:not(.note-continuation){
+ display:flex!important;flex-direction:column!important;gap:.35mm!important;padding:1.2mm 2mm!important;overflow:hidden!important;
+}
+.label-mode .qr-label .qr-label-head{min-height:5mm!important;max-height:5mm!important;padding:0 0 .3mm!important}
+.label-mode .qr-label .qr-company-logo{height:5mm;max-width:7mm}
+.label-mode .qr-label .qr-company-text strong{font-size:10px}
+.label-mode .qr-label .qr-company-text small{font-size:7px}
+.label-mode .qr-label .qr-customer{font-size:8px!important;line-height:1.1!important}
+.label-mode .qr-label h3{font-size:8.5px!important;line-height:1.12!important;max-height:5mm!important}
+.label-mode .qr-label .qr-label-mid{min-height:17mm!important;max-height:19mm!important;grid-template-columns:minmax(0,1fr) 20mm!important;gap:1mm!important}
+.label-mode .qr-label .qr-label-info .label-specs{font-size:7.7px!important;line-height:1.08!important;gap:.4mm!important}
+.label-mode .qr-label .qr-code-heading{font-size:6px!important;line-height:1.1!important}
+.label-mode .qr-label .qr-image{width:19mm!important;height:19mm!important;padding:.4mm!important}
+.label-mode .qr-label .qr-image img,.label-mode .qr-label .qr-image canvas{width:18.2mm!important;height:18.2mm!important}
+.label-mode .qr-label .qr-notes{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;margin-top:0!important;padding-top:.4mm!important}
+.label-mode .qr-label .qr-notes strong{font-size:7.5px!important}
+.label-mode .qr-label .qr-notes p{font-size:8px!important;line-height:1.06!important;max-height:none!important;overflow:visible!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important}
+.label-mode .qr-label.qr-medium-note .qr-notes p{font-size:7px!important;line-height:1.05!important}
+.label-mode .qr-label.qr-long-note .qr-notes p{font-size:6px!important;line-height:1.03!important}
