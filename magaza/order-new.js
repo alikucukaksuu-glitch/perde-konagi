@@ -573,7 +573,7 @@ function stage(next){
   $('order-status-display').value=editing?.status==='new'?'processing':editing?.status||'processing';
   $('editor-print-a4').hidden=!editing;
   $('editor-print-label').hidden=!editing||!['owner','manager'].includes(memberRole);
-  const printAllowed=!!editing&&isManager()&&!['cancelled','voided','delivered'].includes(editing.status);
+  const printAllowed=!!editing&&isManager()&&!['cancelled','voided','delivered'].includes(editing.status)&&(Boolean(editing.barcode_printed_at)||['processing','new'].includes(editing.status));
   $('editor-print-label').disabled=!printAllowed;
   $('editor-print-label').textContent=editing?.barcode_printed_at?'▥ Barkod Yeniden Yazdır':'▥ Barkod Yazdır';
   $('editor-print-label').title=!printAllowed?'İptal veya teslim edilmiş sipariş yazdırılamaz':editing?.barcode_printed_at?'Yönetici yeniden baskısı: eski etiket kaydı korunur':'Üretim barkodlarını yazdır';
