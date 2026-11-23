@@ -32,10 +32,11 @@ const fonSizes=['60','65','70','75','80','85','90','95','100'];
 function syncFonSizes(selected=''){
  const kind=$('fon-wing-type').value,select=$('fon-wing-size');select.replaceChildren();
  const prompt=document.createElement('option');prompt.value='';prompt.textContent=kind?'Kanat ölçüsü seçiniz':'Önce kanat tipi seçiniz';select.append(prompt);
+ if(kind){const noPleats=document.createElement('option');noPleats.value='Pilesiz Dikim';noPleats.textContent='Pilesiz Dikim';select.append(noPleats);}
  for(const size of kind?fonSizes:[]){const option=document.createElement('option');option.value=kind==='Çift Kanat'?size+'/'+size:size;option.textContent=option.value+' cm';select.append(option)}
  select.value=[...select.options].some(o=>o.value===selected)?selected:'';
 }
-function parseFonConfiguration(spec){const text=String(spec||'');const kind=text.match(/(?:^|;\s*)Kanat Tipi:\s*(Tek Kanat|Çift Kanat)(?:;|$)/)?.[1]||'';const size=text.match(/(?:^|;\s*)Kanat Ölçüsü:\s*(\d+(?:\/\d+)?)(?:;|$)/)?.[1]||'';return {kind,size}}
+function parseFonConfiguration(spec){const text=String(spec||'');const kind=text.match(/(?:^|;\s*)Kanat Tipi:\s*(Tek Kanat|Çift Kanat)(?:;|$)/)?.[1]||'';const size=text.match(/(?:^|;\s*)Kanat Ölçüsü:\s*(Pilesiz Dikim|\d+(?:\/\d+)?)(?:;|$)/)?.[1]||'';return {kind,size}}
 function stripFonFields(spec){return String(spec||'').split(/;\s*/).filter(x=>!/^Kanat (Tipi|Ölçüsü):\s*/.test(x)).join('; ').trim()}
 function woodConfiguration(){return {ribbon:$('wood-ribbon').checked,mechanism:$('wood-mechanism').value}}
 function parseWoodConfiguration(spec){
