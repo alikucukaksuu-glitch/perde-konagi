@@ -45,3 +45,16 @@
  body .daily-card .daily-details-head{break-after:avoid}
  body .daily-card .daily-note{font-size:9px!important}
 }
+
+
+/* Harcama düzenleme / denetim geçmişi */
+.cash-edit-action{display:block;margin-top:7px;padding:5px 9px;font-size:11px;border-color:#aec5b3}
+.cash-updated{display:block;color:#768c7b;font-size:10px;margin-top:5px;white-space:nowrap}
+.cash-edit-meta{font-size:11px;color:#526e5c;background:#f3f7f3;border-radius:9px;padding:10px;line-height:1.5}
+.cash-edit-history{border:1px solid #dfe9e1;border-radius:10px;padding:12px;max-height:240px;overflow:auto;font-size:11px}
+.cash-edit-history>strong{display:block;margin-bottom:9px;font-size:12px}
+.cash-history-entry{border-top:1px solid #e6eee7;padding:10px 0;line-height:1.7;overflow-wrap:anywhere}
+.cash-history-entry:first-of-type{border-top:0}
+.cash-history-entry div{padding-left:8px;color:#52695a}
+#edit-expense-feedback{font-size:12px;color:#b63e32;font-weight:650}
+@media print{#edit-expense-modal{display:none!important}}
