@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
-const menus={orders:'orders.html?v=accessory-dom-removal-20261125c',quotes:'quotes.html',appointments:'appointments.html?v=whatsapp-popup-fix-20261118',missing:'missing.html?v=accessory-orders-20261125',products:'hub.html?tab=products&v=product-actions-20261125',workshop:'hub.html?tab=workshop',customers:'hub.html?tab=customers',cash:'cash.html?v=cash-receipts-initial-20261125d',reports:'reports.html',calendar:'calendar.html',notifications:'notifications.html?v=notify-client-v2-20261120',company:'company.html#account'};
+const menus={orders:'orders.html?v=accessory-dom-removal-20261125c',quotes:'quotes.html',appointments:'appointments.html?v=whatsapp-popup-fix-20261118',missing:'missing.html?v=accessory-orders-20261125',products:'hub.html?tab=products&v=product-actions-20261125',workshop:'hub.html?tab=workshop',customers:'hub.html?tab=customers',cash:'cash-approval.html?v=manager-approval-20261125',reports:'reports.html',calendar:'calendar.html',notifications:'notifications.html?v=notify-client-v2-20261120',company:'company.html#account'};
 const defaults={orders:true,quotes:true,appointments:true,missing:true,products:true,workshop:true,customers:true,cash:false,reports:false,calendar:true,notifications:true,company:true};
 const stage=document.getElementById('erp-shell-stage'),notice=document.getElementById('erp-shell-notice'),navigation=document.querySelector('.erp-shell-nav');
 const frames=new Map(),allowed={...defaults};let selected='',orgId='',authenticated=false;
@@ -18,7 +18,7 @@ function routeFromUrl(raw){
  if(path.endsWith('/quotes.html'))return 'quotes';
  if(path.endsWith('/appointments.html'))return 'appointments';
  if(path.endsWith('/missing.html'))return 'missing';
- if(path.endsWith('/cash.html'))return 'cash';
+ if(path.endsWith('/cash.html')||path.endsWith('/cash-approval.html'))return 'cash';
  if(path.endsWith('/reports.html'))return 'reports';
  if(path.endsWith('/calendar.html'))return 'calendar';
  if(path.endsWith('/notifications.html'))return 'notifications';
