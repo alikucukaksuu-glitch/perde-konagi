@@ -7,12 +7,12 @@ const tab=['products','workshop','customers'].includes(qs.get('tab'))?qs.get('ta
 const categories=['TÜL PERDE','FON PERDE','GÜNEŞLİK','STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ','AKSESUAR'];
 const fmt=x=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY'}).format(Number(x)||0);
 const trDate=x=>x?new Date(x).toLocaleString('tr-TR'):'—';
-let user=null,org='',members=[],orgs=[],catalog=[],orders=[],items=[],branches=[],customers=[],productEditing=null,role='staff',expanded=new Set(),working=false;
+let user=null,org='',members=[],orgs=[],catalog=[],orders=[],items=[],branches=[],customers=[],productEditing=null,role='staff',canEditProducts=false,expanded=new Set(),working=false;
 const el=(tag,cls,text)=>{let n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text??'');return n};
 function put(parent,tag,cls,text){const n=el(tag,cls,text);parent.append(n);return n}
 function message(s){$('hub-message').textContent=s||''}
 async function get(table,columns,fn){let query=sb.from(table).select(columns);if(fn)query=fn(query);const {data,error}=await query;if(error)throw error;return data||[]}
-function canEdit(){return ['owner','manager'].includes(role)}
+function canEdit(){return canEditProducts}
 function settings(){
  const content={
  products:['ÜRÜN KATALOĞU','Kategoriler & Ürünler','İşletmenizin kumaş, perde ve aksesuar fiyatlarını tek ekrandan yönetin.'],
@@ -45,9 +45,16 @@ async function initialize(){
  await refresh();
 }
 async function refresh(){
- role=members.find(m=>m.organization_id===org)?.role||'staff';settings();
+ role=members.find(m=>m.organization_id===org)?.role||'staff';
+ canEditProducts=false;
  message('Veriler yükleniyor...');
  try{
+  if(tab==='products'){
+   const {data:granted,error:permissionError}=await sb.rpc('erp_has_menu_permission',{p_org:org,p_menu:'products',p_edit:true});
+   if(permissionError)throw permissionError;
+   canEditProducts=granted===true;
+  }
+  settings();
   if(tab==='products'){
    catalog=await get('erp_catalog_products','id,organization_id,category,name,unit_price,description,active,updated_at',q=>q.eq('organization_id',org).order('category').order('name').limit(1000));
   }else{
