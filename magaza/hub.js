@@ -56,7 +56,7 @@ async function refresh(){
   }
   settings();
   if(tab==='products'){
-   catalog=await get('erp_catalog_products','id,organization_id,category,name,unit_price,description,active,updated_at',q=>q.eq('organization_id',org).order('category').order('name').limit(1000));
+   catalog=await get('erp_catalog_products','id,organization_id,category,name,unit_price,description,active,updated_at,deleted_at',q=>q.eq('organization_id',org).is('deleted_at',null).order('category').order('name').limit(1000));
   }else{
    orders=await get('erp_orders','id,branch_id,order_number,customer_name,customer_phone,created_at,delivery_date,status,barcode_printed_at,total_amount,paid_amount',q=>q.eq('organization_id',org).order('created_at',{ascending:false}).limit(1000));
    if(tab==='customers'){
@@ -81,10 +81,13 @@ function productRow(p){
  row.append(info);
  put(row,'span','hub-price',fmt(p.unit_price));
  if(!p.active)put(row,'span','hub-pill dim','Arşivde');
- if(canEdit()&&p.active){
+ if(canEdit()){
   const actions=el('div','hub-row-buttons');
-  const edit=put(actions,'button','secondary','Düzenle');edit.type='button';edit.onclick=()=>openProduct(p);
-  const remove=put(actions,'button','secondary hub-danger','Arşivle');remove.type='button';remove.onclick=()=>archiveProduct(p);
+  if(p.active){
+   const edit=put(actions,'button','secondary','Düzenle');edit.type='button';edit.onclick=()=>openProduct(p);
+   const archive=put(actions,'button','secondary','Arşivle');archive.type='button';archive.onclick=()=>archiveProduct(p);
+  }
+  const remove=put(actions,'button','secondary hub-danger','Sil');remove.type='button';remove.onclick=()=>removeProduct(p);
   row.append(actions);
  }
  return row;
@@ -132,6 +135,18 @@ async function saveProduct(e){
   const category=$('product-category').value;closeProduct();expanded.add(category);await refresh();message('Ürün kataloğa kaydedildi.');
  }catch(e){$('product-error').textContent='Ürün kaydedilemedi: '+e.message}
  finally{working=false;$('product-save').disabled=false}
+}
+async function removeProduct(p){
+ if(working||!canEdit())return;
+ const approved=confirm('“'+p.name+'” ürünü katalogdan silinsin mi? Bu işlem arşivlemeden farklıdır; ürün katalogdan kaldırılacak, sipariş geçmişi korunacaktır.');
+ if(!approved)return;
+ working=true;
+ try{
+  const {error}=await sb.rpc('erp_catalog_remove',{p_org:org,p_id:p.id});
+  if(error)throw error;
+  await refresh();message('Ürün katalogdan silindi. Değişiklik kayıt altına alındı.');
+ }catch(e){message('Ürün silinemedi: '+e.message)}
+ finally{working=false}
 }
 async function archiveProduct(p){
  if(!canEdit()||!confirm(p.name+' ürünü arşive taşınsın mı? Mevcut siparişler etkilenmeyecek.'))return;
