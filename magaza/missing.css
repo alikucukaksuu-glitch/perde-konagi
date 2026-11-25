@@ -11,3 +11,23 @@
 .accessory-item-info{display:flex;flex-wrap:wrap;gap:9px 16px;margin-top:7px;color:#4c6754;font-size:12px;font-weight:600}
 @media(max-width:940px){.missing-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.missing-metrics .accessory-metric{grid-column:1 / -1;grid-row:auto}}
 @media(max-width:570px){.accessory-heading{flex-wrap:wrap}.missing-metrics .accessory-metric strong{font-size:22px}}
+
+/* Aksesuar toplu seçim ve WhatsApp sipariş paneli */
+.accessory-selection{padding:16px;margin:9px 0 14px;border:1px solid #dfe7df;border-radius:15px}
+.accessory-selection[hidden]{display:none!important}
+.accessory-selection-header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:12px}
+.accessory-selection-header h2{margin:0 0 5px;font-size:18px;color:#203d2d;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.accessory-selection-header p{margin:0;font-size:12px;color:#69776a}
+.accessory-count{background:#dcf2e3;color:#1e6940;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.accessory-whatsapp{background:#078446!important;border:1px solid #06783f!important;color:#fff!important;white-space:normal;text-align:center}
+.accessory-whatsapp:disabled{opacity:.55;cursor:not-allowed}
+.accessory-table-wrap{max-width:100%;overflow-x:auto}
+.accessory-table{width:100%;border-collapse:collapse;font-size:12px;min-width:630px}
+.accessory-table th{padding:10px 8px;background:#e6f1e9;text-align:left;color:#264331;font-weight:700}
+.accessory-table td{padding:9px 8px;border-bottom:1px solid #e4eae5}
+.accessory-table td:first-child{font-weight:700}
+.accessory-selection-empty{padding:12px 4px;font-size:12px;color:#737c75}
+.accessory-select-checkbox{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.accessory-select-checkbox input{width:18px;height:18px;accent-color:#1e7246}
+.accessory-remove{font-size:11px!important;padding:5px 9px!important}
+@media(max-width:650px){.accessory-whatsapp{width:100%}.accessory-selection{padding:12px}}
