@@ -60,7 +60,7 @@ function render(){
   const canEdit=r.editable&&canEditExpense&&(['owner','manager','admin'].includes(members.find(m=>m.organization_id===selectedOrg)?.role)||r.actor===user?.id);
   const editButton=canEdit?'<button type="button" class="cash-edit-action" data-edit-expense="'+esc(r.id)+'">Düzenle</button>':'';
   const updated=r.updatedAt?'<small class="cash-updated">'+esc(dateTR(r.updatedAt))+'</small>':'';
-  return '<tr><td>'+esc(dateTR(r.date))+'</td><td><span class="type '+r.direction+'">'+typ+'</span></td><td>'+esc(r.description)+(r.initial?' <small>(eski kayıt)</small>':'')+'</td><td>'+esc(order?'#'+order.order_number:'—')+'</td><td>'+esc(r.customer||'—')+'</td><td>'+esc(methodLabel[r.method]||r.method)+'</td><td class="amount">'+money(r.amount)+'</td><td>'+esc(actorNames[r.actor]||'Kullanıcı')+'</td><td>'+esc(r.updatedBy?actorNames[r.updatedBy]||'Kullanıcı':'—')+updated+'</td><td><span class="status">'+(r.updatedAt?'Düzenlendi':'Kaydedildi')+'</span>'+editButton</td></tr>';
+  return '<tr><td>'+esc(dateTR(r.date))+'</td><td><span class="type '+r.direction+'">'+typ+'</span></td><td>'+esc(r.description)+(r.initial?' <small>(eski kayıt)</small>':'')+'</td><td>'+esc(order?'#'+order.order_number:'—')+'</td><td>'+esc(r.customer||'—')+'</td><td>'+esc(methodLabel[r.method]||r.method)+'</td><td class="amount">'+money(r.amount)+'</td><td>'+esc(actorNames[r.actor]||'Kullanıcı')+'</td><td>'+esc(r.updatedBy?actorNames[r.updatedBy]||'Kullanıcı':'—')+updated+'</td><td><span class="status">'+(r.updatedAt?'Düzenlendi':'Kaydedildi')+'</span>'+editButton+'</td></tr>';
  }).join('')||'<tr><td colspan="10">Bu filtrede kasa hareketi bulunamadı.</td></tr>';
  $('page-caption').textContent=filtered.length+' kayıt · Sayfa '+(page+1)+' / '+totalPages;
  $('prev').disabled=page===0;$('next').disabled=page===totalPages-1;
@@ -241,7 +241,7 @@ async function openExpenseEditor(id){
 async function saveExpenseEdit(event){
  event.preventDefault();if(!editingExpense)return;
  const btn=$('save-expense-edit'),amount=Number($('edit-expense-amount').value),raw=$('edit-expense-date').value;
- const iso=new Date(raw);
+ const iso=new Date(raw+':00+03:00');
  if(!Number.isFinite(amount)||amount<=0||!raw||isNaN(iso.getTime())){$('edit-expense-feedback').textContent='Tutar veya tarih geçersiz.';return}
  if(!confirm('Harcama değişikliklerini kaydetmek istiyor musunuz? İşlem geçmişe eklenecek.'))return;
  btn.disabled=true;$('edit-expense-feedback').textContent='Kaydediliyor...';
