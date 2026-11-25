@@ -27,7 +27,7 @@ function makeRows(){
  let result=[];
  for(const o of orders){
   const implicit=Math.max(0,unitMoney(Number(o.paid_amount||0)-(paymentsByOrder.get(o.id)||0)-(cashByOrder.get(o.id)||0)));
-  if(implicit>0.005)result.push({id:'initial-'+o.id,branch_id:o.branch_id,order_id:o.id,date:o.created_at,direction:'income',method:o.payment_method||'cash',amount:implicit,description:'Sipariş başlangıç tahsilatı',customer:o.customer_name,actor:o.created_by,initial:true});
+  if(implicit>0.005)result.push({id:'initial-'+o.id,branch_id:o.branch_id,order_id:o.id,date:o.created_at,direction:'income',method:o.payment_method||'cash',amount:implicit,description:'Sipariş başlangıç tahsilatı',customer:o.customer_name,actor:o.created_by,initial:true,source:'initial',editable:true});
  }
  for(const p of payments){
   const o=orderMap.get(p.order_id);if(!o)continue;
@@ -218,7 +218,9 @@ function formatChange(e){
  return Object.keys(names).filter(k=>String(a[k]??'')!==String(b[k]??'')).map(k=>'<div><b>'+names[k]+':</b> '+esc(fmt(k,a[k]))+' → '+esc(fmt(k,b[k]))+'</div>').join('');
 }
 async function showHistory(){
- const {data,error}=editingExpense.source==='payment'
+ const {data,error}=editingExpense.source==='initial'
+ ?await sb.rpc('erp_initial_receipt_history',{p_org:selectedOrg,p_order:editingExpense.order_id})
+ :editingExpense.source==='payment'
  ?await sb.rpc('erp_order_payment_edit_history',{p_org:selectedOrg,p_payment:editingExpense.id})
  :await sb.rpc('erp_cash_movement_history',{p_org:selectedOrg,p_movement:editingExpense.id});
  if(error)throw error;
@@ -229,14 +231,16 @@ async function openExpenseEditor(id){
  if(!canEditRow(r)){feedback('Bu kasa hareketini düzenleyemezsiniz.',true);return}
  editingExpense=r;
  $('edit-expense-form').reset();
- const orderLinked=!!r.order_id;
- $('edit-expense-help').textContent=orderLinked?'Siparişe bağlı tahsilat: tutar değişince siparişin ödenen tutarı ve kalan bakiyesi de güncellenir. İşlem türü ve şube değiştirilemez.':'Manuel kasa hareketini Tahsilat veya Harcama olarak değiştirebilirsiniz. Değişiklik geçmişi saklanır.';
+ const orderLinked=!!r.order_id,isInitial=r.source==='initial';
+ $('edit-expense-help').textContent=isInitial?'Sipariş başlangıç tahsilatı: yalnız tutar ve ödeme yöntemi düzenlenebilir. Sipariş bakiyesi güncellenir; tarih ve işlem açıklaması sabittir.':orderLinked?'Siparişe bağlı tahsilat: tutar değişince ödenen tutar ve kalan bakiye de güncellenir. İşlem türü ve şube değiştirilemez.':'Manuel kasa hareketini Tahsilat veya Harcama olarak değiştirebilirsiniz. Değişiklik geçmişi saklanır.';
  $('edit-expense-direction').disabled=orderLinked;
  $('edit-expense-branch').disabled=orderLinked;
- $('edit-expense-counterparty').closest('label').hidden=r.source==='payment';
+ $('edit-expense-date').disabled=isInitial;
+ $('edit-expense-counterparty').closest('label').hidden=r.source==='payment'||isInitial;
+ $('edit-expense-description').closest('label').hidden=isInitial;
  $('edit-expense-description').maxLength=r.source==='payment'?500:1500;
  $('edit-expense-description').minLength=r.source==='payment'?0:3;
- $('edit-expense-description').required=r.source!=='payment';
+ $('edit-expense-description').required=!isInitial&&r.source!=='payment';
  $('edit-expense-branch').innerHTML=branches.map(b=>'<option value="'+esc(b.id)+'">'+esc(b.name)+'</option>').join('');
  $('edit-expense-direction').value=r.direction;
  $('edit-expense-branch').value=r.branch_id;
@@ -264,7 +268,9 @@ async function saveExpenseEdit(event){
  if(!confirm(orderLinked?'Sipariş tahsilatını güncellemek istiyor musunuz? Siparişin ödenen tutarı ve kalan borcu da değişecektir.':'Kasa hareketini '+(direction==='income'?'Tahsilat':'Harcama')+' olarak kaydetmek istiyor musunuz? Kasa bakiyesi yeniden hesaplanacak ve değişiklik geçmişe eklenecek.'))return;
  btn.disabled=true;$('edit-expense-feedback').textContent='Kaydediliyor...';
  try{
-  const {error}=orderLinked
+  const {error}=editingExpense.source==='initial'
+   ?await sb.rpc('erp_edit_initial_receipt',{p_org:selectedOrg,p_order:editingExpense.order_id,p_amount:amount,p_method:$('edit-expense-method').value})
+   :orderLinked
    ?await sb.rpc('erp_edit_order_receipt',{p_org:selectedOrg,p_source:editingExpense.source,p_receipt:editingExpense.id,p_amount:amount,p_method:$('edit-expense-method').value,p_description:$('edit-expense-description').value.trim(),p_counterparty:$('edit-expense-counterparty').value.trim()||null,p_recorded_at:iso.toISOString()})
    :await sb.rpc('erp_edit_cash_movement',{p_org:selectedOrg,p_movement:editingExpense.id,p_direction:direction,p_branch:$('edit-expense-branch').value,p_amount:amount,p_method:$('edit-expense-method').value,p_description:$('edit-expense-description').value.trim(),p_counterparty:$('edit-expense-counterparty').value.trim()||null,p_movement_at:iso.toISOString()});
   if(error)throw error;
