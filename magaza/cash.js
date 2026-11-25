@@ -35,7 +35,7 @@ function makeRows(){
  }
  for(const m of moves){
   const o=orderMap.get(m.order_id);
-  result.push({id:m.id,branch_id:m.branch_id,order_id:m.order_id,date:m.movement_at||m.created_at,direction:m.direction,method:m.method,amount:Number(m.amount),description:m.description,customer:m.counterparty||o?.customer_name||'',actor:m.created_by,updatedBy:m.updated_by,updatedAt:m.updated_at,editable:m.direction==='expense'&&!m.order_id,rawMovement:m});
+  result.push({id:m.id,branch_id:m.branch_id,order_id:m.order_id,date:m.movement_at||m.created_at,direction:m.direction,method:m.method,amount:Number(m.amount),description:m.description,customer:m.counterparty||o?.customer_name||'',actor:m.created_by,updatedBy:m.updated_by,updatedAt:m.updated_at,editable:!m.order_id,rawMovement:m});
  }
  return result.sort((a,b)=>new Date(b.date)-new Date(a.date));
 }
@@ -211,21 +211,22 @@ function canEditRow(r){
  return canEditExpense&&r?.editable&&(role==='owner'||role==='manager'||role==='admin'||r.actor===user?.id);
 }
 function formatChange(e){
- const a=e.old_data||{},b=e.new_data||{},names={branch_id:'Şube',amount:'Tutar',method:'Yöntem',description:'Açıklama',counterparty:'Firma',movement_at:'Tarih'};
- const fmt=(k,v)=>k==='amount'?money(v):k==='movement_at'?dateTR(v):k==='method'?(methodLabel[v]||v):k==='branch_id'?(branches.find(x=>x.id===v)?.name||v):v||'—';
+ const a=e.old_data||{},b=e.new_data||{},names={direction:'İşlem Türü',branch_id:'Şube',amount:'Tutar',method:'Yöntem',description:'Açıklama',counterparty:'Firma',movement_at:'Tarih'};
+ const fmt=(k,v)=>k==='amount'?money(v):k==='movement_at'?dateTR(v):k==='method'?(methodLabel[v]||v):k==='direction'?(v==='income'?'Tahsilat':v==='expense'?'Harcama':v):k==='branch_id'?(branches.find(x=>x.id===v)?.name||v):v||'—';
  return Object.keys(names).filter(k=>String(a[k]??'')!==String(b[k]??'')).map(k=>'<div><b>'+names[k]+':</b> '+esc(fmt(k,a[k]))+' → '+esc(fmt(k,b[k]))+'</div>').join('');
 }
 async function showHistory(){
- const {data,error}=await sb.rpc('erp_cash_expense_history',{p_org:selectedOrg,p_movement:editingExpense.id});
+ const {data,error}=await sb.rpc('erp_cash_movement_history',{p_org:selectedOrg,p_movement:editingExpense.id});
  if(error)throw error;
  $('edit-expense-history').innerHTML=(data||[]).map(h=>'<div class="cash-history-entry"><strong>'+esc(h.changed_by)+'</strong> · '+esc(dateTR(h.changed_at))+formatChange(h)+'</div>').join('')||'Henüz değişiklik yapılmadı.';
 }
 async function openExpenseEditor(id){
  const r=rows.find(x=>x.id===id);
- if(!canEditRow(r)){feedback('Bu harcamayı düzenleyemezsiniz.',true);return}
+ if(!canEditRow(r)){feedback('Bu kasa hareketini düzenleyemezsiniz.',true);return}
  editingExpense=r;
  $('edit-expense-form').reset();
  $('edit-expense-branch').innerHTML=branches.map(b=>'<option value="'+esc(b.id)+'">'+esc(b.name)+'</option>').join('');
+ $('edit-expense-direction').value=r.direction;
  $('edit-expense-branch').value=r.branch_id;
  $('edit-expense-date').value=trDateInput(r.date);
  $('edit-expense-amount').value=r.amount;
@@ -243,13 +244,15 @@ async function saveExpenseEdit(event){
  const btn=$('save-expense-edit'),amount=Number($('edit-expense-amount').value),raw=$('edit-expense-date').value;
  const iso=new Date(raw+':00+03:00');
  if(!Number.isFinite(amount)||amount<=0||!raw||isNaN(iso.getTime())){$('edit-expense-feedback').textContent='Tutar veya tarih geçersiz.';return}
- if(!confirm('Harcama değişikliklerini kaydetmek istiyor musunuz? İşlem geçmişe eklenecek.'))return;
+ const direction=$('edit-expense-direction').value;
+ if(!['income','expense'].includes(direction)){$('edit-expense-feedback').textContent='İşlem türü seçiniz.';return}
+ if(!confirm('Kasa hareketini '+(direction==='income'?'Tahsilat':'Harcama')+' olarak kaydetmek istiyor musunuz? Kasa bakiyesi yeniden hesaplanacak ve değişiklik geçmişe eklenecek.'))return;
  btn.disabled=true;$('edit-expense-feedback').textContent='Kaydediliyor...';
  try{
-  const {error}=await sb.rpc('erp_edit_cash_expense',{p_org:selectedOrg,p_movement:editingExpense.id,p_branch:$('edit-expense-branch').value,p_amount:amount,p_method:$('edit-expense-method').value,p_description:$('edit-expense-description').value.trim(),p_counterparty:$('edit-expense-counterparty').value.trim()||null,p_movement_at:iso.toISOString()});
+  const {error}=await sb.rpc('erp_edit_cash_movement',{p_org:selectedOrg,p_movement:editingExpense.id,p_direction:direction,p_branch:$('edit-expense-branch').value,p_amount:amount,p_method:$('edit-expense-method').value,p_description:$('edit-expense-description').value.trim(),p_counterparty:$('edit-expense-counterparty').value.trim()||null,p_movement_at:iso.toISOString()});
   if(error)throw error;
   $('edit-expense-modal').hidden=true;editingExpense=null;
-  await load();feedback('Harcama güncellendi ve değişiklik geçmişi kaydedildi.');
+  await load();feedback('Kasa hareketi güncellendi ve değişiklik geçmişi kaydedildi.');
  }catch(e){$('edit-expense-feedback').textContent='Kaydedilemedi: '+e.message}
  finally{btn.disabled=false}
 }
