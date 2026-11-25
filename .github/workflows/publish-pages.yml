@@ -15,46 +15,35 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout site
         uses: actions/checkout@v4
       - name: Validate JavaScript syntax
+        shell: bash
         run: |
-          find . -type f -name '*.js' -not -path './node_modules/*' -print0 | while IFS= read -r -d '' file; do
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
             echo "Checking $file"
-            node --check "$file" || exit 1
-          done
+            node --check "$file"
+          done < <(find . -type f -name '*.js' -not -path './node_modules/*' -print0)
       - name: Setup Pages
         uses: actions/configure-pages@v5
-      - name: Upload static site
+      - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: .
-      - name: Wait for uploaded artifact to become visible
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          GH_RUN_ID: ${{ github.run_id }}
-        run: |
-          for attempt in $(seq 1 18); do
-            if curl --fail --silent --show-error \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/$GH_REPO/actions/runs/$GH_RUN_ID/artifacts?per_page=100" \
-              | jq -e '.artifacts[] | select(.name == "github-pages" and .expired == false)' > /dev/null; then
-              echo "GitHub Pages artifact is available."
-              exit 0
-            fi
-            echo "Artifact not visible yet; checking again ($attempt/18)"
-            sleep 5
-          done
-          echo "::error::GitHub Pages artifact did not become visible after upload."
-          exit 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Allow artifact metadata to settle
+        run: sleep 20
       - name: Publish site
         id: deployment
         uses: actions/deploy-pages@v4
