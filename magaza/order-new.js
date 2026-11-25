@@ -125,14 +125,24 @@ function syncProductRequiredFields(){
 function syncCategoryUI(){
  $('product-status-wrapper').hidden=isAccessory();
  if(isAccessory())$('product-status').value='processing';
- // Aksesuarlar adet ve birim fiyatla satılır; ölçü alanlarını formdan gizle.
+ // Aksesuar alanları gerçek DOM'dan çıkarılır, diğer kategorilerde özgün sıralarına geri konur.
+ const measureContainer=$('product-quantity').closest('.three-inputs');
+ const accessory=isAccessory();
  for(const id of ['product-width','product-height']){
-  const field=$(id);
-  field.closest('label').hidden=isAccessory();
-  field.disabled=isAccessory();
-  if(isAccessory())field.value='';
+  const field=$(id),row=field.closest('label');
+  if(accessory){
+   field.value='';
+   field.required=false;
+   field.disabled=true;
+   row.hidden=true;
+   row.remove();
+  }else{
+   if(!measureContainer.contains(row))measureContainer.append(row);
+   row.hidden=false;
+   field.disabled=false;
+  }
  }
- $('product-quantity').closest('.three-inputs')?.classList.toggle('accessory-quantity-only',isAccessory());
+ measureContainer.classList.toggle('accessory-quantity-only',accessory);
  const tulPileOption=pileControlSelect.querySelector('option[value="2.5x"]');
  if(isTul()&&!tulPileOption){
   const option=new Option('2,5x · Orta Sık Pile','2.5x');
