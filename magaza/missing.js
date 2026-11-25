@@ -2,7 +2,7 @@
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY),$=id=>document.getElementById(id);
 const label=val=>String(val??'');
-let user=null,org='',organizations=[],branches=[],items=[],tab='all',busy=new Set();
+let user=null,org='',organizations=[],branches=[],items=[],accessoryItems=[],tab='all',busy=new Set();
 const dateParts=()=>{const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Istanbul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const obj=Object.fromEntries(parts.map(p=>[p.type,p.value]));return obj.year+'-'+obj.month+'-'+obj.day};
 const today=dateParts();
 const days=(date)=>{if(!date)return null;const a=Date.parse(date+'T12:00:00Z'),b=Date.parse(today+'T12:00:00Z');return Math.round((a-b)/86400000)};
@@ -41,20 +41,21 @@ async function load(){
  if(!org)return;
  msg('Eksik ürünler yükleniyor...');
  try{
-  const [branchResponse,missingResponse]=await Promise.all([
+  const [branchResponse,missingResponse,accessoryResponse]=await Promise.all([
    sb.from('erp_branches').select('id,name').eq('organization_id',org).order('name'),
-   sb.rpc('erp_list_missing_items',{p_org:org})
+   sb.rpc('erp_list_missing_items',{p_org:org}),
+   sb.rpc('erp_list_pending_accessory_items',{p_org:org})
   ]);
-  if(branchResponse.error||missingResponse.error)throw branchResponse.error||missingResponse.error;
-  branches=branchResponse.data||[];items=missingResponse.data||[];
+  if(branchResponse.error||missingResponse.error||accessoryResponse.error)throw branchResponse.error||missingResponse.error||accessoryResponse.error;
+  branches=branchResponse.data||[];items=missingResponse.data||[];accessoryItems=accessoryResponse.data||[];
   const previous=$('branch-filter').value;
   optionList($('branch-filter'),branches,'Tüm Şubeler',previous);
-  render();msg(items.length>=2000?'En fazla 2.000 ürün gösteriliyor. Daha fazlası için işletme bazında rapor alınmalıdır.':'');
+  render();msg(items.length>=2000||accessoryItems.length>=2000?'Liste başına en fazla 2.000 ürün gösteriliyor. Daha fazlası için işletme bazında rapor alınmalıdır.':'');
  }catch(e){msg('Liste yüklenemedi: '+e.message)}
 }
 function filteredItems(){
  const branch=$('branch-filter').value,query=$('search-filter').value.trim().toLocaleLowerCase('tr-TR');
- return items.filter(i=>{
+ return (tab==='accessories'?accessoryItems:items).filter(i=>{
   if(branch&&i.branch_id!==branch)return false;
   if(tab==='urgent'&&!i.urgent)return false;
   if(tab==='late'&&!(days(i.delivery_date)<0))return false;
@@ -68,10 +69,14 @@ function render(){
  $('total-urgent').textContent=items.filter(i=>i.urgent).length;
  $('total-late').textContent=items.filter(i=>days(i.delivery_date)<0).length;
  $('total-today').textContent=items.filter(i=>days(i.delivery_date)===0).length;
+ $('total-accessory').textContent=new Set(accessoryItems.map(i=>i.order_id)).size;
+ $('missing-hint').textContent=tab==='accessories'?'Yalnızca siparişi teslim edilmemiş müşterilerin aksesuar ürünleri listelenir. Sipariş teslim edildiğinde veya aksesuar iptal edildiğinde bu listeden kalkar.':'Yalnızca atölye aşamasına geçmiş ve mağazada teslim alındığı kaydedilmemiş ürünler gösterilir. Barkodla mağazaya kabul edildiğinde ürün bu listeden kalkar.';
+ $('accessory-heading').hidden=tab!=='accessories';
  $('tab-filters').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
  const container=$('product-list');container.replaceChildren();
  const filtered=filteredItems().sort((a,b)=>(Number(b.urgent)-Number(a.urgent))||((days(a.delivery_date)??9999)-(days(b.delivery_date)??9999))||(Number(a.order_number)-Number(b.order_number)));
- if(!filtered.length){container.append(create('div','card missing-empty','Bu filtrede eksik ürün bulunmuyor.'));return}
+ if(tab==='accessories')$('accessory-caption').textContent=new Set(filtered.map(i=>i.order_id)).size+' sipariş · '+filtered.length+' aksesuar';
+ if(!filtered.length){container.append(create('div','card missing-empty',tab==='accessories'?'Teslim edilmemiş aksesuar siparişi bulunmuyor.':'Bu filtrede eksik ürün bulunmuyor.'));return}
  for(const item of filtered){
   const card=create('article','card missing-card'+(item.urgent?' urgent':''));
   const details=create('div');
@@ -84,19 +89,26 @@ function render(){
   const meta=create('div','meta');
   [item.branch_name,'En: '+(item.width_cm??'—')+' cm','Boy: '+(item.height_cm??'—')+' cm','Teslim: '+formatDate(item.delivery_date)].forEach(v=>meta.append(create('span','',v)));
   details.append(meta);
+  if(tab==='accessories'){
+   const info=create('div','accessory-item-info');
+   info.append(create('span','','Adet: '+(item.quantity??1)));
+   info.append(create('span','','Durum: '+({new:'Yeni',processing:'İşlemde',workshop:'Atölyede',ready:'Mağazada',waiting:'Beklemede',partial_ready:'Kısmi Hazır'}[item.item_status]||item.item_status||'Siparişte')));
+   details.append(info);
+  }
   if(item.production_note)details.append(create('p','item-notes','Üretim notu: '+item.production_note));
   const actions=create('div','missing-card-actions');
+  const canMarkUrgent=tab!=='accessories'||(item.item_status==='workshop'&&['workshop','partial_ready'].includes(item.order_status));
   const checkboxLabel=create('label','urgent-checkbox');
-  const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=!!item.urgent;checkbox.disabled=busy.has(item.item_id);
+  const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=!!item.urgent;checkbox.disabled=busy.has(item.item_id)||!canMarkUrgent;
   checkbox.addEventListener('change',()=>changeUrgent(item,!item.urgent));
-  checkboxLabel.append(checkbox,document.createTextNode('Acil listeye ekle'));actions.append(checkboxLabel);
+  if(canMarkUrgent){checkboxLabel.append(checkbox,document.createTextNode('Acil listeye ekle'));actions.append(checkboxLabel)}
   if(item.urgent){
    const note=create('div','urgent-note','Acil notu: '+(item.urgent_note||'Not belirtilmedi'));actions.append(note);
   }
   const tools=create('div','missing-urgent-tools');
   const edit=create('button','secondary',item.urgent?'Acil Notunu Düzenle':'Acil Notuyla Ekle');edit.type='button';edit.disabled=busy.has(item.item_id);edit.onclick=()=>editUrgent(item);
   const orderLink=create('a','view-order','Siparişi Aç');orderLink.href='./order-new.html?org='+encodeURIComponent(org)+'&edit='+encodeURIComponent(item.order_id);
-  tools.append(edit,orderLink);actions.append(tools);card.append(details,actions);container.append(card);
+  if(canMarkUrgent)tools.append(edit);tools.append(orderLink);actions.append(tools);card.append(details,actions);container.append(card);
  }
 }
 async function changeUrgent(item,urgent,note){
