@@ -169,13 +169,88 @@ function accessoryWhatsAppText(){
  lines.push('','*Toplam:* '+selected.length+' aksesuar kalemi / '+selected.reduce((sum,i)=>sum+(Number(i.quantity)||1),0)+' adet');
  return lines.join('\n');
 }
-function sendAccessoryWhatsApp(){
- const chosen=selectedAccessoryRows();if(!chosen.length){msg('WhatsApp için önce aksesuar seçin.');return}
- const text=accessoryWhatsAppText();
- const url='https://api.whatsapp.com/send?text='+encodeURIComponent(text);
- const opened=window.open(url,'_blank','noopener,noreferrer');
- if(!opened){msg('WhatsApp penceresi açılamadı. Tarayıcınızın açılır pencere iznini kontrol edin.');return}
- msg(chosen.length+' aksesuar WhatsApp mesajına hazırlandı. Mesajı göndermeden önce kontrol edin.');
+function accessoryOrderPdf(chosen){
+ if(!window.jspdf?.jsPDF)throw Error('PDF kitaplığı yüklenemedi. Sayfayı yenileyin.');
+ const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+ const company=organizations.find(x=>x.id===org)?.name||'KONAK ERP';
+ const todayStr=new Date().toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'});
+ const totalQty=chosen.reduce((sum,i)=>sum+(Number(i.quantity)||1),0);
+ const rowsPerPage=13,pages=Math.max(1,Math.ceil(chosen.length/rowsPerPage));
+ const W=1190,H=1683,cols=[50,170,385,760,870,1140];
+ const font='Arial, sans-serif';
+ function fitText(ctx,value,maxWidth){
+  let t=String(value??'—');
+  if(ctx.measureText(t).width<=maxWidth)return t;
+  while(t.length>1&&ctx.measureText(t+'…').width>maxWidth)t=t.slice(0,-1);
+  return t+'…';
+ }
+ function wrapText(ctx,value,maxWidth,maxLines=2){
+  const words=String(value??'—').split(/\s+/),out=[];let line='';
+  for(const word of words){
+   const next=line?line+' '+word:word;
+   if(ctx.measureText(next).width<=maxWidth){line=next;continue}
+   if(line){out.push(line);line=word}else{out.push(fitText(ctx,word,maxWidth));line=''}
+   if(out.length>=maxLines)break;
+  }
+  if(out.length<maxLines&&line)out.push(line);
+  return out.slice(0,maxLines).map(t=>fitText(ctx,t,maxWidth));
+ }
+ for(let page=0;page<pages;page++){
+  const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');if(!ctx)throw Error('PDF görüntüsü oluşturulamadı.');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#193d2b';ctx.fillRect(0,0,W,20);
+  ctx.fillStyle='#173d2b';ctx.font='bold 42px '+font;ctx.fillText('KONAK ERP',50,100);
+  ctx.fillStyle='#47604e';ctx.font='23px '+font;ctx.fillText(fitText(ctx,company,750),50,144);
+  ctx.fillStyle='#1a3e2d';ctx.font='bold 33px '+font;ctx.fillText('AKSESUAR SİPARİŞ LİSTESİ',50,219);
+  ctx.fillStyle='#5c6b60';ctx.font='22px '+font;ctx.fillText('Tarih: '+todayStr+'    |    '+chosen.length+' kalem / '+totalQty+' adet',50,262);
+  ctx.fillStyle='#e7f0e9';ctx.fillRect(40,302,1110,66);
+  ctx.font='bold 19px '+font;ctx.fillStyle='#1c3d2a';
+  const headers=['Sipariş','Müşteri','Ürün / Aksesuar','Adet','Şube'];
+  [50,170,385,760,870].forEach((x,index)=>ctx.fillText(headers[index],x,341));
+  const shown=chosen.slice(page*rowsPerPage,(page+1)*rowsPerPage);
+  for(let j=0;j<shown.length;j++){
+   const i=shown[j],y=368+j*87;
+   if(j%2===1){ctx.fillStyle='#f7faf7';ctx.fillRect(40,y,1110,87)}
+   ctx.strokeStyle='#e0e8e1';ctx.beginPath();ctx.moveTo(40,y+87);ctx.lineTo(1150,y+87);ctx.stroke();
+   ctx.fillStyle='#223b2b';ctx.font='bold 20px '+font;ctx.fillText('#'+i.order_number,50,y+38);
+   ctx.font='19px '+font;
+   const drawLines=(v,x,width)=>wrapText(ctx,v,width,2).forEach((txt,n)=>ctx.fillText(txt,x,y+34+n*27));
+   drawLines(i.customer_name,170,198);
+   drawLines(i.product_name,385,360);
+   ctx.fillText(String(Number(i.quantity)||1),760,y+38);
+   drawLines(i.branch_name,870,260);
+  }
+  ctx.fillStyle='#e7f0e9';ctx.fillRect(40,1530,1110,66);
+  ctx.fillStyle='#224432';ctx.font='bold 22px '+font;
+  ctx.fillText('TOPLAM: '+chosen.length+' aksesuar kalemi / '+totalQty+' adet',55,1570);
+  ctx.fillStyle='#687b6c';ctx.font='17px '+font;ctx.fillText('Sayfa '+(page+1)+' / '+pages,1010,1625);
+  doc.addImage(canvas.toDataURL('image/jpeg',0.88),'JPEG',0,0,210,297,undefined,'FAST');
+  if(page<pages-1)doc.addPage();
+ }
+ return doc.output('blob');
+}
+async function sendAccessoryWhatsApp(){
+ const chosen=selectedAccessoryRows();if(!chosen.length){msg('PDF için önce aksesuar seçin.');return}
+ const btn=$('send-accessory-whatsapp');btn.disabled=true;
+ const filename='KONAK_ERP_Aksesuar_Siparisleri_'+new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Istanbul'})+'.pdf';
+ try{
+  const blob=accessoryOrderPdf(chosen);
+  const file=new File([blob],filename,{type:'application/pdf'});
+  if(navigator.share&&navigator.canShare?.({files:[file]})){
+   try{
+    await navigator.share({files:[file],title:'KONAK ERP - Aksesuar Sipariş Listesi'});
+    msg('PDF paylaşım ekranına aktarıldı. WhatsApp üzerinden alıcıyı seçip gönderin.');return;
+   }catch(e){if(e.name==='AbortError'){msg('PDF paylaşımı iptal edildi.');return}}
+  }
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');link.href=url;link.download=filename;
+  document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+  const opened=window.open('https://web.whatsapp.com/','_blank','noopener,noreferrer');
+  msg(opened?'PDF indirildi ve WhatsApp Web açıldı. İndirilen PDF dosyasını WhatsApp sohbetinde ataç simgesinden ekleyip gönderin.':'PDF indirildi. WhatsApp’ı açıp dosyayı sohbetinize ekleyin.');
+ }catch(e){msg('PDF hazırlanamadı: '+e.message)}
+ finally{btn.disabled=selectedAccessoryRows().length===0}
 }
 function urgentList(){
  const chosen=items.filter(x=>x.urgent&&(!$('branch-filter').value||x.branch_id===$('branch-filter').value));
