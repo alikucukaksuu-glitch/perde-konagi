@@ -196,3 +196,9 @@
 .s-pile-check select{width:100%;min-height:42px;border:1px solid #d6dfd8;border-radius:10px;background:#fff;padding:8px 10px;color:#1c3d31;font:inherit}
 
 #catalog-search-block{margin-top:4px}#catalog-search-block .catalog-results{margin-top:0}#product-name{width:100%}
+
+/* Correct hidden state for quote transfer helper on mobile Safari */
+#transfer-order-to-quote[hidden],#transfer-order-to-quote-help[hidden]{display:none!important}
+#transfer-order-to-quote{min-height:42px;justify-self:start;max-width:100%;white-space:normal}
+#transfer-order-to-quote:disabled{opacity:.60;cursor:not-allowed}
+@media(max-width:700px){#transfer-order-to-quote{width:100%;justify-self:stretch}}
