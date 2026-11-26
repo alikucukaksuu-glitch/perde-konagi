@@ -607,9 +607,20 @@ function stage(next){
   $('editor-print-label').title=!printAllowed?'İptal veya teslim edilmiş sipariş yazdırılamaz':editing?.barcode_printed_at?'Yönetici yeniden baskısı: eski etiket kaydı korunur':'Üretim barkodlarını yazdır';
   $('editor-whatsapp').hidden=!editing||![...products.keys()].some(k=>['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ'].some(c=>k.startsWith(c+'|')));
   syncOrderStatusOptions();
-  const canTransfer=!quoteMode&&!!editing&&isManager()&&editing.status==='processing'&&Number(editing.paid_amount||0)===0&&!editing.barcode_printed_at&&[...products.values()].length>0&&[...products.values()].every(p=>p.status==='processing'&&!p.printedAt&&!p.cancellationRequestedAt);
-  $('transfer-order-to-quote').hidden=!canTransfer;
-  $('transfer-order-to-quote-help').hidden=!canTransfer;
+  const showTransfer=!quoteMode&&!!editing&&isManager()&&editing.status==='processing';
+  const transferProblems=[];
+  if(showTransfer){
+   if(Number(editing.paid_amount||0)!==0)transferProblems.push('Tahsilat yapılmış');
+   if(editing.barcode_printed_at)transferProblems.push('Barkod basılmış');
+   if(!products.size)transferProblems.push('Ürün bulunmuyor');
+   if([...products.values()].some(p=>p.status!=='processing'||p.printedAt||p.cancellationRequestedAt))transferProblems.push('Ürünlerin bir kısmı İşlemde değil veya üretim işlemi başlamış');
+  }
+  $('transfer-order-to-quote').hidden=!showTransfer;
+  $('transfer-order-to-quote').disabled=!!transferProblems.length;
+  $('transfer-order-to-quote-help').hidden=!showTransfer;
+  $('transfer-order-to-quote-help').textContent=transferProblems.length
+   ?'Şu anda tekliflere aktarılamaz: '+transferProblems.join(', ')+'.'
+   :'Yalnızca ödemesiz ve üretime alınmamış İşlemde siparişler aktarılabilir.';
   if(quoteMode){$('editor-print-a4').hidden=true;$('editor-print-label').hidden=true;$('editor-whatsapp').hidden=true;}
   $('summary-customer').textContent=$('customer-name').value.trim();
   $('summary-phone').textContent=$('customer-phone').value.trim()||'—';
