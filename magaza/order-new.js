@@ -607,9 +607,10 @@ function stage(next){
   $('editor-print-label').title=!printAllowed?'İptal veya teslim edilmiş sipariş yazdırılamaz':editing?.barcode_printed_at?'Yönetici yeniden baskısı: eski etiket kaydı korunur':'Üretim barkodlarını yazdır';
   $('editor-whatsapp').hidden=!editing||![...products.keys()].some(k=>['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ'].some(c=>k.startsWith(c+'|')));
   syncOrderStatusOptions();
-  const showTransfer=!quoteMode&&!!editing&&isManager()&&editing.status==='processing';
+  const showTransfer=!quoteMode&&!!editing&&editing.status==='processing';
   const transferProblems=[];
   if(showTransfer){
+   if(!isManager())transferProblems.push('Bu işlem yalnızca yönetici hesabında kullanılabilir (oturum rolü: '+(memberRole||'bilinmiyor')+')');
    if(Number(editing.paid_amount||0)!==0)transferProblems.push('Tahsilat yapılmış');
    if(editing.barcode_printed_at)transferProblems.push('Barkod basılmış');
    if(!products.size)transferProblems.push('Ürün bulunmuyor');
