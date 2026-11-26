@@ -607,6 +607,9 @@ function stage(next){
   $('editor-print-label').title=!printAllowed?'İptal veya teslim edilmiş sipariş yazdırılamaz':editing?.barcode_printed_at?'Yönetici yeniden baskısı: eski etiket kaydı korunur':'Üretim barkodlarını yazdır';
   $('editor-whatsapp').hidden=!editing||![...products.keys()].some(k=>['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ'].some(c=>k.startsWith(c+'|')));
   syncOrderStatusOptions();
+  const canTransfer=!quoteMode&&!!editing&&isManager()&&editing.status==='processing'&&Number(editing.paid_amount||0)===0&&!editing.barcode_printed_at&&[...products.values()].length>0&&[...products.values()].every(p=>p.status==='processing'&&!p.printedAt&&!p.cancellationRequestedAt);
+  $('transfer-order-to-quote').hidden=!canTransfer;
+  $('transfer-order-to-quote-help').hidden=!canTransfer;
   if(quoteMode){$('editor-print-a4').hidden=true;$('editor-print-label').hidden=true;$('editor-whatsapp').hidden=true;}
   $('summary-customer').textContent=$('customer-name').value.trim();
   $('summary-phone').textContent=$('customer-phone').value.trim()||'—';
@@ -835,6 +838,16 @@ $('back-step').onclick=()=>{$('delivery-date').value=$('delivery-copy').value;$(
 $('delivery-copy').onchange=()=>{$('delivery-date').value=$('delivery-copy').value};
 $('type-copy').onchange=()=>{$('order-type').value=$('type-copy').value};
 $('note-copy').oninput=()=>{$('order-note').value=$('note-copy').value};
+$('transfer-order-to-quote').onclick=async()=>{
+ if(!editing||!isManager()||editing.status!=='processing'){alertText('Yalnızca İşlemde durumundaki siparişler yönetici tarafından tekliflere aktarılabilir.');return}
+ if(!confirm('Bu sipariş tekliflere TASLAK olarak aktarılacak. Orijinal sipariş aktif listeden çıkarılıp geçmişi saklanacak. Tahsilat, baskı veya üretim işlemi bulunan siparişler aktarılmaz. Devam edilsin mi?'))return;
+ const button=$('transfer-order-to-quote');button.disabled=true;
+ try{
+  const {data,error}=await sb.rpc('erp_transfer_processing_order_to_quote',{p_org:org.id,p_order:editing.id});
+  if(error)throw error;
+  location.replace('./?view=quotes&transferred='+encodeURIComponent(data));
+ }catch(e){alertText('Tekliflere aktarılamadı: '+e.message);button.disabled=false}
+};
 $('product-form').onsubmit=storeItem;
 $('order-status-display').onchange=async()=>{
  const select=$('order-status-display'),previous=editing?.status||'processing',next=select.value;
