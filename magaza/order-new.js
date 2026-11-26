@@ -323,7 +323,10 @@ function drawSlots(){
     }
     select.value=record.status||'processing';
     if(record.status==='ready'||record.status==='delivered'||record.status==='cancelled'||['ready','delivered','cancelled','voided'].includes(editing.status)||(!isManager()&&editing.status==='waiting'&&record.status!=='waiting'))select.disabled=true;
-    select.onchange=async()=>{const prev=record.status,next=select.value;select.disabled=true;
+    select.onchange=async()=>{const prev=record.status,next=select.value;
+      if(prev==='workshop'&&next==='processing'&&!isManager()){select.value=prev;alertText('Atölyeden İşlemde durumuna yalnızca yönetici geri alabilir.');return;}
+      if(prev==='workshop'&&next==='processing'&&!confirm('Bu ürün Atölyeden İşlemde durumuna geri alınacak. Üretim planlamasını kontrol ettiniz mi?')){select.value=prev;return;}
+      select.disabled=true;
       try{if(next==='cancelled'){await cancelItemInEditor(record);return;}await updateItemStatus(record,next);record.status=next;drawSlots();}
       catch(e){record.status=prev;drawSlots();alertText('Satır durumu değiştirilemedi: '+e.message);}
     };
@@ -843,7 +846,7 @@ $('order-status-display').onchange=async()=>{
    reason=prompt('Sipariş için bekleme nedeni (en az 3 karakter):','');
    if(reason===null||reason.trim().length<3){select.value=previous;$('order-status-help').textContent='Bekleme nedeni en az 3 karakter olmalı.';return;}
   }
-  if(!confirm('Siparişin uygun ürünleri '+statusNames[next]+' durumuna alınacak. Devam edilsin mi?')){select.value=previous;return;}
+  if(!confirm(previous==='workshop'&&next==='processing'?'Yönetici işlemi: Bu siparişteki uygun ürünler Atölyeden İşlemde aşamasına geri alınacak. Devam edilsin mi?':'Siparişin uygun ürünleri '+statusNames[next]+' durumuna alınacak. Devam edilsin mi?')){select.value=previous;return;}
   select.disabled=true;$('order-status-help').textContent='Yönetici durum değişikliği kaydediliyor...';
   try{
    const {error}=await sb.rpc('erp_manager_set_workflow_status',{p_org:org.id,p_target:'order',p_record:editing.id,p_status:next,p_reason:reason?.trim()||null});
@@ -899,7 +902,8 @@ $('product-status').onchange=async()=>{
  if(!isManager()&&before==='waiting'&&next==='processing'){$('product-status-message').textContent='Ölçüleri ve özelleştirmeyi tamamlayıp Kaydet’e basın. Durum ve ölçüler birlikte güncellenecek.';calculateItemTotal();return;}
  if(next==='workshop'&&!['owner','manager'].includes(memberRole)){select.value=before;$('product-status-message').textContent='Atölyeye aktarma yalnızca yöneticiler tarafından yapılabilir.';return;}
  if(next==='cancelled'){select.disabled=true;try{await cancelItemInEditor(item);}catch(e){select.value=before;$('product-status-message').textContent='İptal edilemedi: '+e.message;}finally{select.disabled=false;}return;}
- if(!isManager()&&next==='processing'&&(before!=='processing'&&before!=='waiting'||Boolean(editing?.barcode_printed_at))){select.value=before;$('product-status-message').textContent='Atölyeye alınan ürün tekrar İşlemde durumuna geçirilemez.';return}
+ if(!isManager()&&next==='processing'&&(before!=='processing'&&before!=='waiting'||Boolean(editing?.barcode_printed_at))){select.value=before;$('product-status-message').textContent='Atölyeden İşlemde durumuna yalnızca yönetici geri alabilir.';return}
+ if(isManager()&&before==='workshop'&&next==='processing'&&!confirm('Bu ürünü Atölyeden İşlemde durumuna geri almak istiyor musunuz?')){select.value=before;return;}
  select.disabled=true;$('product-status-message').textContent='Durum kaydediliyor...';
  try{
   await updateItemStatus(item,next);
