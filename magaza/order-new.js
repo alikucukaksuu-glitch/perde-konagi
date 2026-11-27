@@ -151,19 +151,13 @@ function syncCategoryUI(){
  $('wood-options').hidden=!wood;
  $('fon-options').hidden=!isFon();
  syncSPileUI();
- // Remove the pile field from the DOM for stor products, not just visually hide it.
- // Restore the exact same field when switching back to tulle/fon/other categories.
+ // Keep pile controls attached across all category changes (especially mobile Safari).
  const pileRow=pileControlRow,unitRow=$('unit-options-row');
- if(stor||plise||wood||isAccessory()){
-  pileRow.hidden=true;
-  pileRow.remove();
-  pileControlSelect.disabled=true;
-  pileControlSelect.value='';
- }else{
-  if(!unitRow.contains(pileRow))unitRow.insertBefore(pileRow,unitRow.firstChild);
-  pileRow.hidden=false;
-  pileControlSelect.disabled=false;
- }
+ if(pileRow&&!unitRow.contains(pileRow))unitRow.insertBefore(pileRow,unitRow.firstChild);
+ const hidePile=stor||plise||wood||isAccessory();
+ pileRow.hidden=hidePile;
+ pileControlSelect.disabled=hidePile;
+ if(hidePile)pileControlSelect.value='';
  unitRow.classList.toggle('stor-price-only',stor||plise||wood||isAccessory());
  $('product-price').closest('label').firstChild.textContent=(stor||plise||wood)?'m² Birim Fiyatı (₺) *':(isTul()||isSun())?'Metre Fiyatı (₺ / m) *':'Temel Birim Fiyat (₺) *';
  syncProductRequiredFields();
@@ -287,7 +281,7 @@ function drawSlots(){
     const add=newElement('button','product-slot');add.type='button';
     if(editing&&['ready','partial_ready'].includes(editing.status)){add.disabled=true;add.title='Mağazada teslime hazır siparişe yeni ürün eklenemez';}
     add.append(newElement('span','slot-add',group.kind==='list'?(i+1)+'. + Ekle':'+ Ekle'));
-    add.onclick=()=>openItem(group.name,i);grid.append(add);continue;
+    add.onclick=()=>{try{openItem(group.name,i)}catch(err){console.error('KONAK ERP ürün formu:',err);alertText('Ürün ekleme ekranında hata: '+err.message);$('product-overlay').hidden=false;}};grid.append(add);continue;
    }
    const wrapper=newElement('div','slot-record status-'+(statusCss[record.status]||'processing'));
    const details=newElement('div','slot-record-detail');
@@ -406,6 +400,7 @@ function openItem(category,index){
  $('fon-wing-type').value='';syncFonSizes();
  $('sewing-type').value=value?.sewingType||(value?.sPile?'S Pile':'');
  $('s-pile-rate').value=value?.sPileRate??0;
+ $('product-overlay').hidden=false;
  syncCategoryUI();
  syncSPileUI();
  $('product-name').value=value?.name||'';
