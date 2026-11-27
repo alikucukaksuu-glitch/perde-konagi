@@ -59,6 +59,7 @@ async function receive(){
  try{
   const {data,error}=await sb.rpc('erp_receive_order_items_by_number',{p_org:orgId,p_order_number:Number(order.order_number),p_item_ids:chosen.map(i=>i.id)});
   if(error)throw error;
+  busy=false;
   await search({preventDefault(){}});
   message(chosen.length+' ürün mağazaya kabul edildi. Sipariş durumu: '+(data.status==='ready'?'Teslime Hazır':data.status==='partial_ready'?'Kısmi Hazır':data.status)+'.');
  }catch(e){message('Kabul işlemi yapılamadı: '+e.message)}
