@@ -100,8 +100,28 @@ function addA4(){
  txt(note,'strong','','SİPARİŞ NOTU');
  txt(note,'p','',order.customer_note||'—');
  page.append(note);
+ const subtotal=Number(order.subtotal_amount||0);
+ const finalAmount=Number(order.total_amount||0);
+ const percent=Math.max(0,Number(order.discount_percent||0));
+ const fixed=Math.max(0,Number(order.discount_amount||0));
+ const discount=Math.max(0,Math.round((subtotal-finalAmount)*100)/100);
+ if(discount>0.005){
+  const info=el('div','a4-discount-summary');
+  const details=el('div','a4-discount-details');
+  const percentLabel=new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2}).format(percent);
+  for(const [name,value] of [
+   ['İskonto Öncesi Ara Toplam',fmt(subtotal)],
+   ...(percent>0?[['Uygulanan İskonto Oranı','%'+percentLabel]]:[]),
+   ...(fixed>0?[['Ek Tutar İndirimi',fmt(fixed)]]:[]),
+   ['Toplam İskonto','− '+fmt(discount)]
+  ]){
+   const line=el('div','a4-discount-row');
+   txt(line,'span','',name);txt(line,'b','',value);
+   details.append(line);
+  }
+  info.append(details);page.append(info);
+ }
  const totals=el('div','a4-new-totals');
- const discount=Math.max(0,Number(order.subtotal_amount||0)-Number(order.total_amount||0));
  for(const [name,value] of [
   ['Toplam',order.total_amount],['Ödenen',order.paid_amount],
   ['Kalan',Math.max(0,Number(order.total_amount)-Number(order.paid_amount))]
@@ -447,7 +467,7 @@ async function start(){
   if(membershipError||!['owner','manager'].includes(membership?.role)){fail('Üretim etiketi yazdırma yalnızca yönetici yetkisiyle yapılabilir.');return}
  }
  const [{data:o,error:e1},{data:rows,error:e2},{data:co,error:e3}]=await Promise.all([
-  sb.from('erp_orders').select('id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,customer_note,total_amount,paid_amount,status,barcode_printed_at,created_at').eq('id',id).eq('organization_id',orgId).single(),
+  sb.from('erp_orders').select('id,organization_id,branch_id,order_number,customer_name,customer_phone,delivery_date,customer_note,subtotal_amount,discount_percent,discount_amount,total_amount,paid_amount,status,barcode_printed_at,created_at').eq('id',id).eq('organization_id',orgId).single(),
   sb.from('erp_order_items').select('id,category,product_name,width_cm,height_cm,unit_price,production_note,barcode,status').eq('order_id',id).eq('organization_id',orgId).order('created_at'),
   sb.from('erp_organizations').select('id,name,logo_url,phone,email,address,instagram').eq('id',orgId).single()
  ]);
