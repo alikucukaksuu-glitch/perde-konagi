@@ -7,7 +7,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const GROUPS=['TÜL PERDE','FON PERDE','GÜNEŞLİK','STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ','AKSESUAR'];
 const METERS=new Set(['TÜL PERDE','FON PERDE','GÜNEŞLİK']);
 const AREA=new Set(['STOR PERDE','PLİSE PERDE','AHŞAP JALUZİ']);
-let user=null,members=[],orgs=[],branches=[],allOrders=[],allItems=[],products=[],page=0,requestId=0,statusMode='active';
+let user=null,members=[],orgs=[],branches=[],allOrders=[],allItems=[],products=[],page=0,requestId=0,statusMode='active',cashOrders=[],cashPayments=[],cashMoves=[],cashLoadError=null;
 function feedback(t,error=false){$('feedback').textContent=t;$('feedback').classList.toggle('error',error)}
 function unit(category){return METERS.has(category)?'metre':AREA.has(category)?'metrekare':'adet'}
 function measure(row){
@@ -52,7 +52,7 @@ async function reload(){
  if(!org)return;
  feedback('Sipariş kayıtları hesaplanıyor...');
  try{
-  const [b,orders]=await Promise.all([
+  const [b,orders,financeResult]=await Promise.all([
    readAll('erp_branches','id,name',q=>q.eq('organization_id',org)),
    readAll('erp_orders','id,branch_id,created_at,status,total_amount,paid_amount',q=>{
     q=q.eq('organization_id',org).order('created_at',{ascending:false});
@@ -63,9 +63,16 @@ async function reload(){
       q=q.lt('created_at',endDate.toISOString());
     }
     return q;
-   })
+   }),
+   Promise.all([
+    readAll('erp_orders','id,branch_id,created_at,status,paid_amount',q=>q.eq('organization_id',org)),
+    readAll('erp_order_payments','order_id,amount,recorded_at',q=>q.eq('organization_id',org)),
+    readAll('erp_cash_movements','order_id,branch_id,direction,amount,movement_at,created_at',q=>q.eq('organization_id',org))
+   ]).then(data=>({data,error:null}),error=>({data:null,error}))
   ]);
   if(req!==requestId)return;
+  cashLoadError=financeResult.error;
+  [cashOrders,cashPayments,cashMoves]=financeResult.data||[[],[],[]];
   branches=b;
   $('branch').innerHTML='<option value="">Tüm şubeler</option>'+branches.map(v=>'<option value="'+esc(v.id)+'">'+esc(v.name)+'</option>').join('');
   if(branches.some(v=>v.id===branchSelected))$('branch').value=branchSelected;
@@ -90,6 +97,7 @@ function compute(){
  const subtotal=orders.reduce((a,o)=>a+Number(o.total_amount||0),0);
  const paid=orders.reduce((a,o)=>a+Number(o.paid_amount||0),0);
  fillOverview(orders,subtotal,paid);
+ renderFinanceSummary();
  const byCategory=new Map(GROUPS.map(c=>[c,{category:c,quantity:0,measure:0,revenue:0,missing:0,measureCount:0}]));
  const byProduct=new Map();
  for(const line of lines){
@@ -111,6 +119,57 @@ function compute(){
  page=0;renderProducts();
  const missing=[...byCategory.values()].reduce((a,x)=>a+x.missing,0);
  feedback(orders.length+' sipariş, '+lines.length+' kalem listelendi.'+(missing?' '+missing+' kalemde ölçü eksik; bu kalemlere ölçü toplamı atanmadı.':''));
+}
+
+
+// Kasa ile aynı mantık: sipariş başlangıç tahsilatının sadece hareketlerde kayıtlı olmayan
+// kısmı oluşturulur. Böylece kasa hareketi ve sipariş ödemeleri iki kez sayılmaz.
+// Finans özeti sipariş durum filtresinden BAĞIMSIZDIR; tarih hareket tarihidir.
+function renderFinanceSummary(){
+ const labels=['finance-order-paid','finance-manual-paid','finance-total-paid','finance-expense','finance-net'];
+ if(cashLoadError){
+  for(const id of labels)$(id).textContent='—';
+  $('finance-scope').textContent='Finans hareketleri okunamadı: '+(cashLoadError.message||'erişim hatası')+'. Kasa görüntüleme yetkisini kontrol edin.';
+  $('finance-scope').classList.add('error');
+  return;
+ }
+ $('finance-scope').classList.remove('error');
+ const branch=$('branch').value,start=$('start').value,end=$('end').value;
+ const inPeriod=date=>{if(!date)return false;const day=trDate(date);return (!start||day>=start)&&(!end||day<=end)};
+ const inBranch=id=>!branch||branch===id;
+ const paymentsByOrder=new Map(),cashByOrder=new Map(),orderMap=new Map(cashOrders.map(o=>[o.id,o]));
+ for(const p of cashPayments)paymentsByOrder.set(p.order_id,(paymentsByOrder.get(p.order_id)||0)+Number(p.amount||0));
+ for(const m of cashMoves)if(m.order_id&&m.direction==='income')cashByOrder.set(m.order_id,(cashByOrder.get(m.order_id)||0)+Number(m.amount||0));
+ const cents=v=>Math.round((Number(v)||0)*100)/100;
+ let orderPaid=0,manualPaid=0,expense=0,linkedUnknown=0;
+ for(const o of cashOrders){
+  const implicit=Math.max(0,cents(Number(o.paid_amount||0)-(paymentsByOrder.get(o.id)||0)-(cashByOrder.get(o.id)||0)));
+  if(implicit>.005&&inBranch(o.branch_id)&&inPeriod(o.created_at))orderPaid+=implicit;
+ }
+ for(const p of cashPayments){
+  const o=orderMap.get(p.order_id);
+  if(!o){linkedUnknown++;continue}
+  if(inBranch(o.branch_id)&&inPeriod(p.recorded_at))orderPaid+=Number(p.amount||0);
+ }
+ for(const m of cashMoves){
+  if(!inBranch(m.branch_id)||!inPeriod(m.movement_at||m.created_at))continue;
+  const amount=Number(m.amount||0);
+  if(m.direction==='expense'){expense+=amount;continue}
+  if(m.direction==='income'){
+   if(m.order_id)orderPaid+=amount;
+   else manualPaid+=amount;
+  }
+ }
+ const totalPaid=cents(orderPaid+manualPaid),net=cents(totalPaid-expense);
+ $('finance-order-paid').textContent=fmtMoney(orderPaid);
+ $('finance-manual-paid').textContent=fmtMoney(manualPaid);
+ $('finance-total-paid').textContent=fmtMoney(totalPaid);
+ $('finance-expense').textContent=fmtMoney(expense);
+ $('finance-net').textContent=fmtMoney(net);
+ const scope=start||end?'Hareket tarihleri: '+(start||'başlangıçtan')+' – '+(end||'bugüne'):'Tüm kayıtlı kasa hareketleri';
+ $('finance-scope').textContent=scope+' · '+(branch?branches.find(b=>b.id===branch)?.name||'Seçilen şube':'Tüm şubeler')
+  +' · Sipariş durumu filtresinden bağımsızdır. '+(linkedUnknown?'Bazı eşleşmeyen ödeme kayıtları kontrol edilmeli ('+linkedUnknown+'). ':'')
+  +'Tutarlar başlangıç kasası/banka bakiyesi değildir.';
 }
 
 function trDate(d){
