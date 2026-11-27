@@ -112,7 +112,8 @@ function addA4(){
   for(const [name,value] of [
    ['İskonto Öncesi Ara Toplam',fmt(subtotal)],
    ...(percent>0?[['Uygulanan İskonto Oranı','%'+percentLabel]]:[]),
-   ...(fixed>0?[['Ek Tutar İndirimi',fmt(fixed)]]:[]),
+   ...(fixed>0?[['Tutar İndirimi',fmt(fixed)]]:[]),
+   ...(percent<=0&&subtotal>0?[['Hesaplanan İndirim Oranı','%'+new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2}).format(discount/subtotal*100)]]:[]),
    ['Toplam İskonto','− '+fmt(discount)]
   ]){
    const line=el('div','a4-discount-row');
