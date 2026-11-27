@@ -24,13 +24,10 @@ async function search(event){
  if(!/^[0-9]{1,12}$/.test(raw)){message('Geçerli bir sipariş numarası girin.');return}
  if(!orgId){message('İşletme bilgisi yüklenemedi. Girişinizi kontrol edin.');return}
  $('results').hidden=true;order=null;eligible=[];message('Sipariş aranıyor...');
- const {data:orders,error:e}=await sb.from('erp_orders').select('id,organization_id,branch_id,order_number,customer_name,status,barcode_printed_at').eq('organization_id',orgId).eq('order_number',Number(raw)).limit(2);
+ const {data:found,error:e}=await sb.rpc('erp_find_receivable_order_by_number',{p_org:orgId,p_order_number:Number(raw)});
  if(e){message('Arama yapılamadı: '+e.message);return}
- if(!orders?.length){message('Bu numarada sipariş bulunamadı.');return}
- if(orders.length!==1){message('Sipariş numarası birden fazla kayıtla eşleşiyor.');return}
- const found=orders[0];
- const {data:items,error:itemError}=await sb.from('erp_order_items').select('id,category,product_name,quantity,width_cm,height_cm,status,printed_at').eq('organization_id',orgId).eq('order_id',found.id).order('id');
- if(itemError){message('Ürünler alınamadı: '+itemError.message);return}
+ if(!found){message('Bu numarada sipariş bulunamadı.');return}
+ const items=found.items||[];
  order=found;
  $('title').textContent='Sipariş #'+found.order_number;
  const summary=$('summary');summary.replaceChildren();
