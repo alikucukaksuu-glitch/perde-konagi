@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
-const menus={orders:'orders.html?v=receive-number-shortcut-20261127b',quotes:'quotes.html',appointments:'appointments.html?v=whatsapp-popup-fix-20261118',missing:'missing.html?v=accessory-pdf-whatsapp-20261125',products:'hub.html?tab=products&v=product-actions-20261125',workshop:'hub.html?tab=workshop',customers:'hub.html?tab=customers',cash:'cash-approval.html?v=manager-approval-20261125',reports:'reports.html?v=finance-reconciliation-20261127',calendar:'calendar.html',notifications:'notifications.html?v=notify-client-v2-20261120',company:'company.html#account'};
-const defaults={orders:true,quotes:true,appointments:true,missing:true,products:true,workshop:true,customers:true,cash:false,reports:false,calendar:true,notifications:true,company:true};
+const menus={orders:'orders.html?v=receive-number-shortcut-20261127b',quotes:'quotes.html',appointments:'appointments.html?v=whatsapp-popup-fix-20261118',missing:'missing.html?v=accessory-pdf-whatsapp-20261125',products:'hub.html?tab=products&v=product-actions-20261125',workshop:'hub.html?tab=workshop',customers:'hub.html?tab=customers',cash:'cash-approval.html?v=manager-approval-20261125',reports:'reports.html?v=finance-reconciliation-20261127',activity:'staff-activity.html?v=staff-history-20261127',calendar:'calendar.html',notifications:'notifications.html?v=notify-client-v2-20261120',company:'company.html#account'};
+const defaults={orders:true,quotes:true,appointments:true,missing:true,products:true,workshop:true,customers:true,cash:false,reports:false,activity:false,calendar:true,notifications:true,company:true};
 const stage=document.getElementById('erp-shell-stage'),notice=document.getElementById('erp-shell-notice'),navigation=document.querySelector('.erp-shell-nav');
 const frames=new Map(),allowed={...defaults};let selected='',orgId='',authenticated=false;
 const mobileToggle=document.querySelector('.erp-mobile-toggle');
@@ -20,6 +20,7 @@ function routeFromUrl(raw){
  if(path.endsWith('/missing.html'))return 'missing';
  if(path.endsWith('/cash.html')||path.endsWith('/cash-approval.html'))return 'cash';
  if(path.endsWith('/reports.html'))return 'reports';
+ if(path.endsWith('/staff-activity.html'))return 'activity';
  if(path.endsWith('/calendar.html'))return 'calendar';
  if(path.endsWith('/notifications.html'))return 'notifications';
  if(path.endsWith('/company.html'))return 'company';
@@ -81,7 +82,7 @@ function navigate(view,push){
  if(record.loaded){showFrame(view);notice.hidden=true;if(view==='orders')record.frame.contentWindow.postMessage({type:'konak-erp-refresh-orders'},location.origin)}
  else{notice.textContent='Bölüm açılıyor...';notice.hidden=false}
  if(push){const url=new URL(location.href);url.searchParams.set('view',view);history.pushState({view},'',url.pathname+url.search+url.hash)}
- document.title='KONAK ERP | '+({orders:'Siparişler',quotes:'Teklif Siparişleri',appointments:'Montaj Randevu',missing:'Eksik Ürünler',products:'Ürünler',workshop:'Atölye',customers:'Müşteriler',cash:'Kasa',reports:'Raporlar',calendar:'Takvim',notifications:'Bildirim Merkezi',company:'Hesabım'}[view]||'Mağaza');
+ document.title='KONAK ERP | '+({orders:'Siparişler',quotes:'Teklif Siparişleri',appointments:'Montaj Randevu',missing:'Eksik Ürünler',products:'Ürünler',workshop:'Atölye',customers:'Müşteriler',cash:'Kasa',reports:'Raporlar',activity:'Personel Hareketleri',calendar:'Takvim',notifications:'Bildirim Merkezi',company:'Hesabım'}[view]||'Mağaza');
 }
 async function initialize(){
  authenticated=false;
@@ -99,7 +100,8 @@ async function initialize(){
     else{
      const {data:rows,error:permissionError}=await client.from('erp_member_permissions').select('menu_key,can_view').eq('organization_id',orgId).eq('user_id',session.user.id);
      if(permissionError)throw permissionError;
-     for(const row of rows||[])allowed[row.menu_key]=!!row.can_view;
+     for(const row of rows||[])if(row.menu_key in allowed&&row.menu_key!=='activity')allowed[row.menu_key]=!!row.can_view;
+     allowed.activity=false;
      const savedKeys=new Set((rows||[]).map(row=>row.menu_key));
      if(!savedKeys.has('missing'))allowed.missing=allowed.workshop;
      if(!savedKeys.has('quotes'))allowed.quotes=allowed.orders;
