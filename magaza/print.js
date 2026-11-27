@@ -102,25 +102,25 @@ function addA4(){
  page.append(note);
  const subtotal=Number(order.subtotal_amount||0);
  const finalAmount=Number(order.total_amount||0);
- const percent=Math.max(0,Number(order.discount_percent||0));
- const fixed=Math.max(0,Number(order.discount_amount||0));
+ const storedPercent=Math.max(0,Number(order.discount_percent||0));
  const discount=Math.max(0,Math.round((subtotal-finalAmount)*100)/100);
  if(discount>0.005){
-  const info=el('div','a4-discount-summary');
-  const details=el('div','a4-discount-details');
-  const percentLabel=new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2}).format(percent);
+  // Reuse the proven A4 total cards so the discount row has identical styling
+  // on screen, paper, PDF and WhatsApp exports; never leave raw unstyled lines.
+  const discountCards=el('div','a4-new-totals a4-discount-cards');
+  discountCards.style.gridTemplateColumns='repeat(2,minmax(0,1fr))';
+  const effectivePercent=subtotal>0?discount/subtotal*100:0;
+  const percentText=new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2}).format(storedPercent>0?storedPercent:effectivePercent);
   for(const [name,value] of [
-   ['İskonto Öncesi Ara Toplam',fmt(subtotal)],
-   ...(percent>0?[['Uygulanan İskonto Oranı','%'+percentLabel]]:[]),
-   ...(fixed>0?[['Tutar İndirimi',fmt(fixed)]]:[]),
-   ...(percent<=0&&subtotal>0?[['Hesaplanan İndirim Oranı','%'+new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2}).format(discount/subtotal*100)]]:[]),
-   ['Toplam İskonto','− '+fmt(discount)]
+   ['İskonto Öncesi',fmt(subtotal)],
+   ['İskonto (%'+percentText+')','− '+fmt(discount)]
   ]){
-   const line=el('div','a4-discount-row');
-   txt(line,'span','',name);txt(line,'b','',value);
-   details.append(line);
+   const cell=el('div','a4-new-total');
+   txt(cell,'span','',name);
+   txt(cell,'strong','',value);
+   discountCards.append(cell);
   }
-  info.append(details);page.append(info);
+  page.append(discountCards);
  }
  const totals=el('div','a4-new-totals');
  for(const [name,value] of [
