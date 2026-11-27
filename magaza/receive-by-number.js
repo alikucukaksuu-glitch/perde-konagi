@@ -2,8 +2,6 @@
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY),$=id=>document.getElementById(id);
 let orgId=null,order=null,eligible=[],busy=false;
-const SUPPORTED=/stor|zebra|plise|jaluzi/;
-const supportedCategory=value=>SUPPORTED.test(String(value||'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,''));
 const message=s=>$('message').textContent=s||'';
 const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e};
 async function init(){
@@ -34,18 +32,18 @@ async function search(event){
  const summary=$('summary');summary.replaceChildren();
  [['Müşteri',found.customer_name],['Durum',({workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',processing:'İşlemde'})[found.status]||found.status]].forEach(([k,v])=>{const d=el('div');d.append(el('span','',k),el('strong','',v));summary.append(d)});
  const host=$('items');host.replaceChildren();
- const filtered=(items||[]).filter(i=>supportedCategory(i.category));
+ const filtered=items||[];
  eligible=[];
  for(const item of filtered){
   const isReady=item.status==='ready'||item.status==='delivered';
   const ok=item.status==='workshop'&&(item.printed_at||found.barcode_printed_at);
   const row=el('label','item'),input=document.createElement('input');input.type='checkbox';input.disabled=!ok;input.addEventListener('change',updateCount);
-  const detail=el('div');detail.append(el('strong','',item.category+' – '+item.product_name),el('small','',Number(item.quantity||1)+' adet · '+(item.width_cm??'—')+' × '+(item.height_cm??'—')+' cm · '+(isReady?'Zaten mağazada':ok?'Atölyede – Kabul edilebilir':item.status==='workshop'?'Barkod basılmamış':'Durum: '+item.status)));
+  const detail=el('div');detail.append(el('strong','',(item.category||'Diğer')+' – '+item.product_name),el('small','',Number(item.quantity||1)+' adet · '+(item.width_cm??'—')+' × '+(item.height_cm??'—')+' cm · '+(isReady?'Zaten mağazada':ok?'Atölyede – Kabul edilebilir':item.status==='workshop'?'Barkod basılmamış':'Durum: '+item.status)));
   row.append(input,detail);host.append(row);
   if(ok)eligible.push({...item,checkbox:input});
  }
- if(!filtered.length)host.append(el('p','muted','Bu siparişte Stor, Zebra, Plise veya Jaluzi ürünü bulunmuyor.'));
- else if(!eligible.length)host.append(el('p','muted','Mağazaya kabul edilebilecek atölye ürünü bulunmuyor.'));
+ if(!filtered.length)host.append(el('p','muted','Bu siparişte kayıtlı ürün bulunmuyor.'));
+ else if(!eligible.length)host.append(el('p','muted','Mağazaya kabul edilebilecek Atölyede durumunda ve barkodu basılmış ürün bulunmuyor.'));
  $('results').hidden=false;updateCount();message('Sipariş yüklendi. Yalnızca gerçekten gelen ürünleri seçin.');
 }
 async function receive(){
