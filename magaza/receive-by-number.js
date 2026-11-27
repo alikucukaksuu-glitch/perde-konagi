@@ -2,7 +2,8 @@
 const API='https://rwylhxrtggsicieuyjrm.supabase.co',KEY='sb_publishable_ZuVtzdkaKytcl7i4rWcEuQ_XWgA28sA';
 const sb=window.supabase?.createClient(API,KEY),$=id=>document.getElementById(id);
 let orgId=null,order=null,eligible=[],busy=false;
-const SUPPORTED=/STOR|ZEBRA|PLİSE|JALUZİ/i;
+const SUPPORTED=/stor|zebra|plise|jaluzi/;
+const supportedCategory=value=>SUPPORTED.test(String(value||'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,''));
 const message=s=>$('message').textContent=s||'';
 const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e};
 async function init(){
@@ -33,7 +34,7 @@ async function search(event){
  const summary=$('summary');summary.replaceChildren();
  [['Müşteri',found.customer_name],['Durum',({workshop:'Atölyede',partial_ready:'Kısmi Hazır',ready:'Teslime Hazır',processing:'İşlemde'})[found.status]||found.status]].forEach(([k,v])=>{const d=el('div');d.append(el('span','',k),el('strong','',v));summary.append(d)});
  const host=$('items');host.replaceChildren();
- const filtered=(items||[]).filter(i=>SUPPORTED.test(i.category||''));
+ const filtered=(items||[]).filter(i=>supportedCategory(i.category));
  eligible=[];
  for(const item of filtered){
   const isReady=item.status==='ready'||item.status==='delivered';
