@@ -33,3 +33,22 @@
 .feedback{margin:8px 4px;font-size:11px;min-height:13px}
 @media(max-width:1100px){.hero{flex-wrap:wrap}.hero-filters{width:100%}.report-grid,.report-grid.lower,.report-grid.bottom{grid-template-columns:1fr}.products-panel table{min-width:650px}}
 @media(max-width:700px){.hero{padding:20px}.hero-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.hero-filters label,.hero-filters select,.hero-filters input{max-width:none}.hero-filters button{grid-column:1/-1}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis strong{font-size:18px}.total-panel{grid-template-columns:1fr}.status-filter{justify-content:flex-start}.graph-scroll svg{min-width:560px}.report-grid>.panel{padding:12px!important}}
+
+
+/* Financial reconciliation / separate sales from recorded cash movement */
+.kpi-note{display:block;font-size:11px;color:#6c7c71;line-height:1.45;margin-top:8px}
+.finance-panel{margin-top:18px!important}
+.finance-title{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:15px;flex-wrap:wrap}
+.finance-title h2{font-size:23px;margin:7px 0}
+.finance-title p{font-size:13px;color:#607168;margin:0}
+.cash-link{display:inline-flex;text-decoration:none;padding:10px 15px;border-radius:9px;border:1px solid #b5d1bc;color:#224d31;font-size:13px;font-weight:700}
+.finance-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.finance-kpis article{background:#f8faf8;border:1px solid #e1eae2;border-radius:13px;padding:17px 13px;min-width:0}
+.finance-kpis article small{display:block;color:#536e5e;font-size:12px;font-weight:700;min-height:30px}
+.finance-kpis article strong{display:block;font-size:clamp(16px,1.9vw,24px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;margin-top:9px}
+.finance-kpis .finance-net{background:#e6f3e9;border-color:#cfdfd2}
+.finance-scope{margin:14px 0 0;font-size:12px;font-weight:600;color:#3b694a}
+.finance-scope.error{color:#b13f31}
+.finance-disclaimer{font-size:12px;color:#69756c;line-height:1.6;margin:9px 0 0}
+@media(max-width:1100px){.finance-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.finance-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-kpis .finance-net{grid-column:span 2}.finance-kpis article{padding:15px 12px}.finance-title h2{font-size:20px}}
