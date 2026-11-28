@@ -58,8 +58,9 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
   "https://unpkg.com/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"
  ];
  var started=false,attempt=0,done=false,scriptLoader=null;
- var notice=document.getElementById("erp-shell-notice");
+ 
  function recovery(note){
+  var notice=document.getElementById("erp-shell-notice");
   if(!notice)return;
   notice.hidden=false;
   notice.replaceChildren();
@@ -94,8 +95,8 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
   s.onerror=function(){finish(false)};
   document.head.append(s);
  }
- recovery("Güvenli giriş bağlantısı hazırlanıyor...");
- attemptSource();
+ function begin(){recovery("Güvenli giriş bağlantısı hazırlanıyor...");attemptSource()}
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",begin,{once:true});else begin();
 })();
 </script>
 </head>
