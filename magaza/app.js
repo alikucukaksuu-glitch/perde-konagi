@@ -108,7 +108,15 @@ function render(){
  $('stat-workshop').textContent=orders.filter(o=>o.status==='workshop'||o.status==='partial_ready').length;
  $('stat-ready').textContent=orders.filter(o=>o.status==='ready').length;
  $('stat-balance').textContent=money(orders.filter(o=>!['cancelled','voided'].includes(o.status)).reduce((s,o)=>s+Number(o.total_amount)-Number(o.paid_amount),0));
- const text=$('filter-search').value.toLocaleLowerCase('tr-TR').trim();
+ const normalizeSearch=value=>String(value??'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/\s+/g,' ').trim();
+ const searchTerms=normalizeSearch($('filter-search').value).split(' ').filter(Boolean);
+ const productSearchByOrder=new Map();
+ for(const item of items){
+  const orderId=item.order_id;
+  const words=normalizeSearch([item.category,item.product_name].join(' '));
+  if(!productSearchByOrder.has(orderId))productSearchByOrder.set(orderId,[]);
+  productSearchByOrder.get(orderId).push(words);
+ }
  const branch=$('filter-branch').value,payment=$('filter-payment').value;
  const subset=orders.filter(o=>{
   if(filterStatus&&o.status!==filterStatus)return false;
@@ -118,7 +126,11 @@ function render(){
   if(payment==='paid'&&remaining>0)return false;
   if(payment==='unpaid'&&Number(o.paid_amount)>0)return false;
   if(payment==='partial'&&!(Number(o.paid_amount)>0&&remaining>0))return false;
-  if(text&&!([o.customer_name,o.customer_phone,String(o.order_number),branchName(o.branch_id)].join(' ').toLocaleLowerCase('tr-TR').includes(text)))return false;
+  if(searchTerms.length){
+   const basic=normalizeSearch([o.customer_name,o.customer_phone,String(o.order_number),branchName(o.branch_id)].join(' '));
+   const productRows=productSearchByOrder.get(o.id)||[];
+   if(!searchTerms.every(term=>basic.includes(term)||productRows.some(row=>row.includes(term))))return false;
+  }
   return true;
  });
  $('orders-list').innerHTML=subset.map(o=>{
