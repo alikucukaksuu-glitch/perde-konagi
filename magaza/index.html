@@ -75,7 +75,7 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
  function loadShell(){
   if(started)return;started=true;
   recovery("Bağlantı kuruldu, sipariş ekranı yükleniyor...");
-  var s=document.createElement("script");s.src="./erp-shell.js?v=boot-fallback-20261128";s.onerror=function(){recovery("Giriş ekranının uygulama dosyası yüklenemedi. Sayfayı yeniden deneyin.")};
+  var s=document.createElement("script");s.src="./erp-shell.js?v=session-init-20261128";s.onerror=function(){recovery("Giriş ekranının uygulama dosyası yüklenemedi. Sayfayı yeniden deneyin.")};
   document.head.append(s);
  }
  function attemptSource(){
