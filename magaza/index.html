@@ -52,7 +52,7 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
 @media(max-width:380px){.erp-shell-brand{font-size:16px}.erp-shell-brand small{font-size:6px}.erp-shell-account{padding:9px 7px;font-size:11px}}
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="./erp-shell.js?v=staff-activity-20261127"></script>
+<script defer src="./erp-shell.js?v=loading-recovery-20261128"></script>
 </head>
 <body class="erp-shell-guest">
 <header class="erp-shell-top"><div class="erp-shell-bar">
@@ -85,5 +85,6 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
 <main class="erp-shell-stage" id="erp-shell-stage">
 <div class="erp-shell-notice" id="erp-shell-notice" role="status">KONAK ERP hazırlanıyor...</div>
 </main>
+<script>setTimeout(function(){var n=document.getElementById('erp-shell-notice');if(!n||n.hidden)return;if(n.textContent.includes('hazırlanıyor')||n.textContent.includes('Bölüm açılıyor')){n.replaceChildren();var d=document.createElement('div');d.style.cssText='max-width:360px;text-align:center;line-height:1.6';d.textContent='KONAK ERP bağlantısı gecikiyor. ';var a=document.createElement('a');a.href='../erp/';a.textContent='Giriş sayfasına git';a.style.cssText='display:block;margin-top:8px;color:#22513a;font-weight:bold';d.append(a);var b=document.createElement('button');b.textContent='Yeniden Dene';b.style.cssText='display:block;margin:10px auto;padding:9px 16px;background:#20513a;color:white;border:0;border-radius:8px';b.onclick=function(){location.reload()};d.append(b);n.append(d)}},14000);</script>
 <script>(function(){const nav=document.getElementById("erp-mobile-navigation"),prev=document.getElementById("erp-nav-prev"),next=document.getElementById("erp-nav-next");function refresh(){const isMobile=matchMedia("(max-width:760px)").matches;const overflow=!isMobile&&nav.scrollWidth>nav.clientWidth+2;prev.hidden=!overflow;next.hidden=!overflow;prev.disabled=nav.scrollLeft<3;next.disabled=nav.scrollLeft+nav.clientWidth>=nav.scrollWidth-3}prev.addEventListener("click",()=>nav.scrollBy({left:-Math.max(180,nav.clientWidth*.65),behavior:"smooth"}));next.addEventListener("click",()=>nav.scrollBy({left:Math.max(180,nav.clientWidth*.65),behavior:"smooth"}));nav.addEventListener("scroll",refresh,{passive:true});window.addEventListener("resize",refresh);new MutationObserver(refresh).observe(nav,{childList:true,subtree:true,attributes:true,attributeFilter:["hidden","style"]});requestAnimationFrame(refresh);setTimeout(refresh,700)})();</script>
 </body></html>
