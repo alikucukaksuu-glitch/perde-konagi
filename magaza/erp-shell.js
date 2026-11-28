@@ -145,10 +145,14 @@ async function initialize(){
  document.body.classList.toggle('erp-shell-guest',!authenticated);
  document.querySelector('.erp-shell-brand').href=authenticated?'./?view=orders':'../erp/';
  if(!authenticated)closeAccountMenu();
+ if(initializationError){
+  notice.hidden=false;
+  showRecovery('Oturum veya veritabanı bağlantısı kurulamadı: '+String(initializationError.message||initializationError));
+  return;
+ }
  const requested=new URLSearchParams(location.search).get('view')||'orders';
  const fallback=Object.keys(menus).find(key=>allowed[key])||'orders';
  navigate(allowed[requested]===false?fallback:requested,false);
- if(initializationError){notice.hidden=false;showRecovery('Oturum veya veritabanı bağlantısı kurulamadı: '+String(initializationError.message||initializationError));}
 }
 const accountTrigger=document.getElementById('erp-account-trigger'),accountMenu=document.getElementById('erp-account-menu');
 function closeAccountMenu(){accountMenu.hidden=true;accountTrigger.setAttribute('aria-expanded','false')}
@@ -201,6 +205,6 @@ window.addEventListener('message',event=>{
   initialize();
  }
 });
-ensureFrame('orders');
+// Create orders iframe only after session initialization to avoid parallel auth on iOS.
 initialize().catch(error=>{notice.hidden=false;showRecovery('Başlatma başarısız: '+String(error?.message||error));});
 })();
