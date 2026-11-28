@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: perde-konagi-pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -42,8 +42,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Allow artifact metadata to settle
-        run: sleep 20
       - name: Publish site
         id: deployment
         uses: actions/deploy-pages@v4
