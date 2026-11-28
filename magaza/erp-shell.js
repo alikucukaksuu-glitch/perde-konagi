@@ -12,7 +12,9 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMobileM
 
 const client=window.__konakErpClient||(window.__konakErpClient=window.supabase?.createClient(API,KEY));
 function waitFor(promise,ms,label){
- return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' bağlantısı zaman aşımına uğradı')),ms))]);
+ let timer;
+ const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' bağlantısı zaman aşımına uğradı')),ms)});
+ return Promise.race([promise,timeout]).finally(()=>clearTimeout(timer));
 }
 function showRecovery(reason){
  if(!notice||notice.hidden)return;
@@ -103,13 +105,30 @@ function navigate(view,push){
  if(push){const url=new URL(location.href);url.searchParams.set('view',view);history.pushState({view},'',url.pathname+url.search+url.hash)}
  document.title='KONAK ERP | '+({orders:'Siparişler',quotes:'Teklif Siparişleri',appointments:'Montaj Randevu',missing:'Eksik Ürünler',products:'Ürünler',workshop:'Atölye',customers:'Müşteriler',cash:'Kasa',reports:'Raporlar',activity:'Personel Hareketleri',calendar:'Takvim',notifications:'Bildirim Merkezi',company:'Hesabım'}[view]||'Mağaza');
 }
+let initializing=false, initializationPending=false;
 async function initialize(){
+ if(initializing){initializationPending=true;return}
+ initializing=true;
+ try{
+  do{
+   initializationPending=false;
+   await loadSessionAndMenus();
+  }while(initializationPending);
+ }catch(error){
+  notice.hidden=false;
+  showRecovery('Başlatma başarısız: '+String(error?.message||error));
+ }finally{initializing=false}
+}
+async function loadSessionAndMenus(){
  let initializationError=null;
  authenticated=false;
+ orgId='';
  Object.assign(allowed,defaults);
  try{
   if(!client)throw new Error('Supabase bağlantı kitaplığı yüklenemedi');
-  const session=(await waitFor(client.auth.getSession(),10000,'Oturum')).data?.session;
+  const {data,error:sessionError}=await waitFor(client.auth.getSession(),10000,'Oturum');
+  if(sessionError)throw sessionError;
+  const session=data?.session;
   if(session?.user){
    authenticated=true;
    const {data:members,error}=await waitFor(client.from('erp_members').select('organization_id,role').eq('user_id',session.user.id),10000,'Personel üyeliği');
@@ -150,9 +169,10 @@ async function initialize(){
   showRecovery('Oturum veya veritabanı bağlantısı kurulamadı: '+String(initializationError.message||initializationError));
   return;
  }
+ if(initializationPending)return;
  const requested=new URLSearchParams(location.search).get('view')||'orders';
  const fallback=Object.keys(menus).find(key=>allowed[key])||'orders';
- navigate(allowed[requested]===false?fallback:requested,false);
+ navigate(Object.hasOwn(menus,requested)&&allowed[requested]?requested:fallback,false);
 }
 const accountTrigger=document.getElementById('erp-account-trigger'),accountMenu=document.getElementById('erp-account-menu');
 function closeAccountMenu(){accountMenu.hidden=true;accountTrigger.setAttribute('aria-expanded','false')}
@@ -206,5 +226,5 @@ window.addEventListener('message',event=>{
  }
 });
 // Create orders iframe only after session initialization to avoid parallel auth on iOS.
-initialize().catch(error=>{notice.hidden=false;showRecovery('Başlatma başarısız: '+String(error?.message||error));});
+initialize();
 })();
