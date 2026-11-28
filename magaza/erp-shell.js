@@ -11,6 +11,24 @@ document.addEventListener('click',event=>{if(!event.target.closest('.erp-shell-n
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMobileMenu()});
 
 const client=window.__konakErpClient||(window.__konakErpClient=window.supabase?.createClient(API,KEY));
+function waitFor(promise,ms,label){
+ return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' bağlantısı zaman aşımına uğradı')),ms))]);
+}
+function showRecovery(reason){
+ if(!notice||notice.hidden)return;
+ notice.replaceChildren();
+ const box=document.createElement('div');box.style.cssText='display:grid;gap:12px;max-width:390px;text-align:left';
+ const heading=document.createElement('strong');heading.textContent='KONAK ERP bağlantısı gecikti';
+ const info=document.createElement('div');info.textContent=reason||'Sunucudan yanıt bekleniyor. Tekrar deneyebilir veya giriş sayfasını açabilirsiniz.';
+ info.style.cssText='font-size:13px;line-height:1.5;color:#617367';
+ const actions=document.createElement('div');actions.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+ const retry=document.createElement('button');retry.type='button';retry.textContent='Yeniden Dene';retry.style.cssText='background:#214832;color:white;border:0;border-radius:8px;padding:11px 14px;font-weight:bold;cursor:pointer';
+ retry.onclick=()=>location.reload();
+ const signIn=document.createElement('a');signIn.href='../erp/';signIn.textContent='Giriş Sayfası';signIn.style.cssText='background:#eef4ee;border-radius:8px;padding:11px 14px;color:#214832;font-size:13px;font-weight:bold;text-decoration:none';
+ const direct=document.createElement('a');direct.href='./orders.html';direct.textContent='Siparişleri Aç';direct.style.cssText='color:#214832;font-size:12px;text-decoration:underline;align-self:center';
+ actions.append(retry,signIn,direct);box.append(heading,info,actions);notice.append(box);notice.hidden=false;
+}
+
 function routeFromUrl(raw){
  const url=new URL(raw,location.href),path=url.pathname;
  if(url.origin!==location.origin||!path.startsWith('/magaza/'))return null;
@@ -48,6 +66,7 @@ function ensureFrame(view){
  if(frames.has(view))return frames.get(view);
  const frame=document.createElement('iframe');frame.className='erp-shell-page';frame.title='KONAK ERP '+view;frame.setAttribute('allow','camera; clipboard-write');frame.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
  const record={frame,loaded:false};frames.set(view,record);
+ const loadWatchdog=setTimeout(()=>{if(!record.loaded&&selected===view)showRecovery('Sipariş ekranı yüklenemedi. İnternet veya sunucu bağlantısını kontrol edip yeniden deneyin.');},12000);
  frame.addEventListener('load',()=>{
   try{
    const url=new URL(frame.contentWindow.location.href);
@@ -56,7 +75,7 @@ function ensureFrame(view){
     frame.remove();frames.delete(view);navigate('orders',true);return;
    }
   }catch(e){}
-  hideEmbeddedChrome(frame);record.loaded=true;
+  clearTimeout(loadWatchdog);hideEmbeddedChrome(frame);record.loaded=true;
   if(selected===view){showFrame(view);notice.hidden=true}
  });
  stage.append(frame);frame.src=iframeAddress(view);
@@ -85,20 +104,22 @@ function navigate(view,push){
  document.title='KONAK ERP | '+({orders:'Siparişler',quotes:'Teklif Siparişleri',appointments:'Montaj Randevu',missing:'Eksik Ürünler',products:'Ürünler',workshop:'Atölye',customers:'Müşteriler',cash:'Kasa',reports:'Raporlar',activity:'Personel Hareketleri',calendar:'Takvim',notifications:'Bildirim Merkezi',company:'Hesabım'}[view]||'Mağaza');
 }
 async function initialize(){
+ let initializationError=null;
  authenticated=false;
  Object.assign(allowed,defaults);
  try{
-  const session=(await client.auth.getSession()).data?.session;
+  if(!client)throw new Error('Supabase bağlantı kitaplığı yüklenemedi');
+  const session=(await waitFor(client.auth.getSession(),10000,'Oturum')).data?.session;
   if(session?.user){
    authenticated=true;
-   const {data:members,error}=await client.from('erp_members').select('organization_id,role').eq('user_id',session.user.id);
+   const {data:members,error}=await waitFor(client.from('erp_members').select('organization_id,role').eq('user_id',session.user.id),10000,'Personel üyeliği');
    if(error)throw error;
    const chosen=(members||[]).find(m=>m.organization_id===new URLSearchParams(location.search).get('org'))||(members||[])[0];
    if(chosen){
     orgId=chosen.organization_id;
     if(chosen.role!=='staff')Object.keys(allowed).forEach(key=>allowed[key]=true);
     else{
-     const {data:rows,error:permissionError}=await client.from('erp_member_permissions').select('menu_key,can_view').eq('organization_id',orgId).eq('user_id',session.user.id);
+     const {data:rows,error:permissionError}=await waitFor(client.from('erp_member_permissions').select('menu_key,can_view').eq('organization_id',orgId).eq('user_id',session.user.id),10000,'Yetki');
      if(permissionError)throw permissionError;
      for(const row of rows||[])if(row.menu_key in allowed&&row.menu_key!=='activity')allowed[row.menu_key]=!!row.can_view;
      allowed.activity=false;
@@ -112,6 +133,7 @@ async function initialize(){
    }else Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));
   }else {Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));for(const record of frames.values())record.frame.remove();frames.clear()}
  }catch(error){
+  initializationError=error;
   authenticated=false;
   Object.keys(allowed).forEach(key=>allowed[key]=(key==='orders'||key==='company'));
   console.warn('KONAK ERP menü yetkileri okunamadı',error?.message);
@@ -126,6 +148,7 @@ async function initialize(){
  const requested=new URLSearchParams(location.search).get('view')||'orders';
  const fallback=Object.keys(menus).find(key=>allowed[key])||'orders';
  navigate(allowed[requested]===false?fallback:requested,false);
+ if(initializationError){notice.hidden=false;showRecovery('Oturum veya veritabanı bağlantısı kurulamadı: '+String(initializationError.message||initializationError));}
 }
 const accountTrigger=document.getElementById('erp-account-trigger'),accountMenu=document.getElementById('erp-account-menu');
 function closeAccountMenu(){accountMenu.hidden=true;accountTrigger.setAttribute('aria-expanded','false')}
@@ -179,5 +202,5 @@ window.addEventListener('message',event=>{
  }
 });
 ensureFrame('orders');
-initialize();
+initialize().catch(error=>{notice.hidden=false;showRecovery('Başlatma başarısız: '+String(error?.message||error));});
 })();
