@@ -51,8 +51,53 @@ html,body{margin:0;min-height:100%;overflow:hidden;background:#f6f8f7;font-famil
 }
 @media(max-width:380px){.erp-shell-brand{font-size:16px}.erp-shell-brand small{font-size:6px}.erp-shell-account{padding:9px 7px;font-size:11px}}
 </style>
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
-<script defer src="./erp-shell.js?v=loading-recovery-20261128"></script>
+<script>
+(function(){
+ var clientSources=[
+  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js",
+  "https://unpkg.com/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"
+ ];
+ var started=false,attempt=0,done=false,scriptLoader=null;
+ var notice=document.getElementById("erp-shell-notice");
+ function recovery(note){
+  if(!notice)return;
+  notice.hidden=false;
+  notice.replaceChildren();
+  var wrap=document.createElement("div");wrap.style.cssText="display:grid;gap:11px;max-width:400px;text-align:center";
+  var title=document.createElement("strong");title.textContent="KONAK ERP açılıyor";
+  var details=document.createElement("span");details.style.cssText="color:#526a5b;font-size:13px;line-height:1.5";details.textContent=note;
+  var actions=document.createElement("div");actions.style.cssText="display:flex;flex-wrap:wrap;justify-content:center;gap:9px";
+  var retry=document.createElement("button");retry.type="button";retry.textContent="Yeniden Dene";retry.style.cssText="background:#234a35;color:#fff;padding:11px;border-radius:8px;border:0;font-weight:700";retry.onclick=function(){location.reload()};
+  var direct=document.createElement("a");direct.href="../erp/";direct.textContent="Giriş Sayfası";direct.style.cssText="background:#e9f1e9;color:#234a35;padding:11px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px";
+  actions.append(retry,direct);wrap.append(title,details,actions);notice.append(wrap);
+ }
+ function loadShell(){
+  if(started)return;started=true;
+  recovery("Bağlantı kuruldu, sipariş ekranı yükleniyor...");
+  var s=document.createElement("script");s.src="./erp-shell.js?v=boot-fallback-20261128";s.onerror=function(){recovery("Giriş ekranının uygulama dosyası yüklenemedi. Sayfayı yeniden deneyin.")};
+  document.head.append(s);
+ }
+ function attemptSource(){
+  if(started||done)return;
+  if(window.supabase&&window.supabase.createClient){loadShell();return}
+  if(attempt>=clientSources.length){done=true;recovery("Giriş bağlantısı kurulamadı. İnternet bağlantınızı kontrol edip yeniden deneyin.");return}
+  var source=clientSources[attempt++],s=document.createElement("script"),settled=false;
+  s.src=source;s.async=true;
+  var watchdog=setTimeout(function(){finish(false)},7000);
+  function finish(success){
+   if(settled)return;settled=true;clearTimeout(watchdog);
+   if(success&&(window.supabase&&window.supabase.createClient)){loadShell();return}
+   if(s.parentNode)s.parentNode.removeChild(s);
+   attemptSource();
+  }
+  s.onload=function(){finish(true)};
+  s.onerror=function(){finish(false)};
+  document.head.append(s);
+ }
+ recovery("Güvenli giriş bağlantısı hazırlanıyor...");
+ attemptSource();
+})();
+</script>
 </head>
 <body class="erp-shell-guest">
 <header class="erp-shell-top"><div class="erp-shell-bar">
